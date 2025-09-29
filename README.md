@@ -12,7 +12,7 @@ We have managed to run the project with a latest Computer generation, though we 
 
 
 Despite all the work we have done so far, this project still has a long road ahead and it is worth-noting that the difficulty increases each step on the way as well as the amount of work. Still we have reached a point in which we could show some potential towards accomplishing our goals. Lets see our current Roadmap:
-- Find people who are insterested and wants to participate in the project.
+- Find people who are insterested and want to participate in the project.
 - Move the project to a professional game engine. The current physics system is not human-playable and it has important issues that makes it no reliable. Additionally, the home-made game engine has limitations that makes it harder to create necessary tools for AI Editing & Analyzing.
 - Create better AI Editor/Analysis tools
 - Create better prediction system
