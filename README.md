@@ -16,6 +16,6 @@ Despite all the work we have done so far, this project still has a long road ahe
 - Move the project to a professional game engine. The current physics system is not human-playable and it has important issues that makes it no reliable. Additionally, the home-made game engine has limitations that makes it harder to create necessary tools for AI Editing & Analyzing.
 - Create better AI Editor/Analysis tools
 - Create better prediction system
-- Find solutions to the AI limitations, specially the indecisive agent behavior.
+- Find solutions for the AI limitations, specially the indecisive agent behavior.
 - Introduce Machine Learning
 - Once we have complete a competitive AI agent, start the challenging phase.
