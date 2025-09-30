@@ -15,4 +15,4 @@ We have managed to run the project with a latest Computer generation, though we 
 - Create better prediction system
 - Find solutions for the AI limitations, specially the indecisive agent behavior.
 - Introduce Machine Learning
-- Once we have complete a competitive AI agent, start the challenging phase.
+- Once we have completed a competitive AI agent, lets start the challenging phase.
