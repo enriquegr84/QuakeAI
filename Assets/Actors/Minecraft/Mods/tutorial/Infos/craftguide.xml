@@ -1,0 +1,22 @@
+<Actor type="node" name="actors\minecraft\mods\tutorial\infos\craftguide.xml" description="craft guide">
+	<ItemComponent>
+		<DrawType>signlike</DrawType>
+		<ParamType>light</ParamType>
+		<ParamType2>wallmounted</ParamType2>
+		<Walkable>false</Walkable>
+		<SunlightPropagates>true</SunlightPropagates>
+		<InventoryImage>default_sign_wall.png</InventoryImage>
+		<WieldImage>default_sign_wall.png</WieldImage>
+		<Tiles>
+			<Tile name="default_sign_wall.png" />
+		</Tiles>
+		<Groups> 
+			<AttachedNode>1</AttachedNode>
+			<CreativeBreakable>1</CreativeBreakable>
+		</Groups>
+		<SelectionBox>
+			<Type>wallmounted</Type>
+			<WallSide>{ -0.5, -0.5, -0.5, -0.4, 0.5, 0.5 }</WallSide>
+		</SelectionBox>
+	</ItemComponent>
+</Actor>

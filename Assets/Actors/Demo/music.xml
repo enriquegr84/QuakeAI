@@ -1,0 +1,7 @@
+<Actor type="Music" resource="actors\demo\music.xml">
+	<AudioComponent>
+		<Sound>audio\spacegod7-level2.ogg</Sound>
+		<Looping>1</Looping>
+		<FadeIn>5</FadeIn>
+	</AudioComponent>	
+</Actor>

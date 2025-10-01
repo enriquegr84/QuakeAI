@@ -1,0 +1,55 @@
+<Actors>
+	<Actor type="craft" name="supplemental:rock" description="piece of rock">
+		<ItemComponent>
+			<InventoryImage>supplemental_rock.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="supplemental:wheat" description="wheat">
+		<ItemComponent>
+			<InventoryImage>supplemental_wheat.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="supplemental:flour" description="flour">
+		<ItemComponent>
+			<InventoryImage>supplemental_flour.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="supplemental:paper_white" description="white sheet of paper">
+		<ItemComponent>
+			<InventoryImage>default_paper.png</InventoryImage>
+			<Groups>
+				<Paper>1</Paper>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="supplemental:paper_orange" description="orange sheet of paper">
+		<ItemComponent>
+			<InventoryImage>supplemental_paper_orange.png</InventoryImage>
+			<Groups>
+				<Paper>1</Paper>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="supplemental:paper_purple" description="purple sheet of paper">
+		<ItemComponent>
+			<InventoryImage>supplemental_paper_purple.png</InventoryImage>
+			<Groups>
+				<Paper>1</Paper>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="supplemental:paper_green" description="green sheet of paper">
+		<ItemComponent>
+			<InventoryImage>supplemental_paper_green.png</InventoryImage>
+			<Groups>
+				<Paper>1</Paper>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+</Actors>

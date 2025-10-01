@@ -1,0 +1,27 @@
+<Actor type="Fire" resource="actors\quake\effects\railgunfire.xml">
+
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<Scale x="8.0" y="8.0" z="8.0" />
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	
+	<VolumeLightRenderComponent>
+		<Material type="12" />
+		<Subdivision u="32" v="32"/>
+		<FootColor r="1.0" g="1.0" b="1.0" a="1.0" />
+		<TailColor r="0.0" g="0.0" b="0.0" a="1.0" />
+    <Animation type="96" time="300" />
+		<Texture>
+			art/quake/gfx/misc/portal1.bmp,
+			art/quake/gfx/misc/portal2.bmp,
+			art/quake/gfx/misc/portal3.bmp,
+			art/quake/gfx/misc/portal4.bmp,
+			art/quake/gfx/misc/portal5.bmp,
+			art/quake/gfx/misc/portal6.bmp,
+			art/quake/gfx/misc/portal7.bmp
+		</Texture>
+		<TextureSize x="16.0" y="16.0" />
+	</VolumeLightRenderComponent>
+
+</Actor>

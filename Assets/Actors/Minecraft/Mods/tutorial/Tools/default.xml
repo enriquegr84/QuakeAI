@@ -1,0 +1,10 @@
+<Actors>
+	<Actor type="tool" name="tutorial:snatcher" description="apple snatcher">
+		<ItemComponent>
+			<InventoryImage>tutorial_snatcher.png</InventoryImage>
+			<WieldImage>tutorial_snatcher.png</WieldImage>
+			<WieldScale x="1" y="1" z="2.5" />
+			<Range>10</Range>
+		</ItemComponent>
+	</Actor>
+</Actors>

@@ -1,0 +1,25 @@
+<Actor type="Trigger" resource="actors\quake\trigger\push.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	<AudioComponent>
+		<Sound>jumppad</Sound>
+		<Looping>0</Looping>
+	</AudioComponent>
+	<PhysicsComponent>
+		<Shape>None</Shape>
+		<Density>Infinite</Density>
+		<PhysicsMaterial>Normal</PhysicsMaterial>
+		<RigidBodyTransform>
+			<Position x="0" y="0" z="0"/>
+			<YawPitchRoll x="0" y="0" z="0"/>
+			<Scale x="0" y="0" z="0" />  
+		</RigidBodyTransform>
+	</PhysicsComponent>
+	<PushTrigger>
+		<Color r="0.5" g="0.5" b="0.5" />
+		<Trigger type="0" code="0" />
+		<!--Speed of travel is determined by the distance needed to reach the target entity-->
+	</PushTrigger>
+</Actor>

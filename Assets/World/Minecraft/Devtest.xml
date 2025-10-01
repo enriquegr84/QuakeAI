@@ -1,0 +1,9 @@
+<World id="devtest" name="Development Test" author="Dev" path="art\minecraft\games\devtest\map" iconpath="art\minecraft\games\devtest\menu\icon.png"
+	description="Testing environment to help with testing the engine features of Minetest. It can also be helpful in mod development." >
+
+    <!-- A list of static actors to load. Static actors have no game view attached.  -->
+
+	<StaticActors>
+		<Actor resource="actors\minecraft\maps\tutorial.xml" />
+	</StaticActors>
+</World>

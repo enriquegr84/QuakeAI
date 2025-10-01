@@ -1,0 +1,22 @@
+<Actor type="Explosion" resource="actors\quake\effects\bulletexplosion.xml">
+
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<Scale x="1.0" y="1.0" z="1.0" />
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	
+	<BillboardRenderComponent>
+		<Material type="12" />
+    <Animation type="96" time="600" />
+		<Texture>
+			art/quake/models/weaphits/bullet1.jpg,
+			art/quake/models/weaphits/bullet2.jpg,
+			art/quake/models/weaphits/bullet3.jpg,
+			art/quake/gfx/colors/black.jpg
+		</Texture>
+		<TextureColor r="1.0" g="1.0" b="1.0" a="1.0" />
+		<TextureSize x="16.0" y="16.0" />
+	</BillboardRenderComponent>
+
+</Actor>

@@ -1,0 +1,835 @@
+<Actors>
+	<Actor type="node" name="supplemental:sticky" description="sticky stone brick">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_stone_brick.png^supplemental_splat.png"/>
+			</Tiles>
+			<Groups> 
+				<DisableJump>1</DisableJump>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:bouncy" description="bouncy block">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="supplemental_bouncy.png"/>
+			</Tiles>
+      <IsGroundContent>true</IsGroundContent>
+			<Groups> 
+				<FallDamageAddPercent>-100</FallDamageAddPercent>
+				<CreativeBreakable>1</CreativeBreakable>
+				<Bouncy>70</Bouncy>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:conglomerate" description="conglomerate">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="supplemental_conglomerate.png"/>
+			</Tiles>
+      <IsGroundContent>true</IsGroundContent>
+			<Groups> 
+				<Cracky>1</Cracky>
+			</Groups>
+			<Drops>
+				<Item name="supplemental:rock" rarity="0" />
+				<Item name="supplemental:rock" rarity="5" />
+				<Item name="supplemental:rock" rarity="5" />
+				<Item name="supplemental:rock" rarity="5" />
+				<Item name="supplemental:rock" rarity="5" />
+			</Drops>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:frame" description="picture frame">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>supplemental_frame.png</InventoryImage>
+			<WieldImage>supplemental_frame.png</WieldImage>
+			<Tiles>
+				<Tile name="supplemental_frame.png" />
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+			</SelectionBox>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<LegacyWallmounted>true</LegacyWallmounted>
+			<Sounds name="default.node_sound_defaults">
+				<Footstep name="" gain="1.0"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:spikes" description="short spikes">
+		<ItemComponent>
+			<DrawType>plantlike</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>supplemental_spikes_small.png</InventoryImage>
+			<WieldImage>supplemental_spikes_small.png</WieldImage>
+			<Tiles>
+				<Tile name="supplemental_spikes_small.png" />
+			</Tiles>
+			<DamagePerSecond>1</DamagePerSecond>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<CollisionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0.1, 0.5}
+				</Fixed>
+			</CollisionBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0.1, 0.5}
+				</Fixed>
+			</SelectionBox>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:spikes_large" description="long spikes">
+		<ItemComponent>
+			<DrawType>plantlike</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>supplemental_spikes_large.png</InventoryImage>
+			<WieldImage>supplemental_spikes_large.png</WieldImage>
+			<Tiles>
+				<Tile name="supplemental_spikes_large.png" />
+			</Tiles>
+			<DamagePerSecond>2</DamagePerSecond>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:loudspeaker" description="loudspeaker">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="supplemental_loudspeaker.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Text>
+				loudspeaker (rightclick to toggle music)
+			</Text>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+      <OnConstruct>true</OnConstruct>
+      <OnRightClick>true</OnRightClick>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid0" description="flowing test liquid 0">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>0</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid0</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource0</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid0.png{supplemental_testliquid0.png{supplemental_testliquid0.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid0.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid0.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid0.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource0" description="flowing test liquid source 0">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>0</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid0</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource0</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid0.png{supplemental_testliquid0.png{supplemental_testliquid0.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid0.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid0.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid1" description="flowing test liquid 1">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>1</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid1</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource1</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid1.png{supplemental_testliquid1.png{supplemental_testliquid1.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid1.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid1.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid1.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource1" description="flowing test liquid source 1">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>1</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid1</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource1</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid1.png{supplemental_testliquid1.png{supplemental_testliquid1.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid1.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid1.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid2" description="flowing test liquid 2">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>2</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid2</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource2</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid2.png{supplemental_testliquid2.png{supplemental_testliquid2.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid2.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid2.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid2.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource2" description="flowing test liquid source 2">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>2</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid2</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource2</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid2.png{supplemental_testliquid2.png{supplemental_testliquid2.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid2.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid2.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid3" description="flowing test liquid 3">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>3</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid3</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource3</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid3.png{supplemental_testliquid3.png{supplemental_testliquid3.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid3.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid3.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid3.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource3" description="flowing test liquid source 3">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>3</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid3</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource3</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid3.png{supplemental_testliquid3.png{supplemental_testliquid3.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid3.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid3.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid4" description="flowing test liquid 4">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>4</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid4</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource4</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid4.png{supplemental_testliquid4.png{supplemental_testliquid4.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid4.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid4.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid4.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource4" description="flowing test liquid source 4">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>4</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid4</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource4</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid4.png{supplemental_testliquid4.png{supplemental_testliquid4.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid4.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid4.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid5" description="flowing test liquid 5">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>5</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid5</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource5</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid5.png{supplemental_testliquid5.png{supplemental_testliquid5.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid5.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid5.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid5.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource5" description="flowing test liquid source 5">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>5</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid5</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource5</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid5.png{supplemental_testliquid5.png{supplemental_testliquid5.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid5.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid5.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid6" description="flowing test liquid 6">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>6</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid6</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource6</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid6.png{supplemental_testliquid6.png{supplemental_testliquid6.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid6.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid6.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid6.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource6" description="flowing test liquid source 6">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>6</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid6</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource6</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid6.png{supplemental_testliquid6.png{supplemental_testliquid6.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid6.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid6.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquid7" description="flowing test liquid 7">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>7</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid7</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource7</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid7.png{supplemental_testliquid7.png{supplemental_testliquid7.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid7.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid7.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>supplemental_testliquid7.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="supplemental:liquidsource7" description="flowing test liquid source 7">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>7</LiquidViscosity>
+			<LiquidAlternativeFlowing>supplemental:liquid7</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>supplemental:liquidsource7</LiquidAlternativeSource>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{supplemental_testliquid7.png{supplemental_testliquid7.png{supplemental_testliquid7.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="supplemental_testliquid7.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>supplemental_testliquid7.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+</Actors>

@@ -1,0 +1,43 @@
+<Actors>
+	<Actor type="craft" name="default:book" description="book">
+		<ItemComponent>
+			<InventoryImage>default_book.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="default:coal_lump" description="coal lump">
+		<ItemComponent>
+			<InventoryImage>default_coal_lump.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="default:iron_lump" description="iron lump">
+		<ItemComponent>
+			<InventoryImage>default_iron_lump.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="default:gold_lump" description="gold lump">
+		<ItemComponent>
+			<InventoryImage>default_gold_lump.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="default:diamond" description="diamond">
+		<ItemComponent>
+			<InventoryImage>default_diamond.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="craft" name="default:steel_ingot" description="steel ingot">
+		<ItemComponent>
+			<InventoryImage>default_steel_ingot.png</InventoryImage>
+		</ItemComponent>	
+	</Actor>
+
+	<Actor type="craft" name="default:gold_ingot" description="gold ingot">
+		<ItemComponent>
+			<InventoryImage>default_gold_ingot.png</InventoryImage>
+		</ItemComponent>
+	</Actor>
+</Actors>

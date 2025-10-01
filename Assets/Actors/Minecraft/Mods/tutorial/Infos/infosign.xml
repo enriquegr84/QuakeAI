@@ -1,0 +1,30 @@
+<Actor type="node" name="actors\minecraft\mods\tutorial\infos\infosign.xml" description="info sign">
+	<ItemComponent>
+		<DrawType>signlike</DrawType>
+		<ParamType>light</ParamType>
+		<ParamType2>wallmounted</ParamType2>
+		<Walkable>false</Walkable>
+		<IsGroundContent>false</IsGroundContent>
+		<SunlightPropagates>true</SunlightPropagates>
+		<InventoryImage>default_sign_wall.png</InventoryImage>
+		<WieldImage>default_sign_wall.png</WieldImage>
+		<Tiles>
+			<Tile name="default_sign_wall.png" />
+		</Tiles>
+		<Groups> 
+			<TutorialSign>1</TutorialSign>
+			<AttachedNode>1</AttachedNode>
+			<CreativeBreakable>1</CreativeBreakable>
+		</Groups>
+		<SelectionBox>
+			<Type>wallmounted</Type>
+		</SelectionBox>
+		<Sounds name="default.node_sound_defaults">
+			<Footstep name="" gain="1.0"/>
+			<Place name="default_place_node_hard" gain="1.0"/>
+			<Dug name="default_dug_node" gain="0.25"/>
+		</Sounds>
+		<LegacyWallmounted>true</LegacyWallmounted>
+    <OnConstruct>true</OnConstruct>
+	</ItemComponent>
+</Actor>

@@ -1,0 +1,16 @@
+<Actors>
+  <!-- shapeless -->
+  <Actor type="shapeless">
+		<CraftingComponent>
+			<Output>supplemental:flour</Output>
+			<Recipe>supplemental:wheat,supplemental:wheat,supplemental:wheat,supplemental:wheat</Recipe>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="shaped">
+		<CraftingComponent>
+			<Output>default:book</Output>
+			<Recipe>group:Paper,group:Paper,group:Paper</Recipe>
+		</CraftingComponent>
+	</Actor>
+</Actors>

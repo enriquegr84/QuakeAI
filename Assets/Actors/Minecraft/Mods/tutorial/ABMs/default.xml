@@ -1,0 +1,120 @@
+<Actors>
+  <!-- tutorial -->
+  <Actor type="block">
+		<ABMComponent>
+			<Nodenames>group:TutorialSign</Nodenames>
+			<Interval>1</Interval>
+			<Chance>1</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>group:Cupgold</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.goldinfo</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>group:Cupdiamond</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.diamondinfo</Action>
+		</ABMComponent>
+	</Actor>
+
+	<!-- supplemental -->
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>supplemental:loudspeaker</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>set_loudspeaker_infotext</Action>
+		</ABMComponent>
+	</Actor>
+
+	<!-- grow trees -->
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>default:sapling</Nodenames>
+			<Interval>10</Interval>
+			<Chance>50</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>default:junglesapling</Nodenames>
+			<Interval>10</Interval>
+			<Chance>50</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>default:lava_flowing</Nodenames>
+			<Neighbors>group:Water</Neighbors>
+			<Interval>1</Interval>
+			<Chance>1</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>default:lava_source</Nodenames>
+			<Neighbors>group:Water</Neighbors>
+			<Interval>1</Interval>
+			<Chance>1</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+
+	<!-- nodes -->
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>default:chest</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>default:furnace</Nodenames>
+			<Interval>1</Interval>
+			<Chance>1</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+
+  <Actor type="block">
+    <ABMComponent>
+      <Nodenames>default:furnace_active</Nodenames>
+      <Interval>1</Interval>
+      <Chance>1</Chance>
+      <Action>function</Action>
+    </ABMComponent>
+  </Actor>
+  
+	<!-- arrow sign -->
+
+	<Actor type="block">
+		<ABMComponent>
+			<Nodenames>group:ArrowSign</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>function</Action>
+		</ABMComponent>
+	</Actor>
+</Actors>

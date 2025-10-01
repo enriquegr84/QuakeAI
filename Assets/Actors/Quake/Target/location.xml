@@ -1,0 +1,9 @@
+<Actor type="Target" resource="actors\quake\target\location.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	<LocationTarget>
+		<Color r="1.0" g="0.0" b="0.0" />
+	</LocationTarget>
+</Actor>

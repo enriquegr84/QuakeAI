@@ -1,0 +1,560 @@
+<Actors>
+	<!-- the basic version of a bed - a sleeping mat
+		to facilitate upgrade path straw mat -> sleeping mat -> bed, this uses a nodebox-->
+	<Actor type="node" name="cottages:sleeping_mat" description="sleeping mat">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<IsGroundContent>true</IsGroundContent>
+			<InventoryImage>cottages_sleepingmat.png</InventoryImage>
+			<WieldImage>cottages_sleepingmat.png</WieldImage>
+			<Tiles>
+				<Tile name="cottages_sleepingmat.png" />
+			</Tiles>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.48, -0.5,-0.48,  0.48, -0.45, 0.48}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.48, -0.5,-0.48,  0.48, -0.25, 0.48}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_leaves_defaults">
+				<Footstep name="default_grass_footstep" gain="0.35"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_grass_footstep" gain="0.85"/>
+				<Dig name="default_dig_crumbly" gain="0.4"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!-- furniture; possible replacement: 3dforniture:chair -->
+	<Actor type="node" name="cottages:bench" description="simple wooden bench">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_minimal_wood.png" />
+				<Tile name="cottages_minimal_wood.png" />
+				<Tile name="cottages_minimal_wood.png" />
+				<Tile name="cottages_minimal_wood.png" />
+				<Tile name="cottages_minimal_wood.png" />
+				<Tile name="cottages_minimal_wood.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					-- sitting area
+					{-0.5, -0.15, 0.1,  0.5,  -0.05, 0.5},
+				
+					-- stützen
+					{-0.4, -0.5,  0.2, -0.3, -0.15, 0.4},
+					{ 0.3, -0.5,  0.2,  0.4, -0.15, 0.4}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, 0, 0.5, 0, 0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!-- a simple table; possible replacement: 3dforniture:table -->
+	<Actor type="node" name="cottages:table" description="table">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_minimal_wood.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.1, -0.5, -0.1,  0.1, 0.3,  0.1},
+					{ -0.5,  0.3, -0.5,  0.5, 0.4,  0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5,  0.5, 0.4,  0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+
+	<!-- can be used to buid real stationary wagons or attached to walls as decoration -->
+	<Actor type="node" name="cottages:wagon_wheel" description="wagon wheel">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>cottages_wagonwheel.png</InventoryImage>
+			<WieldImage>cottages_wagonwheel.png</WieldImage>
+			<Tiles>
+				<Tile name="cottages_wagonwheel.png" />
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+			</SelectionBox>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<LegacyWallmounted>true</LegacyWallmounted>
+			<Sounds name="default.node_sound_defaults">
+				<Footstep name="" gain="1.0"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!-- create the three basic roof parts plus receipes for them; -->
+	<Actor type="node" name="cottages:roof_black" description="black roof">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="cottages:roof_connector_black" description="black roof connector">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="cottages:roof_flat_black" description="black flat roof">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="cottages:roof_red" description="red roof">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="cottages:roof_connector_red" description="red roof connector">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5},
+					{-0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="cottages:roof_flat_red" description="red flat roof">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.5, -0.5, -0.5, 0.5, 0, 0.5}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!-- an even simpler from of bed - usually for animals 
+		it is a nodebox and not wallmounted because that makes it easier to replace beds with straw mats -->
+	<Actor type="node" name="cottages:straw_mat" description="straw layer">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<Walkable>false</Walkable>
+			<SunlightPropagates>true</SunlightPropagates>
+			<IsGroundContent>true</IsGroundContent>
+			<InventoryImage>cottages_darkage_straw.png</InventoryImage>
+			<WieldImage>cottages_darkage_straw.png</WieldImage>
+			<Tiles>
+				<Tile name="cottages_darkage_straw.png" />
+			</Tiles>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.48, -0.5,-0.48,  0.48, -0.45, 0.48}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.48, -0.5,-0.48,  0.48, -0.25, 0.48}
+				</Fixed>
+			</SelectionBox>
+			<Sounds name="default.node_sound_leaves_defaults">
+				<Footstep name="default_grass_footstep" gain="0.35"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_grass_footstep" gain="0.85"/>
+				<Dig name="default_dig_crumbly" gain="0.4"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+
+  <!-- add the diffrent roof types -->
+	<Actor type="node" name="black" description="black roof" 
+		resource="actors\minecraft\mods\tutorial\nodes\roof.xml">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+			</Tiles>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="black" description="black roof connector" 
+		resource="actors\minecraft\mods\tutorial\nodes\roof.xml">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+			</Tiles>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 },
+					{ -0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 },
+					{ -0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</SelectionBox>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="black" description="black flat roof" 
+		resource="actors\minecraft\mods\tutorial\nodes\roof.xml">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_asphalt.png" />
+			</Tiles>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 }
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 }
+				</Fixed>
+			</SelectionBox>
+		</ItemComponent>
+	</Actor>
+
+
+	<Actor type="node" name="red" description="red roof" 
+		resource="actors\minecraft\mods\tutorial\nodes\roof.xml">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+			</Tiles>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="red" description="red roof connector" 
+		resource="actors\minecraft\mods\tutorial\nodes\roof.xml">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+			</Tiles>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 },
+					{ -0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 },
+					{ -0.5, 0, 0, 0.5, 0.5, 0.5}
+				</Fixed>
+			</SelectionBox>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="red" description="red flat roof" 
+		resource="actors\minecraft\mods\tutorial\nodes\roof.xml">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="default_wood.png" />
+				<Tile name="cottages_homedecor_shingles_terracotta.png" />
+			</Tiles>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 }
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{ -0.5, -0.5, -0.5, 0.5, 0, 0.5 }
+				</Fixed>
+			</SelectionBox>
+		</ItemComponent>
+	</Actor>
+</Actors>

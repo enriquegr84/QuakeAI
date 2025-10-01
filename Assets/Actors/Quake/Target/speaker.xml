@@ -1,0 +1,11 @@
+<Actor type="Target" resource="actors\quake\target\speaker.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	<SpeakerTarget>
+		<Color r="0.0" g="1.0" b="0.0" />
+		<Dimension minx="-8.0" miny="-8.0" minz="-8.0" maxx="8.0" maxy="8.0" maxz="8.0" />
+		<Target type="0" code="0" />
+	</SpeakerTarget>
+</Actor>

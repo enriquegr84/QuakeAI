@@ -1,0 +1,602 @@
+<Actors>
+	<Actor type="none" name="unknown" description="unknown item">
+		<ItemComponent>
+			<Diggable>true</Diggable>
+			<InventoryImage>unknown_item.png</InventoryImage>
+			<Tiles>
+			<Tile name="unknown_item.png"/>
+			</Tiles>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="air" description="air">
+		<ItemComponent>
+			<DrawType>airlike</DrawType>
+			<ParamType>light</ParamType>
+			<WieldImage>air.png</WieldImage>
+			<InventoryImage>air.png</InventoryImage>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>false</BuildableTo>
+			<Floodable>true</Floodable>
+			<AirEquivalent>true</AirEquivalent>
+			<Drops>
+        <Item name="" />
+      </Drops>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="ignore" description="ignore">
+		<ItemComponent>
+			<DrawType>airlike</DrawType>
+			<ParamType>none</ParamType>
+			<WieldImage>ignore.png</WieldImage>
+			<InventoryImage>ignore.png</InventoryImage>
+			<SunlightPropagates>false</SunlightPropagates>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+			<AirEquivalent>true</AirEquivalent>
+			<Drops>
+        <Item name="" />
+      </Drops>
+			<Groups> 
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:stone" description="stone">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_stone.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<Cracky>3</Cracky>
+				<Stone>1</Stone>
+			</Groups>
+			<Drops>
+        <Item name="default:cobble" />
+      </Drops> 
+			<LegacyMineral>true</LegacyMineral> 
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:stone_with_coal" description="coal ore">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_stone.png^default_mineral_coal.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<Cracky>3</Cracky>
+			</Groups>
+			<Drops>
+        <Item name="default:coal_lump"/>
+      </Drops> 
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+  <Actor type="node" name="default:stone_with_iron" description="iron ore">
+    <ItemComponent>
+      <Tiles>
+        <Tile name="default_stone.png^default_mineral_iron.png"/>
+      </Tiles>
+      <IsGroundContent>true</IsGroundContent>
+      <Groups>
+        <Cracky>2</Cracky>
+      </Groups>
+      <Drops>
+        <Item name="default:iron_lump"/>
+      </Drops>
+      <Sounds name="default.node_sound_stone_defaults">
+        <Footstep name="default_hard_footstep" gain="0.5"/>
+        <Place name="default_place_node_hard" gain="1.0"/>
+        <Dug name="default_hard_footstep" gain="1.0"/>
+      </Sounds>
+    </ItemComponent>
+  </Actor>
+  
+	<Actor type="node" name="default:stone_with_gold" description="gold ore">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_stone.png^default_mineral_gold.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<Cracky>2</Cracky>
+			</Groups>
+			<Drops>
+        <Item name="default:gold_lump"/>
+      </Drops> 
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:stone_with_diamond" description="diamond ore">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_stone.png^default_mineral_diamond.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<Cracky>1</Cracky>
+			</Groups>
+			<Drops>
+        <Item name="default:diamond"/>
+      </Drops> 
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:dirt_with_grass" description="dirt with grass">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_grass.png"/>
+				<Tile name="default_dirt.png"/>
+				<Tile name="default_dirt.png^default_grass_side.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Drops>
+        <Item name="default:dirt"/>
+      </Drops> 
+			<Sounds name="default.node_sound_dirt_defaults">
+				<Footstep name="default_grass_footstep" gain="0.25"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_dirt_footstep" gain="1.5"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:dirt" description="dirt">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_dirt.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_dirt_defaults">
+				<Footstep name="default_dirt_footstep" gain="1.0"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_dirt_footstep" gain="1.5"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:sand" description="sand">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_sand.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+				<FallingNode>1</FallingNode>
+			</Groups>
+			<Sounds name="default.node_sound_sand_defaults">
+				<Footstep name="default_sand_footstep" gain="0.5"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_sand_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:tree" description="tree trunk">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_tree_top.png"/>
+				<Tile name="default_tree_top.png"/>
+				<Tile name="default_tree.png"/>
+			</Tiles>
+			<ParamType2>facedir</ParamType2>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+			<OnPlace>minetest.rotate_node</OnPlace>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:leaves" description="leaves">
+		<ItemComponent>
+			<DrawType>allfacesoptional</DrawType>
+			<Waving>1</Waving>
+			<ParamType>light</ParamType>
+			<Tiles>
+				<Tile name="default_leaves.png"/>
+			</Tiles>
+			<IsGroundContent>false</IsGroundContent> 
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_sand_defaults">
+				<Footstep name="default_grass_footstep" gain="0.35"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_grass_footstep" gain="0.85"/>
+				<Dig name="default_dig_crumbly" gain="0.4"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:grass_5" description="grass">
+		<ItemComponent>
+			<DrawType>plantlike</DrawType>
+			<SunlightPropagates>true</SunlightPropagates>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<InventoryImage>default_grass_5.png</InventoryImage>
+			<WieldImage>default_grass_5.png</WieldImage>
+			<Tiles>
+				<Tile name="default_grass_5.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<AttachedActor>1</AttachedActor>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_leaves_defaults">
+				<Footstep name="default_grass_footstep" gain="0.35"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_grass_footstep" gain="0.85"/>
+				<Dig name="default_dig_crumbly" gain="0.4"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:ladder" description="ladder">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+			<Climbable>true</Climbable>
+			<InventoryImage>default_ladder.png</InventoryImage>
+			<WieldImage>default_ladder.png</WieldImage>
+			<Tiles>
+				<Tile name="default_ladder.png"/>
+			</Tiles>
+			<IsGroundContent>false</IsGroundContent> 
+			<SelectionBox>
+				<Type>wallmounted</Type>
+			</SelectionBox>
+			<Groups> 
+				<AttachedActor>1</AttachedActor>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<LegacyWallmounted>true</LegacyWallmounted>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:wood" description="wooden planks">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="default_wood.png"/>
+			</Tiles>
+			<Groups> 
+				<Choppy>2</Choppy>
+				<Wood>1</Wood>
+			</Groups>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:water_flowing" description="flowing water">
+		<ItemComponent>
+			<DrawType>flowingliquid</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>flowingliquid</ParamType2>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+			<Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>flowing</LiquidType>
+			<LiquidViscosity>1</LiquidViscosity>
+			<LiquidAlternativeFlowing>default:water_flowing</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>default:water_source</LiquidAlternativeSource>
+			<PostEffectColor a="64" r="100" g="100" b="100"/>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{default_water.png{default_water.png{default_water.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="default_water.png"/>
+			</Tiles>
+			<SpecialTiles>
+				<SpecialTile>
+					<Image>default_water_flowing_animated.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+					<Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="0.8"/>
+				</SpecialTile>
+				<SpecialTile>
+					<Image>default_water_flowing_animated.png</Image>
+					<BackfaceCulling>true</BackfaceCulling>
+					<Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="0.8"/>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<Water>3</Water>
+				<Liquid>3</Liquid>
+				<Freezes>1</Freezes>
+				<MeltAround>1</MeltAround>
+				<PutsOutFire>1</PutsOutFire>
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:water_source" description="water source">
+		<ItemComponent>
+			<DrawType>liquid</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<BuildableTo>true</BuildableTo>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Drowning>1</Drowning>
+			<LiquidType>source</LiquidType>
+			<LiquidViscosity>1</LiquidViscosity>
+			<LiquidAlternativeFlowing>default:water_flowing</LiquidAlternativeFlowing>
+			<LiquidAlternativeSource>default:water_source</LiquidAlternativeSource>
+			<PostEffectColor a="64" r="100" g="100" b="100"/>
+			<UseTextureAlpha>blend</UseTextureAlpha>
+			<InventoryImage>
+				[inventorycube{default_water.png{default_water.png{default_water.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="default_water_source_animated.png">
+					<Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="2.0" />
+				</Tile>
+			</Tiles>
+			<SpecialTiles>
+				<!-- New-style water source material (mostly unused)-->
+				<SpecialTile>
+					<Image>default_water_source_animated.png</Image>
+					<BackfaceCulling>false</BackfaceCulling>
+					<Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="2.0"/>
+				</SpecialTile>
+			</SpecialTiles>
+			<Groups> 
+				<Water>3</Water>
+				<Liquid>3</Liquid>
+				<Freezes>1</Freezes>
+				<PutsOutFire>1</PutsOutFire>
+			</Groups>
+			<Sounds name="default.node_sound_water_defaults">
+				<Footstep name="default_water_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:torch" description="torch">
+		<ItemComponent>
+			<DrawType>torchlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+			<LightSource>13</LightSource>
+			<IsGroundContent>false</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>default_torch_on_floor.png</InventoryImage>
+			<WieldImage>default_torch_on_floor.png</WieldImage>
+			<Tiles>
+				<Tile name="default_torch_on_floor_animated.png">
+					<Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="3.0" />
+				</Tile>
+				<Tile name="default_torch_on_ceiling_animated.png">
+					<Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="3.0" />
+				</Tile>
+				<Tile name="default_torch_animated.png">
+					<Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="3.0" />
+				</Tile>
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+				<WallTop>{-0.1, -0.1, -0.1, 0.1, 0.5, 0.1}</WallTop>
+				<WallBottom>{-0.1, -0.5, -0.1, 0.1, 0.1, 0.1}</WallBottom>
+				<WallSide>{-0.5, -0.3, -0.1, -0.2, 0.3, 0.1}</WallSide>
+			</SelectionBox>
+			<Groups> 
+				<AttachedActor>1</AttachedActor>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<LegacyWallmounted>true</LegacyWallmounted>
+			<Sounds name="default.node_sound_defaults">
+				<Footstep name="" gain="1.0"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:chest" description="storage chest">
+		<ItemComponent>
+			<ParamType2>facedir</ParamType2>
+			<Tiles>
+				<Tile name="default_chest_top.png"/>
+				<Tile name="default_chest_top.png"/>
+				<Tile name="default_chest_side.png"/>
+				<Tile name="default_chest_side.png"/>
+				<Tile name="default_chest_side.png"/>
+				<Tile name="default_chest_front.png"/>
+			</Tiles>
+			<IsGroundContent>false</IsGroundContent> 
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+			<LegacyFacedirSimple>true</LegacyFacedirSimple>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:furnace" description="furnace">
+		<ItemComponent>
+			<ParamType2>facedir</ParamType2>
+			<Tiles>
+				<Tile name="default_furnace_top.png"/>
+				<Tile name="default_furnace_bottom.png"/>
+				<Tile name="default_furnace_side.png"/>
+				<Tile name="default_furnace_side.png"/>
+				<Tile name="default_furnace_side.png"/>
+				<Tile name="default_furnace_front.png"/>
+			</Tiles>
+			<IsGroundContent>false</IsGroundContent> 
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+			<LegacyFacedirSimple>true</LegacyFacedirSimple>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:furnace_active" description="furnace">
+		<ItemComponent>
+			<ParamType2>facedir</ParamType2>
+			<LightSource>8</LightSource>
+			<Drops>
+        <Item name="default:furnace"/>
+      </Drops>
+			<Tiles>
+				<Tile name="default_furnace_top.png"/>
+				<Tile name="default_furnace_bottom.png"/>
+				<Tile name="default_furnace_side.png"/>
+				<Tile name="default_furnace_side.png"/>
+        <Tile name="default_furnace_side.png"/>
+        <Tile name="default_furnace_front_active.png">
+          <BackfaceCulling>false</BackfaceCulling>
+          <Animation type="verticalframes" aspectwidth="16" aspectheight="16" length="1.5" />
+        </Tile>
+			</Tiles>
+			<IsGroundContent>false</IsGroundContent> 
+			<Groups> 
+				<Hot>1</Hot>
+				<CreativeBreakable>1</CreativeBreakable>
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+			<LegacyFacedirSimple>true</LegacyFacedirSimple>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:cobble" description="cobblestone">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_cobble.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups> 
+				<Cracky>3</Cracky>
+				<Stone>2</Stone>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_hard_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="default:apple" description="apple">
+		<ItemComponent>
+			<DrawType>plantlike</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>default_apple.png</InventoryImage>
+			<VisualScale>1.0</VisualScale>
+			<Tiles>
+				<Tile name="default_apple.png"/>
+			</Tiles>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>{-0.2, -0.5, -0.2, 0.2, 0, 0.2}</Fixed>
+			</SelectionBox>
+			<Groups> 
+				<DigImmediate>3</DigImmediate>
+			</Groups>
+			<Sounds name="default.node_sound_leaves_defaults">
+				<Footstep name="default_grass_footstep" gain="0.35"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_grass_footstep" gain="0.85"/>
+				<Dig name="default_dig_crumbly" gain="0.4"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+</Actors>

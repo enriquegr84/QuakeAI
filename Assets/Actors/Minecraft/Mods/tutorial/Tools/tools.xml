@@ -1,0 +1,107 @@
+<Actors>
+	<Actor type="none" name="" description="">
+		<ItemComponent>
+			<WieldImage>wieldhand.png</WieldImage>
+			<WieldScale x="1" y="1" z="2.5" />
+			<Groups>
+				<NotInCreativeInventory>1</NotInCreativeInventory>
+			</Groups>
+			<ToolCapabilities>
+				<FullPunchInterval>0.9</FullPunchInterval>
+				<PunchAttackUses>0</PunchAttackUses>
+				<MaxDropLevel>0</MaxDropLevel>
+				<GroupCaps>
+					<Crumbly times="[2]=3.00,[3]=0.70" uses="0" maxlevel="1"/>
+					<Snappy times="[3]=0.40" uses="0" maxlevel="1"/>
+					<OddlyBreakableByHand times="[1]=3.50,[2]=2.00,[3]=0.70" uses="0"/>
+				</GroupCaps>
+				<DamageGroups>
+					<Fleshy>1</Fleshy>
+				</DamageGroups>
+			</ToolCapabilities>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Picks -->
+	<Actor type="tool" name="default:pick_wood" description="wooden pickaxe">
+		<ItemComponent>
+			<InventoryImage>default_tool_woodpick.png</InventoryImage>
+			<ToolCapabilities>
+				<FullPunchInterval>1.2</FullPunchInterval>
+				<MaxDropLevel>0</MaxDropLevel>
+				<GroupCaps>
+					<Cracky times="[3]=1.60" uses="10" maxlevel="1"/>
+				</GroupCaps>
+				<DamageGroups>
+					<Fleshy>2</Fleshy>
+				</DamageGroups>
+			</ToolCapabilities>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="tool" name="default:pick_stone" description="stone pickaxe">
+		<ItemComponent>
+			<InventoryImage>default_tool_stonepick.png</InventoryImage>
+			<ToolCapabilities>
+				<FullPunchInterval>1.3</FullPunchInterval>
+				<MaxDropLevel>0</MaxDropLevel>
+				<GroupCaps>
+					<Cracky times="[2]=2.0,[3]=1.20" uses="20" maxlevel="1"/>
+				</GroupCaps>
+				<DamageGroups>
+					<Fleshy>3</Fleshy>
+				</DamageGroups>
+			</ToolCapabilities>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="tool" name="default:pick_steel" description="steel pickaxe">
+		<ItemComponent>
+			<InventoryImage>default_tool_steelpick.png</InventoryImage>
+			<ToolCapabilities>
+				<FullPunchInterval>1.0</FullPunchInterval>
+				<MaxDropLevel>1</MaxDropLevel>
+				<GroupCaps>
+					<Cracky times="[1]=4.00,[2]=1.60,[3]=0.80" uses="20" maxlevel="2"/>
+				</GroupCaps>
+				<DamageGroups>
+					<Fleshy>4</Fleshy>
+				</DamageGroups>
+			</ToolCapabilities>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Shovels -->
+	<Actor type="tool" name="default:shovel_wood" description="wooden shovel">
+		<ItemComponent>
+			<InventoryImage>default_tool_woodshovel.png</InventoryImage>
+			<WieldImage>default_tool_woodshovel.png^[transformR90</WieldImage>
+			<ToolCapabilities>
+				<FullPunchInterval>1.2</FullPunchInterval>
+				<MaxDropLevel>0</MaxDropLevel>
+				<GroupCaps>
+					<Crumbly times="[1]=3.00,[2]=1.60,[3]=0.60" uses="10" maxlevel="1"/>
+				</GroupCaps>
+				<DamageGroups>
+					<Fleshy>2</Fleshy>
+				</DamageGroups>
+			</ToolCapabilities>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="tool" name="default:axe_steel" description="steel axe">
+		<ItemComponent>
+			<InventoryImage>default_tool_steelaxe.png</InventoryImage>
+			<ToolCapabilities>
+				<FullPunchInterval>1.0</FullPunchInterval>
+				<MaxDropLevel>1</MaxDropLevel>
+				<GroupCaps>
+					<Choppy times="[1]=2.50,[2]=1.40,[3]=1.00" uses="20" maxlevel="2"/>
+				</GroupCaps>
+				<DamageGroups>
+					<Fleshy>4</Fleshy>
+				</DamageGroups>
+			</ToolCapabilities>
+		</ItemComponent>
+	</Actor>
+</Actors>

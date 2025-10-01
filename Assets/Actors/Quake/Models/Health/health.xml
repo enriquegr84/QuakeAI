@@ -1,0 +1,34 @@
+<Actor type="Health" resource="actors\quake\models\health\health.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	<AudioComponent>
+		<Sound>n_health</Sound>
+		<Looping>0</Looping>
+	</AudioComponent>
+  <PhysicsComponent>
+    <Shape>Trigger</Shape>
+    <Density>Infinite</Density>
+    <PhysicsMaterial>Normal</PhysicsMaterial>
+    <RigidBodyTransform>
+      <Position x="0" y="0" z="0"/>
+      <YawPitchRoll x="0" y="0" z="0"/>
+      <Scale x="16" y="16" z="16" />
+    </RigidBodyTransform>
+  </PhysicsComponent>
+	<MeshRenderComponent>
+		<Mesh>
+			art/quake/models/powerups/health/medium_cross.md3,
+			art/quake/models/powerups/health/medium_sphere.md3
+		</Mesh>
+    <Icon>art/quake/icons/iconh_yellow.png</Icon>
+		<Material type="12" />
+    <Animation type="18" />
+	</MeshRenderComponent>
+	<HealthPickup>
+		<Color r="0.3" g="0.3" b="1.0" />
+		<Dimension minx="-16.0" miny="-16.0" minz="-16.0" maxx="16.0" maxy="16.0" maxz="16.0" />
+		<Health type="3" code="1" wait="35000" amount="25" maximum="100" />
+	</HealthPickup>
+</Actor>

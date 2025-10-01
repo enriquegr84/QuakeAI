@@ -1,0 +1,19 @@
+<Actor type="Box" resource="actors\demo\box.xml">
+	<TransformComponent>
+		<Position x="200" y="10" z="-150" />
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	<PhysicsComponent>
+		<Shape>Box</Shape>
+		<Density>glass</Density>
+		<PhysicsMaterial>Normal</PhysicsMaterial>
+		<RigidBodyTransform>
+			<Scale x="16" y="16" z="16" />  
+		</RigidBodyTransform>
+	</PhysicsComponent>
+  <BoxRenderComponent>
+		<Box x="16.0" y="16.0" z="16.0" />
+		<Material type="0" />
+		<Texture file="art\stones.jpg" x="1.0" y="1.0" />
+  </BoxRenderComponent>
+</Actor>

@@ -1,0 +1,129 @@
+<Actors>
+	<!-- Sign right-->
+	<Actor type="node" name="arrow_signs:wall_right" description="rightwards-pointing sign">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>arrow_sign_right.png</InventoryImage>
+			<WieldImage>arrow_sign_right.png</WieldImage>
+			<Tiles>
+				<Tile name="arrow_sign_right.png" />
+			</Tiles>
+			<Groups> 
+				<ArrowSign>1</ArrowSign>
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+			</SelectionBox>
+			<Sounds name="default.node_sound_defaults">
+				<Footstep name="" gain="1.0"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+			<LegacyWallmounted>true</LegacyWallmounted>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Sign left-->
+	<Actor type="node" name="arrow_signs:wall_left" description="leftwards-pointing sign">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>arrow_sign_left.png</InventoryImage>
+			<WieldImage>arrow_sign_left.png</WieldImage>
+			<Tiles>
+				<Tile name="arrow_sign_left.png" />
+			</Tiles>
+			<Groups> 
+				<ArrowSign>1</ArrowSign>
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+			</SelectionBox>
+			<Sounds name="default.node_sound_defaults">
+				<Footstep name="" gain="1.0"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+			<LegacyWallmounted>true</LegacyWallmounted>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Sign up-->
+	<Actor type="node" name="arrow_signs:wall_up" description="upwards-pointing sign">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>arrow_sign_up.png</InventoryImage>
+			<WieldImage>arrow_sign_up.png</WieldImage>
+			<Tiles>
+				<Tile name="arrow_sign_up.png" />
+			</Tiles>
+			<Groups> 
+				<ArrowSign>1</ArrowSign>
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+			</SelectionBox>
+			<Sounds name="default.node_sound_defaults">
+				<Footstep name="" gain="1.0"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+			<LegacyWallmounted>true</LegacyWallmounted>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Sign down-->
+	<Actor type="node" name="arrow_signs:wall_down" description="downwards-pointing sign">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>arrow_sign_down.png</InventoryImage>
+			<WieldImage>arrow_sign_down.png</WieldImage>
+			<Tiles>
+				<Tile name="arrow_sign_down.png" />
+			</Tiles>
+			<Groups> 
+				<ArrowSign>1</ArrowSign>
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+			</SelectionBox>
+			<Sounds name="default.node_sound_defaults">
+				<Footstep name="" gain="1.0"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+			<LegacyWallmounted>true</LegacyWallmounted>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+</Actors>

@@ -1,0 +1,33 @@
+<Actor type="Fire" resource="actors\quake\effects\plasmagunfire.xml">
+
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<Scale x="1.0" y="1.0" z="1.0" />
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	
+	<PhysicsComponent>
+		<Shape>Sphere</Shape>
+		<Density>soft</Density>
+		<PhysicsMaterial>PlayDough</PhysicsMaterial>
+		<RigidBodyTransform>
+			<Position x="0" y="0" z="0"/>
+			<YawPitchRoll x="0" y="0" z="0"/>
+			<Scale x="6" y="6" z="6" />  
+		</RigidBodyTransform>
+	</PhysicsComponent>
+	
+	<BillboardRenderComponent>
+		<Material type="12" />
+		<Texture>
+			art/quake/gfx/misc/raildisc_mono2.jpg
+		</Texture>
+		<TextureColor r="0.07" g="0.57" b="0.87" a="1.0" />
+		<TextureSize x="32.0" y="32.0" />
+	</BillboardRenderComponent>
+
+	<PlasmaFire>
+		<Projectile type="4" code="1" explosion="10000" />
+	</PlasmaFire>
+
+</Actor>

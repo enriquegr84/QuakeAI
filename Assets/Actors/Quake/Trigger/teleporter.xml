@@ -1,0 +1,24 @@
+<Actor type="Trigger" resource="actors\quake\trigger\teleporter.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	<AudioComponent>
+		<Sound>telein,teleout</Sound>
+		<Looping>0</Looping>
+	</AudioComponent>
+	<PhysicsComponent>
+		<Shape>None</Shape>
+		<Density>Infinite</Density>
+		<PhysicsMaterial>Normal</PhysicsMaterial>
+		<RigidBodyTransform>
+			<Position x="0" y="0" z="0"/>
+			<YawPitchRoll x="0" y="0" z="0"/>
+			<Scale x="0" y="0" z="0" />  
+		</RigidBodyTransform>
+	</PhysicsComponent>
+    <TeleporterTrigger>
+		<Color r="0.5" g="0.5" b="0.5" />
+		<Trigger type="0" code="0" />
+    </TeleporterTrigger>
+</Actor>

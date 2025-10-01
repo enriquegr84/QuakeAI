@@ -1,0 +1,238 @@
+<Actors>
+	<Actor type="node" name="darkage:basalt_cobble" description="basalt cobble">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_basalt_cobble.png"/>
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:basalt_brick" description="basalt brick">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_basalt_brick.png"/>
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:stone_brick" description="stone brick">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_stone_brick.png"/>
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Other Blocks -->
+	<Actor type="node" name="darkage:straw" description="straw">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_straw.png"/>
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_leaves_defaults">
+				<Footstep name="default_grass_footstep" gain="0.35"/>
+				<Place name="default_place_node" gain="1.0"/>
+				<Dug name="default_grass_footstep" gain="0.85"/>
+				<Dig name="default_dig_crumbly" gain="0.4"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:lamp" description="lamp">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<ParamType>light</ParamType>
+			<LightSource>14</LightSource>
+			<Tiles>
+				<Tile name="darkage_lamp.png"/>
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_glass_defaults">
+				<Footstep name="default_glass_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_break_glass" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:marble_tile" description="marble tile">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_marble_tile.png"/>
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Glass / Glow Glass -->
+	<Actor type="node" name="darkage:glass" description="medieval glass">
+		<ItemComponent>
+			<DrawType>glasslike</DrawType>
+			<ParamType>light</ParamType>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_glass.png"/>
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Sounds name="default.node_sound_glass_defaults">
+				<Footstep name="default_glass_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_break_glass" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!-- Wood based deco items -->
+	<Actor type="node" name="darkage:wood_bars" description="wooden bars">
+		<ItemComponent>
+			<DrawType>glasslike</DrawType>
+			<ParamType>light</ParamType>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_wood_bars.png"/>
+			</Tiles>
+			<InventoryImage>darkage_wood_bars.png</InventoryImage>
+			<WieldImage>darkage_wood_bars.png</WieldImage>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:wood_grille" description="wooden grille">
+		<ItemComponent>
+			<DrawType>glasslike</DrawType>
+			<ParamType>light</ParamType>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_wood_grille.png"/>
+			</Tiles>
+			<InventoryImage>darkage_wood_grille.png</InventoryImage>
+			<WieldImage>darkage_wood_grille.png</WieldImage>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:wood_frame" description="wooden frame">
+		<ItemComponent>
+			<DrawType>glasslike</DrawType>
+			<ParamType>light</ParamType>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_wood_frame.png"/>
+			</Tiles>
+			<InventoryImage>darkage_wood_frame.png</InventoryImage>
+			<WieldImage>darkage_wood_frame.png</WieldImage>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:iron_bars" description="iron bars">
+		<ItemComponent>
+			<DrawType>glasslike</DrawType>
+			<ParamType>light</ParamType>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="darkage_iron_bars.png"/>
+			</Tiles>
+			<InventoryImage>darkage_iron_bars.png</InventoryImage>
+			<WieldImage>darkage_iron_bars.png</WieldImage>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Sounds name="default.node_sound_metal_defaults">
+				<Footstep name="default_metal_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_metal" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="darkage:iron_grille" description="iron grille">
+		<ItemComponent>
+			<DrawType>glasslike</DrawType>
+			<ParamType>light</ParamType>
+			<Tiles>
+				<Tile name="darkage_iron_grille.png"/>
+			</Tiles>
+			<InventoryImage>darkage_iron_grille.png</InventoryImage>
+			<WieldImage>darkage_iron_grille.png</WieldImage>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Sounds name="default.node_sound_metal_defaults">
+				<Footstep name="default_metal_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_metal" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+</Actors>

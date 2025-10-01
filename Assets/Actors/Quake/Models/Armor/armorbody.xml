@@ -1,0 +1,31 @@
+<Actor type="Armor" resource="actors\quake\models\armor\armorbody.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	<AudioComponent>
+		<Sound>ar2_pkup</Sound>
+		<Looping>0</Looping>
+	</AudioComponent>
+  <PhysicsComponent>
+    <Shape>Trigger</Shape>
+    <Density>Infinite</Density>
+    <PhysicsMaterial>Normal</PhysicsMaterial>
+    <RigidBodyTransform>
+      <Position x="0" y="0" z="0"/>
+      <YawPitchRoll x="0" y="0" z="0"/>
+      <Scale x="16" y="16" z="16" />
+    </RigidBodyTransform>
+  </PhysicsComponent>
+	<MeshRenderComponent>
+		<Mesh>art/quake/models/powerups/armor/armor_red.md3</Mesh>
+    <Icon>art/quake/icons/iconr_red.png</Icon>
+		<Material type="12" />
+    <Animation type="18" />
+	</MeshRenderComponent>
+	<ArmorPickup>
+		<Color r="0.3" g="0.3" b="1.0" />
+		<Dimension minx="-16.0" miny="-16.0" minz="-16.0" maxx="16.0" maxy="16.0" maxz="16.0" />
+		<Armor type="2" code="1" wait="25000" amount="100" maximum="200" />
+	</ArmorPickup>
+</Actor>

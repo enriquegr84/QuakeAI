@@ -1,0 +1,405 @@
+<Actors>
+
+	<Actor type="node" name="tutorial:wall" description="reinforced wall">
+		<ItemComponent>
+			<Tiles>
+				<Tile name="default_stone_brick.png"/>
+			</Tiles>
+			<IsGroundContent>true</IsGroundContent> 
+			<Groups>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_stone_defaults">
+				<Footstep name="default_hard_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_dug_node" gain="0.25"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:wood" description="reinforced wall">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="default_wood.png"/>
+			</Tiles>
+			<Groups>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_wood_defaults">
+				<Footstep name="default_wood_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_wood_footstep" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:reinforced_glass" description="reinforced glass">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<ParamType>light</ParamType>
+			<DrawType>glasslike</DrawType>
+			<InventoryImage>
+				[inventorycube{tutorial_reinforced_glass.png{tutorial_reinforced_glass.png{tutorial_reinforced_glass.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="tutorial_reinforced_glass.png"/>
+			</Tiles>
+			<Groups>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_glass_defaults">
+				<Footstep name="default_glass_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_break_glass" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:weak_glass" description="weak glass">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<ParamType>light</ParamType>
+			<DrawType>glasslike</DrawType>
+			<InventoryImage>
+				[inventorycube{tutorial_weak_glass.png{tutorial_weak_glass.png{tutorial_weak_glass.png
+			</InventoryImage>
+			<Tiles>
+				<Tile name="tutorial_weak_glass.png"/>
+			</Tiles>
+      <Drops>
+        <Item name="" />
+      </Drops>
+			<Groups>
+				<Cracky>3</Cracky>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_glass_defaults">
+				<Footstep name="default_glass_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_break_glass" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<!--[[ A special switch which, when flipped, exchanges day for night and vice versa. ]]-->
+	<Actor type="node" name="tutorial:day" description="day/night switch (day)">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="tutorial_day.png"/>
+			</Tiles>
+			<Groups>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+      <OnRightClick>true</OnRightClick>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:night" description="day/night switch (night)">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="tutorial_night.png"/>
+			</Tiles>
+			<Groups>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+      <OnRightClick>true</OnRightClick>
+		</ItemComponent>
+	</Actor>
+
+	<!--[[ A special switch which "activates" and "deactivates" the waterfall in Tutorial World.
+	It only works on a prepared map! ]]-->
+	<Actor type="node" name="tutorial:waterfall_on" description="waterfall switch (on)">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="tutorial_waterfall_on.png"/>
+			</Tiles>
+			<Groups>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+      <OnRightClick>true</OnRightClick>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:waterfall_off" description="waterfall switch (off)">
+		<ItemComponent>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="tutorial_waterfall_off.png"/>
+			</Tiles>
+			<Groups>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+      <OnRightClick>true</OnRightClick>
+		</ItemComponent>
+	</Actor>
+
+	<!--Ruler (used in sneaking section)-->
+	<Actor type="node" name="tutorial:ruler" description="ruler">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>tutorial_ruler.png</InventoryImage>
+			<WieldImage>tutorial_ruler.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_ruler.png"/>
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+				<WallSide>{ -0.5, -0.5, 0.0625, -0.4, 0.5, 0.5 }</WallSide>
+			</SelectionBox>
+			<Groups> 
+				<AttachedActor>1</AttachedActor>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+		</ItemComponent>
+	</Actor>
+
+	<!--Item spawner-->
+	<Actor type="node" name="tutorial:itemspawner" description="item spawner">
+		<ItemComponent>
+			<DrawType>airlike</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+			<Pointable>false</Pointable>
+			<Diggable>false</Diggable>
+			<AirEquivalent>true</AirEquivalent>
+			<Foodable>false</Foodable>
+			<BuildableTo>false</BuildableTo>
+      <IsGroundContent>true</IsGroundContent>
+			<InventoryImage>tutorial_item_spawner.png</InventoryImage>
+			<WieldImage>tutorial_item_spawner.png</WieldImage>
+			<SunlightPropagates>true</SunlightPropagates>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+	</Actor>
+
+	<!--Craft guide -->
+	<Actor type="node" name="tutorial:craftguide_paper" description="crafting example: white paper">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>tutorial_craftguide_paper_white.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_paper_white.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_paper_white.png"/>
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+				<WallSide>{ -0.5, -0.5, -0.5, -0.4, 0.5, 0.5 }</WallSide>
+			</SelectionBox>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+		</ItemComponent>
+ 		<ABMComponent>
+			<Nodenames>tutorial:craftguide_paper</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.craftguideinfo</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:craftguide_wheat" description="crafting example: wheat">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>tutorial_craftguide_wheat.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_wheat.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_wheat_anim.png">
+					<Animation type="verticalframes" aspectwidth="32" aspectheight="32" length="12"/>
+				</Tile>
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+				<WallSide>{ -0.5, -0.5, -0.5, -0.4, 0.5, 0.5 }</WallSide>
+			</SelectionBox>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+		</ItemComponent>
+ 		<ABMComponent>
+			<Nodenames>tutorial:craftguide_wheat</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.craftguideinfo</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:craftguide_paper_color" description="crafting example: colored paper">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>tutorial_craftguide_paper_color.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_paper_color.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_paper_color_anim.png">
+					<Animation type="verticalframes" aspectwidth="32" aspectheight="32" length="16"/>
+				</Tile>
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+				<WallSide>{ -0.5, -0.5, -0.5, -0.4, 0.5, 0.5 }</WallSide>
+			</SelectionBox>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+		</ItemComponent>
+ 		<ABMComponent>
+			<Nodenames>tutorial:paper_color</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.craftguideinfo</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:repair" description="crafting example: tool repair">
+		<ItemComponent>
+			<DrawType>signlike</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>wallmounted</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<InventoryImage>tutorial_craftguide_repair.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_repair.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_repair_anim.png">
+					<Animation type="verticalframes" aspectwidth="32" aspectheight="32" length="12"/>
+				</Tile>
+			</Tiles>
+			<SelectionBox>
+				<Type>wallmounted</Type>
+				<WallSide>{ -0.5, -0.5, -0.5, -0.4, 0.5, 0.5 }</WallSide>
+			</SelectionBox>
+			<Groups> 
+				<AttachedNode>1</AttachedNode>
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+		</ItemComponent>
+ 		<ABMComponent>
+			<Nodenames>tutorial:repair</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.craftguideinfo</Action>
+		</ABMComponent>
+	</Actor>
+
+	<!-- awarded for collecting all gold ingots -->
+	<Actor type="node" name="tutorial:cup_gold" description="golden cup">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="default_gold_block.png"/>
+			</Tiles>
+			<Nodebox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.3,-0.5,-0.3,0.3,-0.4,0.3}, -- stand
+					{-0.1,-0.4,-0.1,0.1,0,0.1}, -- handle
+					{-0.3,0,-0.3,0.3,0.1,0.3}, -- cup (lower part)
+					-- the 4 sides of the upper part
+					{-0.2,0.1,-0.3,0.2,0.5,-0.2},
+					{-0.2,0.1,0.2,0.2,0.5,0.3},
+					{-0.3,0.1,-0.3,-0.2,0.5,0.3},
+					{0.2,0.1,-0.3,0.3,0.5,0.3},
+				</Fixed>
+			</Nodebox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.3,-0.5,-0.3,0.3,-0.4,0.3}, -- stand
+					{-0.1,-0.4,-0.1,0.1,0,0.1}, -- handle
+					{-0.3,0,-0.3,0.3,0.5,0.3}, -- upper part
+				</Fixed>
+			</SelectionBox>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Text>
+				This golden cup has been awarded for finishing the tutorial.
+			</Text>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+ 		<ABMComponent>
+			<Nodenames>tutorial:cup_gold</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.craftguideinfo</Action>
+		</ABMComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:cup_diamond" description="diamond cup">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="default_diamond_block.png"/>
+			</Tiles>
+			<Nodebox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.3,-0.5,-0.3,0.3,-0.4,0.3}, -- stand
+					{-0.1,-0.4,-0.1,0.1,0,0.1}, -- handle
+					{-0.3,0,-0.3,0.3,0.1,0.3}, -- cup (lower part)
+					-- the 4 sides of the upper part
+					{-0.2,0.1,-0.3,0.2,0.5,-0.2},
+					{-0.2,0.1,0.2,0.2,0.5,0.3},
+					{-0.3,0.1,-0.3,-0.2,0.5,0.3},
+					{0.2,0.1,-0.3,0.3,0.5,0.3},
+				</Fixed>
+			</Nodebox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.3,-0.5,-0.3,0.3,-0.4,0.3}, -- stand
+					{-0.1,-0.4,-0.1,0.1,0,0.1}, -- handle
+					{-0.3,0,-0.3,0.3,0.5,0.3}, -- upper part
+				</Fixed>
+			</SelectionBox>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Text>
+				This diamond cup has been awarded for collecting all hidden diamonds.
+			</Text>
+      <OnConstruct>true</OnConstruct>
+		</ItemComponent>
+ 		<ABMComponent>
+			<Nodenames>tutorial:cup_diamond</Nodenames>
+			<Interval>5</Interval>
+			<Chance>1</Chance>
+			<Action>tutorial.craftguideinfo</Action>
+		</ABMComponent>
+	</Actor>
+</Actors>

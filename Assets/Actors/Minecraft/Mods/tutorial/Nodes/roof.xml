@@ -1,0 +1,30 @@
+<Actor type="node" name="actors\minecraft\mods\tutorial\nodes\roof.xml" description="cottage roof">
+	<ItemComponent>
+		<DrawType>nodebox</DrawType>
+		<ParamType>light</ParamType>
+		<ParamType2>facedir</ParamType2>
+		<IsGroundContent>true</IsGroundContent>
+		<Groups> 
+			<CreativeBreakable>1</CreativeBreakable>
+		</Groups>
+		<NodeBox>
+			<Type>fixed</Type>
+			<Fixed>
+				{ -0.5, -0.5, -0.5, 0.5, 0, 0 },
+				{ -0.5, 0, 0, 0.5, 0.5, 0.5}
+			</Fixed>
+		</NodeBox>
+		<SelectionBox>
+			<Type>fixed</Type>
+			<Fixed>
+				{ -0.5, -0.5, -0.5, 0.5, 0, 0 },
+				{ -0.5, 0, 0, 0.5, 0.5, 0.5}
+			</Fixed>
+		</SelectionBox>
+		<Sounds name="default.node_sound_wood_defaults">
+			<Footstep name="default_wood_footstep" gain="0.5"/>
+			<Place name="default_place_node_hard" gain="1.0"/>
+			<Dug name="default_wood_footstep" gain="1.0"/>
+		</Sounds>
+	</ItemComponent>
+</Actor>

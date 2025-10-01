@@ -1,0 +1,75 @@
+<Actors>
+	<Actor type="node" name="tutorial:craftguide_paper" description="Crafting example: white paper"
+		resource="actors\minecraft\mods\tutorial\infos\craftguide.xml">
+		<ItemComponent>
+			<InventoryImage>tutorial_craftguide_paper_white.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_paper_white.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_paper_white.png" />
+			</Tiles>
+		</ItemComponent>
+    <ABMComponent>
+      <Nodenames>tutorial:craftguide_paper</Nodenames>
+      <Interval>5</Interval>
+      <Chance>1</Chance>
+      <Action>tutorial.craftguideinfo</Action>
+    </ABMComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:craftguide_wheat" description="Crafting example: wheat"
+		resource="actors\minecraft\mods\tutorial\infos\craftguide.xml">
+		<ItemComponent>
+			<InventoryImage>tutorial_craftguide_wheat.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_wheat.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_wheat_anim.png">
+					<Animation type="verticalframes" aspectwidth="32" aspectheight="32" length="12"/>
+				</Tile>
+			</Tiles>
+		</ItemComponent>
+    <ABMComponent>
+      <Nodenames>tutorial:craftguide_wheat</Nodenames>
+      <Interval>5</Interval>
+      <Chance>1</Chance>
+      <Action>tutorial.craftguideinfo</Action>
+    </ABMComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:craftguide_paper_color" description="Crafting example: colored paper"
+		resource="actors\minecraft\mods\tutorial\infos\craftguide.xml">
+		<ItemComponent>
+			<InventoryImage>tutorial_craftguide_paper_color.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_paper_color.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_paper_color_anim.png">
+					<Animation type="verticalframes" aspectwidth="32" aspectheight="32" length="16"/>
+				</Tile>
+			</Tiles>
+		</ItemComponent>
+    <ABMComponent>
+      <Nodenames>tutorial:craftguide_paper_color</Nodenames>
+      <Interval>5</Interval>
+      <Chance>1</Chance>
+      <Action>tutorial.craftguideinfo</Action>
+    </ABMComponent>
+	</Actor>
+
+	<Actor type="node" name="tutorial:craftguide_repair" description="Crafting example: tool repair"
+		resource="actors\minecraft\mods\tutorial\infos\craftguide.xml">
+		<ItemComponent>
+			<InventoryImage>tutorial_craftguide_repair.png</InventoryImage>
+			<WieldImage>tutorial_craftguide_repair.png</WieldImage>
+			<Tiles>
+				<Tile name="tutorial_craftguide_repair_anim.png">
+					<Animation type="verticalframes" aspectwidth="32" aspectheight="32" length="12"/>
+				</Tile>
+			</Tiles>
+		</ItemComponent>
+    <ABMComponent>
+      <Nodenames>tutorial:craftguide_repair</Nodenames>
+      <Interval>5</Interval>
+      <Chance>1</Chance>
+      <Action>tutorial.craftguideinfo</Action>
+    </ABMComponent>
+	</Actor>
+</Actors>

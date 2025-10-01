@@ -1,0 +1,44 @@
+<Actor type="Weapon" resource="actors\quake\models\weapon\lightning.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+  <PhysicsComponent>
+    <Shape>Trigger</Shape>
+    <Density>Infinite</Density>
+    <PhysicsMaterial>Normal</PhysicsMaterial>
+    <RigidBodyTransform>
+      <Position x="0" y="0" z="0"/>
+      <YawPitchRoll x="0" y="0" z="0"/>
+      <Scale x="16" y="16" z="16" />  
+    </RigidBodyTransform>
+  </PhysicsComponent>
+  <ModelComponent>
+    <Mesh>
+      <Weapon>art/quake/models/weapons2/lightning/lightning.md3</Weapon>
+      <Flash>art/quake/models/weapons2/lightning/lightning_flash.md3</Flash>
+      <Hand>art/quake/models/weapons2/lightning/lightning_hand.md3</Hand>
+      <Explosion>art/quake/models/weaphits/crackle.md3</Explosion>
+    </Mesh>
+    <Sound>
+      <Pickup>art/quake/audio/sound/misc/w_pkup.wav</Pickup>
+      <Ready>art/quake/audio/sound/weapons/melee/fsthum.ogg</Ready>
+      <Flash>art/quake/audio/sound/weapons/lightning/lg_fire.ogg</Flash>
+      <Firing>art/quake/audio/sound/weapons/lightning/lg_hum.ogg</Firing>
+      <Hit>
+        art/quake/audio/sound/weapons/lightning/lg_hit.ogg,
+        art/quake/audio/sound/weapons/lightning/lg_hit2.ogg,
+        art/quake/audio/sound/weapons/lightning/lg_hit3.ogg
+      </Hit>
+    </Sound>
+    <Icon>art/quake/icons/iconw_lightning.png</Icon>
+    <FlashColor r="0.6" g="0.6" b="1.0" />
+    <Material type="0" />
+    <Animation type="18" />
+  </ModelComponent>
+	<WeaponPickup>
+		<Color r="0.3" g="0.3" b="1.0" />
+		<Dimension minx="-16.0" miny="-16.0" minz="-16.0" maxx="16.0" maxy="16.0" maxz="16.0" />
+		<Weapon type="0" code="6" wait="40000" ammo="100" />
+	</WeaponPickup>
+</Actor>

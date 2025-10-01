@@ -1,0 +1,6 @@
+<Actor type="Music" resource="actors\quake\music\music.xml">
+	<AudioComponent>
+		<Sound>spacegod7-level2</Sound>
+		<Looping>1</Looping>
+	</AudioComponent>	
+</Actor>

@@ -1,0 +1,23 @@
+<Actor type="Explosion" resource="actors\quake\effects\bleed.xml">
+
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<Scale x="1.0" y="1.0" z="1.0" />
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	
+	<BillboardRenderComponent>
+		<Material type="12" />
+    <Animation type="96" time="500" />
+		<Texture>
+			art/quake/gfx/damage/blood201.jpg,
+			art/quake/gfx/damage/blood202.jpg,
+			art/quake/gfx/damage/blood203.jpg,
+			art/quake/gfx/damage/blood204.jpg,
+			art/quake/gfx/damage/blood205.jpg
+		</Texture>
+		<TextureColor r="1.0" g="1.0" b="1.0" a="1.0" />
+		<TextureSize x="32.0" y="32.0" />
+	</BillboardRenderComponent>
+
+</Actor>

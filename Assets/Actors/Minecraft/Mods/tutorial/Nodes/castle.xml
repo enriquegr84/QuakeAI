@@ -1,0 +1,58 @@
+<Actors>
+	<Actor type="node" name="castle:light" description="light block">
+		<ItemComponent>
+			<DrawType>glasslike</DrawType>
+			<ParamType>light</ParamType>
+      <IsGroundContent>true</IsGroundContent>
+			<SunlightPropagates>true</SunlightPropagates>
+			<LightSource>14</LightSource>
+			<Tiles>
+				<Tile name="castle_street_light.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<Sounds name="default.node_sound_glass_defaults">
+				<Footstep name="default_glass_footstep" gain="0.5"/>
+				<Place name="default_place_node_hard" gain="1.0"/>
+				<Dug name="default_break_glass" gain="1.0"/>
+			</Sounds>
+		</ItemComponent>
+	</Actor>
+
+	<Actor type="node" name="castle:shield_2" description="mounted shield">
+		<ItemComponent>
+			<DrawType>nodebox</DrawType>
+			<ParamType>light</ParamType>
+			<ParamType2>facedir</ParamType2>
+			<Walkable>false</Walkable>
+      <IsGroundContent>true</IsGroundContent>
+			<Tiles>
+				<Tile name="castle_shield_side_2.png" />
+				<Tile name="castle_shield_side_2.png" />
+				<Tile name="castle_shield_side_2.png" />
+				<Tile name="castle_shield_side_2.png" />
+				<Tile name="castle_shield_back.png" />
+				<Tile name="castle_shield_front_2.png" />
+			</Tiles>
+			<Groups> 
+				<CreativeBreakable>1</CreativeBreakable>
+			</Groups>
+			<NodeBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.500000,-0.125000,0.375000,0.500000,0.500000,0.500000}, --NodeBox 1
+					{-0.437500,-0.312500,0.375000,0.425000,0.500000,0.500000}, --NodeBox 2
+					{-0.312500,-0.437500,0.375000,0.312500,0.500000,0.500000}, --NodeBox 3
+					{-0.187500,-0.500000,0.375000,0.187500,0.500000,0.500000} --NodeBox 4
+				</Fixed>
+			</NodeBox>
+			<SelectionBox>
+				<Type>fixed</Type>
+				<Fixed>
+					{-0.500000,-0.500000,0.375000,0.500000,0.500000,0.500000}, --NodeBox 1
+				</Fixed>
+			</SelectionBox>
+		</ItemComponent>
+	</Actor>
+</Actors>

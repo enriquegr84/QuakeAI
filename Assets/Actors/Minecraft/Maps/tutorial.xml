@@ -1,0 +1,16 @@
+<Actor type="Map" resource="actors\minecraft\maps\tutorial.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+    <PhysicsComponent>
+        <Shape>BSP</Shape>
+        <Density>Infinite</Density>
+        <PhysicsMaterial>Normal</PhysicsMaterial>
+		<Mesh>art\minecraft\games\tutorial\map\map.bin</Mesh>
+    </PhysicsComponent>
+	<VisualComponent>
+		<Mesh>art\minecraft\games\tutorial\map\map.bin</Mesh>
+		<Material type="0" />
+	</VisualComponent>
+</Actor>

@@ -1,0 +1,117 @@
+<Actors>
+  <!-- tool repair -->
+  <Actor type="toolrepair">
+		<CraftingComponent>
+			<AdditionalWear>-0.02</AdditionalWear>
+		</CraftingComponent>
+	</Actor>
+
+	<!-- cooking recipes -->
+
+	<Actor type="cooking">
+		<CraftingComponent>
+			<Output>default:steel_ingot</Output>
+			<Recipe>default:iron_lump</Recipe>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="cooking">
+		<CraftingComponent>
+			<Output>default:gold_ingot</Output>
+			<Recipe>default:gold_lump</Recipe>
+		</CraftingComponent>
+	</Actor>
+
+	<!-- fuels -->
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>group:Tree</Recipe>
+			<BurnTime>30</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:junglegrass</Recipe>
+			<BurnTime>2</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>group:Leaves</Recipe>
+			<BurnTime>1</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:cactus</Recipe>
+			<BurnTime>15</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:bookshelf</Recipe>
+			<BurnTime>30</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:fence_wood</Recipe>
+			<BurnTime>15</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:ladder</Recipe>
+			<BurnTime>5</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>group:Wood</Recipe>
+			<BurnTime>7</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:lava_source</Recipe>
+			<BurnTime>60</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:torch</Recipe>
+			<BurnTime>4</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:apple</Recipe>
+			<BurnTime>3</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:coal_lump</Recipe>
+			<BurnTime>40</BurnTime>
+		</CraftingComponent>
+	</Actor>
+
+	<Actor type="fuel">
+		<CraftingComponent>
+			<Recipe>default:coalblock</Recipe>
+			<BurnTime>370</BurnTime>
+		</CraftingComponent>
+	</Actor>
+</Actors>

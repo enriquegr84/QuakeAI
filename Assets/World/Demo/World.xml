@@ -1,0 +1,39 @@
+<World id="demo" name="Demo" author="Enrique" path="art\demo" iconpath="art\noscreenshot.png" description="Game Engine Demo"  >
+
+    <!-- A list of static actors to load.  Static actors have no game view attached.  This is for stuff like 
+    level geometry.-->
+
+  <StaticActors>
+		<Actor resource="actors\demo\grid.xml">
+			<TransformComponent>
+				<Position x="0" y="0" z="0"/>
+				<YawPitchRoll x="0" y="0" z="0"/>
+			</TransformComponent>
+			<GridRenderComponent>
+				<Extent x="800.0" y="800.0"/>
+				<Segment x="1" y="1" />
+			</GridRenderComponent>
+			<PhysicsComponent>
+				<RigidBodyTransform>
+          <Position x="0" y="0" z="0"/>
+          <YawPitchRoll x="0" y="0" z="0"/>
+					<Scale x="800" y="0.1" z="800" />  
+				</RigidBodyTransform>
+			</PhysicsComponent>	
+	  </Actor>
+	  <Actor resource="actors\demo\cube.xml" />
+	  <Actor resource="actors\demo\sphere.xml" />
+		  
+	  <Actor resource="actors\demo\light.xml" />
+	  <Actor resource="actors\demo\fire.xml" />
+		<Actor resource="actors\demo\afternoon_sky.xml" />
+<!--
+        <Actor resource="actors\demo\player_spawner.xml" />
+        <Actor resource="actors\demo\ai_spawner_0.xml" />
+        <Actor resource="actors\demo\ai_spawner_1.xml" />
+        <Actor resource="actors\demo\ai_spawner_2.xml" />
+        <Actor resource="actors\demo\ai_spawner_3.xml" />
+-->
+		<Actor resource="actors\demo\music.xml" />
+  </StaticActors>
+</World>

@@ -1,0 +1,28 @@
+<Actor type="Player" resource="actors\minecraft\players\tutorial\player.xml">
+  <TransformComponent>
+    <Position x="0" y="30" z="0"/>
+    <YawPitchRoll x="0" y="0" z="0"/>
+  </TransformComponent>
+  <PhysicsComponent>
+    <Shape>Controller</Shape>
+    <Density>glass</Density>
+    <PhysicsMaterial>Normal</PhysicsMaterial>
+    <RigidBodyTransform>
+      <Position x="0" y="30" z="0"/>
+      <YawPitchRoll x="0" y="0" z="0"/>
+      <Scale x="24" y="60" z="24" />
+    </RigidBodyTransform>
+  </PhysicsComponent>
+  <VisualComponent>
+		<Mesh>Art/Minecraft/games/tutorial/models/character.dae</Mesh>
+		<Texture>Art/Minecraft/games/tutorial/textures/character.png</Texture>
+		<Animations speed="30">
+			<Animation name="stand" start="0" end="79"/>
+			<!-- <Animation name="sit" start="81" end="160"/> not used by the game -->
+			<!-- <Animation name="lay" start="162" end="166"/> -->
+			<Animation name="walk" start="168" end="187"/>
+			<Animation name="mine" start="189" end="198"/>
+			<Animation name="walk_mine" start="200" end="219"/>
+		</Animations>
+	</VisualComponent>
+</Actor>

@@ -1,0 +1,23 @@
+<World id="tutorial" name="Tutorial" author="Wuzzy" path="art\minecraft\games\tutorial\map" iconpath="art\minecraft\games\tutorial\menu\icon.png"
+	description="Learn how to play Minecraft" >
+
+    <!-- A list of mod resources to load.  -->
+	<Mods>
+		<Actors resource="actors\minecraft\mods\tutorial\crafting\crafting.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\crafting\supplementals.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\craftitems\craftitems.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\craftitems\supplementals.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\infos\infosigns.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\infos\craftguides.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\nodes\arrowsigns.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\nodes\castle.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\nodes\cottages.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\nodes\darkage.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\nodes\default.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\nodes\nodes.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\nodes\supplementals.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\tools\default.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\tools\tools.xml" />
+		<Actors resource="actors\minecraft\mods\tutorial\abms\default.xml" />
+	</Mods>
+</World>

@@ -1,0 +1,37 @@
+<Actor type="Weapon" resource="actors\quake\models\weapon\plasmagun.xml">
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+  <PhysicsComponent>
+    <Shape>Trigger</Shape>
+    <Density>Infinite</Density>
+    <PhysicsMaterial>Normal</PhysicsMaterial>
+    <RigidBodyTransform>
+      <Position x="0" y="0" z="0"/>
+      <YawPitchRoll x="0" y="0" z="0"/>
+      <Scale x="16" y="16" z="16" />
+    </RigidBodyTransform>
+  </PhysicsComponent>
+  <ModelComponent>
+    <Mesh>
+      <Weapon>art/quake/models/weapons2/plasma/plasma.md3</Weapon>
+      <Flash>art/quake/models/weapons2/plasma/plasma_flash.md3</Flash>
+      <Hand>art/quake/models/weapons2/plasma/plasma_hand.md3</Hand>
+    </Mesh>
+    <Sound>
+      <Pickup>art/quake/audio/sound/misc/w_pkup.wav</Pickup>
+      <Flash>art/quake/audio/sound/weapons/plasma/hyprbf1a.ogg</Flash>
+      <Missile>art/quake/audio/sound/weapons/plasma/lasfly.ogg</Missile>
+    </Sound>
+    <Icon>art/quake/icons/iconw_plasma.png</Icon>
+    <FlashColor r="1.0" g="0.6" b="0" />
+    <Material type="0" />
+    <Animation type="18" />
+  </ModelComponent>
+	<WeaponPickup>
+		<Color r="0.3" g="0.3" b="1.0" />
+		<Dimension minx="-16.0" miny="-16.0" minz="-16.0" maxx="16.0" maxy="16.0" maxz="16.0" />
+		<Weapon type="0" code="4" wait="40000" ammo="50" />
+	</WeaponPickup>
+</Actor>

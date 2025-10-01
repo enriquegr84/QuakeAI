@@ -1,0 +1,9 @@
+<World id="minetest_game" name="Minetest Game" author="Minetest" path="art\minecraft\games\minetest_game\map" iconpath="art\minecraft\games\minetest_game\menu\icon.png"
+	description="A basic exploration, mining, crafting and building sandbox game with no NPCs, monsters or animals. 
+	Minecraft Game is usually used with mods added and many mods are available for this game. Reliably maintained by Minecraft Engine core developers." >
+
+    <!-- A list of static actors to load. Static actors have no game view attached.  -->
+	<StaticActors>
+		<Actor resource="actors\minecraft\maps\hi.xml" />
+	</StaticActors>
+</World>

@@ -1,0 +1,31 @@
+<Actor type="Fire" resource="actors\quake\effects\rocketlauncherfire.xml">
+
+	<TransformComponent>
+		<Position x="0" y="0" z="0"/>
+		<Scale x="1.0" y="1.0" z="1.0" />
+		<YawPitchRoll x="0" y="0" z="0"/>
+	</TransformComponent>
+	
+	<PhysicsComponent>
+    <Shape>Trigger</Shape>
+    <Density>Infinite</Density>
+    <PhysicsMaterial>Normal</PhysicsMaterial>
+		<RigidBodyTransform>
+			<Position x="4" y="0" z="0"/>
+			<YawPitchRoll x="0" y="0" z="0"/>
+			<Scale x="6" y="2" z="2" />  
+		</RigidBodyTransform>
+	</PhysicsComponent>
+
+  <AudioComponent>
+    <Sound>rockfly</Sound>
+    <PlaySound>1</PlaySound>
+    <Looping>0</Looping>
+  </AudioComponent>
+
+  <MeshRenderComponent>
+		<Mesh>art/quake/models/ammo/rocket/rocket.md3</Mesh>
+		<Material type="12" />
+	</MeshRenderComponent>
+
+</Actor>
