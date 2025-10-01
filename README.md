@@ -7,9 +7,7 @@ Quake A.I. is an on-going research project with the goal of creating challenging
 - Challenging phase. We propose a post-game processing algorithm that analyzes the recorded game actions of the human player using the same AI model and decision-making process. The offline process will numerically evaluate each player’s decision by comparing them with other alternatives. Other player skills such as environment awareness, aiming or reaction time will be also considered and numerically evaluated.
 
   <img width="886" height="540" alt="image" src="https://github.com/user-attachments/assets/17465539-af77-4254-8f78-b0b6daf9e20b" />
-https://youtu.be/4eBNRxVzoYE
-
-
+  https://youtu.be/4eBNRxVzoYE
 
 We have managed to run the project with a latest Computer generation, though we don't have a minimum specs requirement. We have written documentation in the wiki section that is meant for readers with a technical background in computer science, especially in the artificial intelligence field. Despite all the work we have done so far, this project still has a long road ahead and it is worth-noting that the difficulty increases each step on the way as well as the amount of work. Still we have reached a point in which we could show some potential towards accomplishing our goals. Lets see our current roadmap:
 - Find people who are insterested and want to participate in the project.
