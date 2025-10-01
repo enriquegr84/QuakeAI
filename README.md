@@ -10,10 +10,10 @@ Quake A.I. is an on-going research project with the goal of creating challenging
   https://youtu.be/4eBNRxVzoYE
 
 We have managed to run the project with a latest Computer generation, though we don't have a minimum specs requirement. We have written documentation in the wiki section that is meant for readers with a technical background in computer science, especially in the artificial intelligence field. Despite all the work we have done so far, this project still has a long road ahead and it is worth-noting that the difficulty increases each step on the way as well as the amount of work. Still we have reached a point in which we could show some potential towards accomplishing our goals. Lets see our current roadmap:
-- Find people who are insterested and want to participate in the project.
+- Find people who are insterested and want to participate in this project.
 - Move the project to a professional game engine. The current physics system is not human-playable and it has important issues that makes it no reliable. Additionally, the home-made game engine has limitations that makes it harder to create necessary tools for AI Editing & Analyzing.
 - Create better AI Editor/Analysis tools. Displaying players visibility and predictions data in the Analysis tool
-- Create better prediction system
+- Create better prediction system.
 - Find solutions for the AI limitations, specially the indecisive agent behavior.
-- Introduce Machine Learning
+- Introduce Machine Learning.
 - Once we have completed a competitive AI agent, lets start the challenging phase.
