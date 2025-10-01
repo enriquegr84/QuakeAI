@@ -1,0 +1,114 @@
+// David Eberly, Geometric Tools, Redmond WA 98052
+// Copyright (c) 1998-2017
+// Distributed under the Boost Software License, Version 1.0.
+// http://www.boost.org/LICENSE_1_0.txt
+// http://www.geometrictools.com/License/Boost/LICENSE_1_0.txt
+// File Version: 3.0.0 (2016/06/19)
+
+#ifndef PROGRAMFACTORY_H
+#define PROGRAMFACTORY_H
+
+#include "Graphic/Shader/ComputeProgram.h"
+#include "Graphic/Shader/ProgramDefines.h"
+#include "Graphic/Shader/VisualProgram.h"
+
+class GRAPHIC_ITEM ProgramFactory
+{
+public:
+	ProgramFactory();
+
+    // Abstract base class.
+    virtual ~ProgramFactory();
+
+    // All members are in public scope, because there are no side effects
+    // when the values are modified.  The current values are used in the
+    // the Create(...) functions.
+    std::string version;
+	std::string vsEntry, psEntry, gsEntry, csEntry;
+    ProgramDefines defines;
+    unsigned int flags;
+
+    // The returned value is used as a lookup index into arrays of strings
+    // corresponding to shader programs.  Currently, GLSLProgramFactory
+    // returns PF_GLSL and HLSLProgramFactory returns PF_HLSL.
+    enum
+    {
+        PF_GLSL,
+        PF_HLSL,
+        PF_NUM_API
+    };
+
+    virtual int GetAPI() const = 0;
+
+    // Create new shader program after being compiled
+    virtual std::shared_ptr<VisualProgram> CreateFromProgram(
+        std::shared_ptr<VisualProgram> const& program) = 0;
+
+	// Create a program for GPU display. The filenames are passed as parameters 
+	// in case the shader compiler needs this for #include path searches.
+	std::shared_ptr<VisualProgram> CreateFromFiles(
+		std::string const& vsFile, std::string const& psFile, std::string const& gsFile, 
+        ProgramDefines const& defs = ProgramDefines());
+
+	std::shared_ptr<VisualProgram> CreateFromSources(
+		std::string const& vsSource, std::string const& psSource, std::string const& gsSource,
+        ProgramDefines const& defs = ProgramDefines());
+
+    // Create a program for GPU computing. The filename is passed the 'csName' 
+	// parameters in case the shader compiler needs this for #include path searches.
+	std::shared_ptr<ComputeProgram> CreateFromFile(std::string const& csFile, 
+        ProgramDefines const& defs = ProgramDefines());
+
+	std::shared_ptr<ComputeProgram> CreateFromSource(std::string const& csSource, 
+        ProgramDefines const& defs = ProgramDefines());
+
+    // Support for passing ProgramFactory objects to a function that
+    // potentially modifies 'defines' or 'flags' but then needs to resstore
+    // the previous state on return.  The PushDefines() function saves the
+    // current 'defines' on a stack and then clears 'defines'.  The
+    // PushFlags() function saves the current 'flags' on a stack and then
+    // sets 'flags' to zero.  If you need to modify subelements of either
+    // member, you will have to manage that on your own.
+    void PushDefines();
+    void PopDefines();
+    void PushFlags();
+    void PopFlags();
+
+	// Getter for the main global program factory. This is the program factory that is used by 
+	// the majority of the engine, though you are free to define your own as long as you instantiate it.
+	// It is not valid to have more than one global program factory.
+	static std::shared_ptr<ProgramFactory> Get(void);
+
+protected:
+
+	static std::shared_ptr<ProgramFactory> mProgramFactory;
+
+	virtual std::shared_ptr<VisualProgram> CreateFromNamedFiles(
+		std::string const& vsName, std::string const& vsFile,
+		std::string const& psName, std::string const& psFile,
+		std::string const& gsName, std::string const& gsFile,
+        ProgramDefines const& customDefines = ProgramDefines()) = 0;
+
+    virtual std::shared_ptr<VisualProgram> CreateFromNamedSources(
+		std::string const& vsName, std::string const& vsSource,
+		std::string const& psName, std::string const& psSource,
+		std::string const& gsName, std::string const& gsSource,
+        ProgramDefines const& customDefines = ProgramDefines()) = 0;
+
+    virtual std::shared_ptr<ComputeProgram> CreateFromNamedSource(
+		std::string const& csName, std::string const& csSource,
+        ProgramDefines const& customDefines = ProgramDefines()) = 0;
+
+	virtual std::shared_ptr<ComputeProgram> CreateFromNamedFile(
+		std::string const& csName, std::string const& csFile,
+        ProgramDefines const& customDefines = ProgramDefines()) = 0;
+
+private:
+	std::stack<ProgramDefines> mDefinesStack;
+	std::stack<unsigned int> mFlagsStack;
+
+    // Prevent assignment.
+    ProgramFactory& operator=(ProgramFactory const&) { return *this; }
+};
+
+#endif

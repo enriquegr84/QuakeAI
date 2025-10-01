@@ -1,0 +1,1170 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\TriangleDemoApp.h" />
+    <ClInclude Include="..\GameDemo\GameDemoEvents.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoManager.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoNetwork.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoResources.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoStd.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoView.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoApp.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemo.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoCameraController.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GameDemo\GameDemoAIManager.h">
+      <Filter>Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AreaLightsApp.h" />
+    <ClInclude Include="..\AreaLightsView.h" />
+    <ClInclude Include="..\Minecraft\MinecraftApp.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftView.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Minecraft.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftLevel.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftLevelManager.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftStd.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftAIManager.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftEvents.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftNetwork.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\MinecraftActorFactory.h">
+      <Filter>Minecraft</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Drawing\Anaglyph.h">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Drawing\Core.h">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Drawing\Interlaced.h">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Drawing\Plain.h">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Drawing\Sidebyside.h">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Drawing\Stereo.h">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\GUI\UIScene.h">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\GUI\UIItemImage.h">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\GUI\UIPasswordChange.h">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\GUI\UIVolumeChange.h">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\GUI\UIInventoryForm.h">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\GUI\UIKeyChange.h">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\GameParams.h">
+      <Filter>Minecraft\Games</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Games.h">
+      <Filter>Minecraft\Games</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Mods.h">
+      <Filter>Minecraft\Games</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Subgames.h">
+      <Filter>Minecraft\Games</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\Database.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\Metadata.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\MeshUtil.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\MeshCollector.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\MeshGeneratorThread.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Particles.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\PlayerCamera.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\ProfilerGraph.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Shader.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Sky.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\TextureOverride.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\WieldMesh.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Physics\Collision.h">
+      <Filter>Minecraft\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Physics\Raycast.h">
+      <Filter>Minecraft\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Utils\FacePositionCache.h">
+      <Filter>Minecraft\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Utils\NameIdMapping.h">
+      <Filter>Minecraft\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Utils\Noise.h">
+      <Filter>Minecraft\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Utils\PointedThing.h">
+      <Filter>Minecraft\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Utils\Util.h">
+      <Filter>Minecraft\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Map\ContentMapBlock.h">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Environment\Environment.h">
+      <Filter>Minecraft\Games\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Environment\LogicEnvironment.h">
+      <Filter>Minecraft\Games\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Environment\VisualEnvironment.h">
+      <Filter>Minecraft\Games\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\VisualEvent.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\ActiveObject.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\ActiveObjectManager.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\Craft.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\CraftingComponent.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\Inventory.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\InventoryManager.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\Item.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\ItemComponent.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\ItemStackMetadata.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\LogicActiveObject.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\LogicPlayer.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\EntityLAO.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\ObjectProperties.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\Player.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\PlayerLAO.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\StaticObject.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\Tool.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\UnitLAO.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Map\VisualMap.h">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Hud.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\Map.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapBlock.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapNode.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapNodeMetadata.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapSector.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapSettingsManager.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\ContentMapNode.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Node.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Tile.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\Emerge.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\Voxel.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\VoxelAlgorithms.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\CaveGenerator.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\DungeonGenerator.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGenerator.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorBiome.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorCarpathian.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorDecoration.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorFlat.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorFractal.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorOre.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorSchematic.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorSingleNode.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorV5.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorV6.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorV7.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\MapGeneratorValleys.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\Reflowscan.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\TreeGenerator.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Map\MapBlockMesh.h">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\Object.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Map\ContentNodeMeta.h">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Actors\ContentVisualActiveObject.h">
+      <Filter>Minecraft\Graphics\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Actors\ContentVisualSimpleObject.h">
+      <Filter>Minecraft\Graphics\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Actors\VisualPlayer.h">
+      <Filter>Minecraft\Graphics\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Actors\VisualSimpleObject.h">
+      <Filter>Minecraft\Graphics\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\Huddata.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\MetricsBackend.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\CloudParams.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\ParticleParams.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\SkyParams.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Data\TileParams.h">
+      <Filter>Minecraft\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\VisualObject.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Death.h">
+      <Filter>Minecraft\Games\Forms</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\About.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\BaseMenu.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\Content.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\DlgContentStore.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\DlgDeleteContent.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\Local.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\MenuSettings.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Forms\Menu\Online.h">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Map\Minimap.h">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\ABMComponent.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Utils\AreaStore.h">
+      <Filter>Minecraft\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Effects\DefaultEffect.h">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Effects\InterlacedMergeEffect.h">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Effects\MinimapEffect.h">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Effects\NodesEffect.h">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Effects\ObjectEffect.h">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Effects\SelectionEffect.h">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\Effects\StarsEffect.h">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Games\Actors\VisualComponent.h">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\AnimatedObjectMesh.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Minecraft\Graphics\ObjectMesh.h">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\TriangleDemoApp.cpp" />
+    <ClCompile Include="..\GameDemo\GameDemoEvents.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameDemo\GameDemoManager.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameDemo\GameDemoStd.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameDemo\GameDemoView.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameDemo\GameDemoApp.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameDemo\GameDemo.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameDemo\GameDemoCameraController.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameDemo\GameDemoAIManager.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\AreaLightsApp.cpp" />
+    <ClCompile Include="..\AreaLightsView.cpp" />
+    <ClCompile Include="..\Minecraft\MinecraftApp.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\MinecraftView.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Minecraft.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\MinecraftLevel.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\MinecraftLevelManager.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\MinecraftStd.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\MinecraftAIManager.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\MinecraftEvents.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\MinecraftActorFactory.cpp">
+      <Filter>Minecraft</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Drawing\Anaglyph.cpp">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Drawing\Core.cpp">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Drawing\Interlaced.cpp">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Drawing\Plain.cpp">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Drawing\Sidebyside.cpp">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Drawing\Stereo.cpp">
+      <Filter>Minecraft\Graphics\Drawing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\GUI\UIItemImage.cpp">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\GUI\UIScene.cpp">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\GUI\UIPasswordChange.cpp">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\GUI\UIVolumeChange.cpp">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\GUI\UIInventoryForm.cpp">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\GUI\UIKeyChange.cpp">
+      <Filter>Minecraft\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Games.cpp">
+      <Filter>Minecraft\Games</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Mods.cpp">
+      <Filter>Minecraft\Games</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Subgames.cpp">
+      <Filter>Minecraft\Games</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Data\Database.cpp">
+      <Filter>Minecraft\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Data\Metadata.cpp">
+      <Filter>Minecraft\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\MeshCollector.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\MeshGeneratorThread.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\MeshUtil.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Particles.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\PlayerCamera.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\ProfilerGraph.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Shader.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Sky.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\TextureOverride.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\WieldMesh.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Physics\Collision.cpp">
+      <Filter>Minecraft\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Physics\Raycast.cpp">
+      <Filter>Minecraft\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Utils\FacePositionCache.cpp">
+      <Filter>Minecraft\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Utils\NameIdMapping.cpp">
+      <Filter>Minecraft\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Utils\Noise.cpp">
+      <Filter>Minecraft\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Utils\PointedThing.cpp">
+      <Filter>Minecraft\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Utils\Util.cpp">
+      <Filter>Minecraft\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Map\ContentMapBlock.cpp">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Environment\Environment.cpp">
+      <Filter>Minecraft\Games\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Environment\LogicEnvironment.cpp">
+      <Filter>Minecraft\Games\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Environment\VisualEnvironment.cpp">
+      <Filter>Minecraft\Games\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\ActiveObjectManager.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\Craft.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\CraftingComponent.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\Inventory.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\InventoryManager.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\Item.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\ItemComponent.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\ItemStackMetadata.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\LogicActiveObject.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\LogicPlayer.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\EntityLAO.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\ObjectProperties.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\Player.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\PlayerLAO.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\StaticObject.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\Tool.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\UnitLAO.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Map\VisualMap.cpp">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Hud.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\Map.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapBlock.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapNode.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapNodeMetadata.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapSector.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapSettingsManager.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\ContentMapNode.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Node.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Tile.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\Emerge.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\Voxel.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\VoxelAlgorithms.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\CaveGenerator.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\DungeonGenerator.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGenerator.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorBiome.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorCarpathian.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorDecoration.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorFlat.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorFractal.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorOre.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorSchematic.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorSingleNode.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorV5.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorV6.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorV7.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\MapGeneratorValleys.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\Reflowscan.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\TreeGenerator.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Map\MapBlockMesh.cpp">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\Object.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Map\ContentNodeMeta.cpp">
+      <Filter>Minecraft\Games\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Actors\ContentVisualActiveObject.cpp">
+      <Filter>Minecraft\Graphics\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Actors\ContentVisualSimpleObject.cpp">
+      <Filter>Minecraft\Graphics\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Actors\VisualPlayer.cpp">
+      <Filter>Minecraft\Graphics\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Data\Huddata.cpp">
+      <Filter>Minecraft\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Data\MetricsBackend.cpp">
+      <Filter>Minecraft\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Data\ParticleParams.cpp">
+      <Filter>Minecraft\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Data\TileParams.cpp">
+      <Filter>Minecraft\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\VisualObject.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Death.cpp">
+      <Filter>Minecraft\Games\Forms</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\About.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\BaseMenu.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\Content.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\DlgContentStore.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\DlgDeleteContent.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\Local.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\MenuSettings.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Forms\Menu\Online.cpp">
+      <Filter>Minecraft\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Map\Minimap.cpp">
+      <Filter>Minecraft\Graphics\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\ABMComponent.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Utils\AreaStore.cpp">
+      <Filter>Minecraft\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Effects\DefaultEffect.cpp">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Effects\InterlacedMergeEffect.cpp">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Effects\MinimapEffect.cpp">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Effects\NodesEffect.cpp">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Effects\ObjectEffect.cpp">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Effects\SelectionEffect.cpp">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\Effects\StarsEffect.cpp">
+      <Filter>Minecraft\Graphics\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Games\Actors\VisualComponent.cpp">
+      <Filter>Minecraft\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\AnimatedObjectMesh.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Minecraft\Graphics\ObjectMesh.cpp">
+      <Filter>Minecraft\Graphics</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Demo">
+      <UniqueIdentifier>{ce6ead9a-75e3-4556-82f9-64ef1a39a749}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft">
+      <UniqueIdentifier>{5c18b753-d131-437a-aa38-8ec305c28acd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets">
+      <UniqueIdentifier>{b483eb6a-4c47-4a35-973c-43cc60861b59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Maps">
+      <UniqueIdentifier>{eb761b11-006c-4880-a000-11a7f87f3deb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Players">
+      <UniqueIdentifier>{d55a8670-61c6-4ff0-a0e1-9392c41bc34c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Demo\Assets">
+      <UniqueIdentifier>{d35df3b7-73ff-4c3a-8a92-b7ed4d3c2d97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\World">
+      <UniqueIdentifier>{e55746fd-0a7a-4b97-808c-a11ab24a5f2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Graphics">
+      <UniqueIdentifier>{8efb70a4-86f6-4d93-815a-c7c672dc0de7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Graphics\Drawing">
+      <UniqueIdentifier>{204084fe-409c-4d00-9b6e-8028ea76993e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Graphics\GUI">
+      <UniqueIdentifier>{47ba8d5c-895d-4cae-bfb1-22b0539ee584}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods">
+      <UniqueIdentifier>{ae6df7bc-c64d-4381-bb7c-d895f36f37b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods\Tutorial">
+      <UniqueIdentifier>{e8c28e5f-d7ff-4af0-880f-bc2665549c56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods\Tutorial\Crafting">
+      <UniqueIdentifier>{bdff5fa3-f727-4d5c-a2f0-916a9c24963e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods\Tutorial\Craftitems">
+      <UniqueIdentifier>{26291f6f-7c76-4f8f-b883-deae24700543}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods\Tutorial\Infos">
+      <UniqueIdentifier>{87791a9b-d9cf-44e9-8aa9-55b6b62ea739}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods\Tutorial\Nodes">
+      <UniqueIdentifier>{2df752d7-6225-4af0-854a-402c6d040dc5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods\Tutorial\Tools">
+      <UniqueIdentifier>{28fd69d2-d9e7-49d1-9d57-038a41705ba7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Games">
+      <UniqueIdentifier>{1560e762-4e36-4b89-a96b-c70f6067ece3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Mods\Tutorial\ABMs">
+      <UniqueIdentifier>{42231bc4-9b14-4fad-a10a-7cab50f60438}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Data">
+      <UniqueIdentifier>{aa4702e8-35bb-42dc-88ef-5fbbf30505d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Physics">
+      <UniqueIdentifier>{d3d8a5f8-8e35-469c-bdf7-0527fa9c0a93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Utils">
+      <UniqueIdentifier>{55e73911-e983-4e7b-bd9c-c60855f2986b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Graphics\Map">
+      <UniqueIdentifier>{f17c1e7c-e407-40e5-a23f-e84b014c602b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Games\Actors">
+      <UniqueIdentifier>{ffd64661-44ed-49a1-8382-a127a7b24347}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Games\Environment">
+      <UniqueIdentifier>{9a82d9b7-c039-446a-b3ac-eeca04f24bf5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Games\Map">
+      <UniqueIdentifier>{b77f580e-f551-4639-8d29-6902abf5698e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Graphics\Actors">
+      <UniqueIdentifier>{55410fe9-679a-4763-b614-77e22fcb3e6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Games\Forms">
+      <UniqueIdentifier>{b07bc693-b121-40af-8309-b423edc4f694}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Games\Forms\Menu">
+      <UniqueIdentifier>{e6c78d15-2c8e-4ee9-bc53-c122b25e78c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Players\Tutorial">
+      <UniqueIdentifier>{1c915d6f-481b-44d2-b072-e33db4860d60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Assets\Effects">
+      <UniqueIdentifier>{b4646a8d-7d5c-4b3d-a308-cb1493d0fea1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Minecraft\Graphics\Effects">
+      <UniqueIdentifier>{0bd4d085-1476-46df-a6d8-a24d24199cad}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Maps\tutorial.xml">
+      <Filter>Minecraft\Assets\Maps</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\afternoon_sky.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\ai_player.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\box.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\cloudy_sky.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\cube.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\fire.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\grid.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\light.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\music.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\player.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\remote_player.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Demo\sphere.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Minecraft\Devtest.xml">
+      <Filter>Minecraft\Assets\World</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Minecraft\Loria.xml">
+      <Filter>Minecraft\Assets\World</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Minecraft\Mineclone2.xml">
+      <Filter>Minecraft\Assets\World</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Minecraft\Minetest.xml">
+      <Filter>Minecraft\Assets\World</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Minecraft\Nodecore.xml">
+      <Filter>Minecraft\Assets\World</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Minecraft\Tutorial.xml">
+      <Filter>Minecraft\Assets\World</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Demo\World.xml">
+      <Filter>Demo\Assets</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Crafting\crafting.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Crafting</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Craftitems\craftitems.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Craftitems</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Craftitems\supplementals.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Craftitems</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\castle.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\cottages.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\darkage.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\nodes.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\supplementals.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Tools\tools.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Tools</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Crafting\supplementals.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Crafting</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\arrowsigns.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\roof.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Tools\default.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Tools</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Nodes\default.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Nodes</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Infos\craftguide.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Infos</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Infos\craftguides.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Infos</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Infos\infosign.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Infos</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\Infos\infosigns.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\Infos</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Mods\tutorial\ABMs\default.xml">
+      <Filter>Minecraft\Assets\Mods\Tutorial\ABMs</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Players\tutorial\ai_player.xml">
+      <Filter>Minecraft\Assets\Players\Tutorial</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Players\tutorial\player.xml">
+      <Filter>Minecraft\Assets\Players\Tutorial</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Minecraft\Players\tutorial\remote_player.xml">
+      <Filter>Minecraft\Assets\Players\Tutorial</Filter>
+    </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Assets\Effects\Minecraft\DefaultPS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\DefaultVS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\InterlacedMergePS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\InterlacedMergeVS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\MinimapVS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\MinimapPS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\NodesPS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\NodesVS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\ObjectPS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\ObjectVS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\SelectionPS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\SelectionVS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\StarsPS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+    <None Include="..\..\..\Assets\Effects\Minecraft\StarsVS.glsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\DefaultPS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\DefaultVS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\InterlacedMergePS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\InterlacedMergeVS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\MinimapVS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\MinimapPS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\NodesPS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\NodesVS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\ObjectPS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\ObjectVS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\SelectionPS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\SelectionVS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\StarsPS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\Assets\Effects\Minecraft\StarsVS.hlsl">
+      <Filter>Minecraft\Assets\Effects</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>

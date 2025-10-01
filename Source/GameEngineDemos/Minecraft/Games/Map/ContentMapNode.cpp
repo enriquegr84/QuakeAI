@@ -1,0 +1,163 @@
+/*
+Minetest
+Copyright (C) 2010-2013 celeron55, Perttu Ahola <celeron55@gmail.com>
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
+#include "ContentMapNode.h"
+
+/*
+	Legacy node content type IDs
+	Ranges:
+	0x000...0x07f (0...127): param2 is fully usable
+	126 and 127 are reserved (CONTENT_AIR and CONTENT_IGNORE).
+	0x800...0xfff (2048...4095): higher 4 bits of param2 are not usable
+*/
+#define CONTENT_STONE 0
+#define CONTENT_WATER 2
+#define CONTENT_TORCH 3
+#define CONTENT_WATERSOURCE 9
+#define CONTENT_SIGN_WALL 14
+#define CONTENT_CHEST 15
+#define CONTENT_FURNACE 16
+#define CONTENT_LOCKABLE_CHEST 17
+#define CONTENT_FENCE 21
+#define CONTENT_RAIL 30
+#define CONTENT_LADDER 31
+#define CONTENT_LAVA 32
+#define CONTENT_LAVASOURCE 33
+#define CONTENT_GRASS 0x800 //1
+#define CONTENT_TREE 0x801 //4
+#define CONTENT_LEAVES 0x802 //5
+#define CONTENT_GRASS_FOOTSTEPS 0x803 //6
+#define CONTENT_MESE 0x804 //7
+#define CONTENT_MUD 0x805 //8
+#define CONTENT_CLOUD 0x806 //10
+#define CONTENT_COALSTONE 0x807 //11
+#define CONTENT_WOOD 0x808 //12
+#define CONTENT_SAND 0x809 //13
+#define CONTENT_COBBLE 0x80a //18
+#define CONTENT_STEEL 0x80b //19
+#define CONTENT_GLASS 0x80c //20
+#define CONTENT_MOSSYCOBBLE 0x80d //22
+#define CONTENT_GRAVEL 0x80e //23
+#define CONTENT_SANDSTONE 0x80f //24
+#define CONTENT_CACTUS 0x810 //25
+#define CONTENT_BRICK 0x811 //26
+#define CONTENT_CLAY 0x812 //27
+#define CONTENT_PAPYRUS 0x813 //28
+#define CONTENT_BOOKSHELF 0x814 //29
+#define CONTENT_JUNGLETREE 0x815
+#define CONTENT_JUNGLEGRASS 0x816
+#define CONTENT_NC 0x817
+#define CONTENT_NC_RB 0x818
+#define CONTENT_APPLE 0x819
+#define CONTENT_SAPLING 0x820
+
+/*
+	A conversion table for backwards compatibility.
+	Maps <=v19 content types to current ones.
+	Should never be touched.
+*/
+uint16_t TranslationTable19[21][2] = {
+	{CONTENT_GRASS, 1},
+	{CONTENT_TREE, 4},
+	{CONTENT_LEAVES, 5},
+	{CONTENT_GRASS_FOOTSTEPS, 6},
+	{CONTENT_MESE, 7},
+	{CONTENT_MUD, 8},
+	{CONTENT_CLOUD, 10},
+	{CONTENT_COALSTONE, 11},
+	{CONTENT_WOOD, 12},
+	{CONTENT_SAND, 13},
+	{CONTENT_COBBLE, 18},
+	{CONTENT_STEEL, 19},
+	{CONTENT_GLASS, 20},
+	{CONTENT_MOSSYCOBBLE, 22},
+	{CONTENT_GRAVEL, 23},
+	{CONTENT_SANDSTONE, 24},
+	{CONTENT_CACTUS, 25},
+	{CONTENT_BRICK, 26},
+	{CONTENT_CLAY, 27},
+	{CONTENT_PAPYRUS, 28},
+	{CONTENT_BOOKSHELF, 29},
+};
+
+MapNode MapNodeTranslateToInternal(MapNode nodeFrom, uint8_t version)
+{
+	MapNode result = nodeFrom;
+	if(version <= 19)
+	{
+        uint16_t contentFrom = nodeFrom.GetContent();
+		for (const auto& tt : TranslationTable19) 
+        {
+			if (tt[1] == contentFrom) 
+            {
+				result.SetContent(tt[0]);
+				break;
+			}
+		}
+	}
+	return result;
+}
+
+void ContentMapNodeGetNameIdMapping(NameIdMapping* nimap)
+{
+	nimap->Set(0, "default:stone");
+	nimap->Set(2, "default:water_flowing");
+	nimap->Set(3, "default:torch");
+	nimap->Set(9, "default:water_source");
+	nimap->Set(14, "default:sign_wall");
+	nimap->Set(15, "default:chest");
+	nimap->Set(16, "default:furnace");
+	nimap->Set(17, "default:chest_locked");
+	nimap->Set(21, "default:fence_wood");
+	nimap->Set(30, "default:rail");
+	nimap->Set(31, "default:ladder");
+	nimap->Set(32, "default:lava_flowing");
+	nimap->Set(33, "default:lava_source");
+	nimap->Set(0x800, "default:dirt_with_grass");
+	nimap->Set(0x801, "default:tree");
+	nimap->Set(0x802, "default:leaves");
+	nimap->Set(0x803, "default:dirt_with_grass_footsteps");
+	nimap->Set(0x804, "default:mese");
+	nimap->Set(0x805, "default:dirt");
+	nimap->Set(0x806, "default:cloud");
+	nimap->Set(0x807, "default:coalstone");
+	nimap->Set(0x808, "default:wood");
+	nimap->Set(0x809, "default:sand");
+	nimap->Set(0x80a, "default:cobble");
+	nimap->Set(0x80b, "default:steelblock");
+	nimap->Set(0x80c, "default:glass");
+	nimap->Set(0x80d, "default:mossycobble");
+	nimap->Set(0x80e, "default:gravel");
+	nimap->Set(0x80f, "default:sandstone");
+	nimap->Set(0x810, "default:cactus");
+	nimap->Set(0x811, "default:brick");
+	nimap->Set(0x812, "default:clay");
+	nimap->Set(0x813, "default:papyrus");
+	nimap->Set(0x814, "default:bookshelf");
+	nimap->Set(0x815, "default:jungletree");
+	nimap->Set(0x816, "default:junglegrass");
+	nimap->Set(0x817, "default:nyancat");
+	nimap->Set(0x818, "default:nyancat_rainbow");
+	nimap->Set(0x819, "default:apple");
+	nimap->Set(0x820, "default:sapling");
+	// Static types
+	nimap->Set(CONTENT_IGNORE, "ignore");
+	nimap->Set(CONTENT_AIR, "air");
+}
+

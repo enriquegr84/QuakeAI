@@ -1,0 +1,300 @@
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
+// This file is part of the "Irrlicht Engine".
+// For conditions of distribution and use, see copyright notice in irrlicht.h
+
+#ifndef UIEDITBOX_H
+#define UIEDITBOX_H
+
+#include "UIElement.h"
+
+#include "Graphic/Resource/Color.h"
+
+#include "Graphic/Scene/Hierarchy/Visual.h"
+
+//! Single line edit box for editing simple text.
+/** \par This element can create the following events of type EGUI_EVENT_TYPE:
+\li UIEDITBOX_ENTER
+\li UIEDITBOX_CHANGED
+\li UIEDITBOX_MARKING_CHANGED
+*/
+
+class BaseUIFont;
+class UIScrollBar;
+
+class BaseUIEditBox : public BaseUIElement
+{
+public:
+
+	//! constructor
+	BaseUIEditBox(int id, RectangleShape<2, int> rectangle)
+		: BaseUIElement(UIET_EDIT_BOX, id, rectangle) {}
+
+	//! Initialize editbox
+	virtual void OnInit() = 0;
+
+	//! Sets another skin independent font.
+	/** If this is set to zero, the button uses the font of the skin.
+	\param font: New font to set. */
+	virtual void SetOverrideFont(const std::shared_ptr<BaseUIFont>& font = 0) = 0;
+
+	//! Gets the override font (if any)
+	/** \return The override font (may be 0) */
+	virtual const std::shared_ptr<BaseUIFont>& GetOverrideFont() const = 0;
+
+	//! Get the font which is used right now for drawing
+	/** Currently this is the override font when one is set and the
+	font of the active skin otherwise */
+	virtual const std::shared_ptr<BaseUIFont>& GetActiveFont() const = 0;
+
+	//! Sets another color for the text.
+	/** If set, the edit box does not use the EGDC_BUTTON_TEXT color defined
+	in the skin, but the set color instead. You don't need to call
+	IGUIEditBox::enableOverrrideColor(true) after this, this is done
+	by this function.
+	If you set a color, and you want the text displayed with the color
+	of the skin again, call IGUIEditBox::enableOverrideColor(false);
+	\param color: New color of the text. */
+	virtual void SetOverrideColor(SColor color) = 0;
+
+	//! Gets the override color
+	virtual SColor GetOverrideColor() const = 0;
+
+	//! Sets if the text should use the override color or the color in the gui skin.
+	/** \param enable: If set to true, the override color, which can be set
+	with IGUIEditBox::setOverrideColor is used, otherwise the
+	EGDC_BUTTON_TEXT color of the skin. */
+	virtual void EnableOverrideColor(bool enable) = 0;
+
+	//! Checks if an override color is enabled
+	/** \return true if the override color is enabled, false otherwise */
+	virtual bool IsOverrideColorEnabled(void) const = 0;
+
+	//! Sets whether to draw the background
+	virtual void SetDrawBackground(bool draw) = 0;
+
+	//! Turns the border on or off
+	/** \param border: true if you want the border to be drawn, false if not */
+	virtual void SetDrawBorder(bool border) = 0;
+
+	//! Sets text justification mode
+	/** \param horizontal: EGUIA_UPPERLEFT for left justified (default),
+	EGUIA_LOWERRIGHT for right justified, or EGUIA_CENTER for centered text.
+	\param vertical: EGUIA_UPPERLEFT to align with top edge,
+	EGUIA_LOWERRIGHT for bottom edge, or EGUIA_CENTER for centered text (default). */
+	virtual void SetTextAlignment(UIAlignment horizontal, UIAlignment vertical) = 0;
+
+	//! Enables or disables word wrap.
+	/** \param enable: If set to true, words going over one line are
+	broken to the next line. */
+	virtual void SetWordWrap(bool enable) = 0;
+
+	//! Checks if word wrap is enabled
+	/** \return true if word wrap is enabled, false otherwise */
+	virtual bool IsWordWrapEnabled() const = 0;
+
+	//! Enables or disables newlines.
+	/** \param enable: If set to true, the EGET_EDITBOX_ENTER event will not be fired,
+	instead a newline character will be inserted. */
+	virtual void SetMultiLine(bool enable) = 0;
+
+	//! Checks if multi line editing is enabled
+	/** \return true if multi-line is enabled, false otherwise */
+	virtual bool IsMultiLineEnabled() const = 0;
+
+	//! Enables or disables automatic scrolling with cursor position
+	/** \param enable: If set to true, the text will move around with the cursor position */
+	virtual void SetAutoScroll(bool enable) = 0;
+
+	//! Checks to see if automatic scrolling is enabled
+	/** \return true if automatic scrolling is enabled, false if not */
+	virtual bool IsAutoScrollEnabled() const = 0;
+
+	//! Sets whether the edit box is a password box. Setting this to true will
+	/** disable MultiLine, WordWrap and the ability to copy with ctrl+c or ctrl+x
+	\param passwordBox: true to enable password, false to disable
+	\param passwordChar: the character that is displayed instead of letters */
+	virtual void SetPasswordBox(bool passwordBox, wchar_t passwordChar = L'*') = 0;
+
+	//! Returns true if the edit box is currently a password box.
+	virtual bool IsPasswordBox() const = 0;
+
+	//! Gets the size area of the text in the edit box
+	/** \return The size in pixels of the text */
+	virtual Vector2<int> GetTextDimension() = 0;
+
+	//! Sets the maximum amount of characters which may be entered in the box.
+	/** \param max: Maximum amount of characters. If 0, the character amount is
+	infinity. */
+	virtual void SetMax(unsigned int max) = 0;
+
+	//! Returns maximum amount of characters, previously set by setMax();
+	virtual unsigned int GetMax() const = 0;
+};
+
+class UIEditBox : public BaseUIEditBox
+{
+public:
+
+	//! constructor
+	UIEditBox(BaseUI* ui, int id, RectangleShape<2, int> rectangle,
+        const wchar_t* text, bool border, bool writable = true);
+
+	//! destructor
+	virtual ~UIEditBox();
+
+	//! initialize editbox
+	virtual void OnInit();
+
+	//! Sets another skin independent font.
+	virtual void SetOverrideFont(const std::shared_ptr<BaseUIFont>& font = 0);
+
+	//! Gets the override font (if any)
+	virtual const std::shared_ptr<BaseUIFont>& GetOverrideFont() const;
+
+	//! Get the font which is used right now for drawing
+	virtual const std::shared_ptr<BaseUIFont>& GetActiveFont() const;
+
+	//! Sets another color for the text.
+	virtual void SetOverrideColor(SColor color);
+
+	//! Gets the override color
+	virtual SColor GetOverrideColor() const;
+
+	//! Sets if the text should use the override color or the color in the gui skin.
+	virtual void EnableOverrideColor(bool enable);
+
+	//! Checks if an override color is enabled
+	virtual bool IsOverrideColorEnabled(void) const;
+
+    //! Sets background color
+    virtual void SetBackgroundColor(SColor color);
+
+	//! Sets whether to draw the background
+	virtual void SetDrawBackground(bool draw);
+
+	//! Turns the border on or off
+	virtual void SetDrawBorder(bool border);
+
+	//! Sets text justification mode
+	virtual void SetTextAlignment(UIAlignment horizontal, UIAlignment vertical);
+
+	//! Enables or disables word wrap.
+	virtual void SetWordWrap(bool enable);
+
+	//! Checks if word wrap is enabled
+	virtual bool IsWordWrapEnabled() const;
+
+	//! Enables or disables newlines.
+	virtual void SetMultiLine(bool enable);
+
+	//! Checks if multi line editing is enabled
+	virtual bool IsMultiLineEnabled() const;
+
+	//! Enables or disables automatic scrolling with cursor position
+	virtual void SetAutoScroll(bool enable);
+
+	//! Checks to see if automatic scrolling is enabled
+	virtual bool IsAutoScrollEnabled() const;
+
+	//! Sets whether the edit box is a password box. Setting this to true will
+	virtual void SetPasswordBox(bool passwordBox, wchar_t passwordChar = L'*');
+
+	//! Returns true if the edit box is currently a password box.
+	virtual bool IsPasswordBox() const;
+
+	//! Gets the size area of the text in the edit box
+	virtual Vector2<int> GetTextDimension();
+
+	//! Sets the maximum amount of characters which may be entered in the box.
+	virtual void SetMax(unsigned int max);
+
+	//! Returns maximum amount of characters, previously set by setMax();
+	virtual unsigned int GetMax() const;
+
+	//! called if an event happened.
+	virtual bool OnEvent(const Event& evt);
+
+	//! draws the element and its children
+	virtual void Draw();
+
+	//! Sets the new caption of this element.
+	virtual void SetText(const wchar_t* text);
+
+    //! set true if this EditBox is writable
+    virtual void SetWritable(bool canWriteText);
+
+    virtual bool AcceptsIME() { return IsEnabled() && mWritable; };
+
+	//! Updates the absolute position, splits text if required
+	virtual void UpdateAbsolutePosition();
+
+protected:
+	//! Breaks the single text line.
+	void BreakText();
+	//! sets the area of the given line
+	void SetTextRect(int line);
+	//! returns the line number that the cursor is on
+	int GetLineFromPosition(int pos);
+	//! adds a letter to the edit box
+	void InputChar(wchar_t c);
+    //! adds a string to the edit box
+    void InputString(const std::wstring& str);
+	//! calculates the current scroll position
+	void CalculateScrollPosition();
+	//! calculated the FrameRect
+	void CalculateFrameRect();
+	//! send some ui event to parent
+	void SendUIEvent(UIEventType type);
+	//! set text markers
+	void SetTextMarkers(int begin, int end);
+    //! create the vertical scrollBar
+    void CreateVScrollBar();
+    //! update the vertical scrollBar (visibilty & position)
+    void UpdateVScrollBar();
+
+	bool ProcessKey(const Event& evt);
+	bool ProcessMouse(const Event& evt);
+	int GetCursorPosition(int x, int y);
+
+    bool mWritable;
+    bool mOverwriteMode;
+	bool mMouseMarking;
+	bool mBorder;
+	bool mBackground;
+    bool mBackgroundColorUsed;
+	bool mOverrideColorEnabled;
+	int mMarkBegin;
+	int mMarkEnd;
+
+    SColor mBackgroundColor, mOverrideColor;
+	std::shared_ptr<BaseUIFont> mOverrideFont, mLastBreakFont;
+
+	int mCursorPos;
+	int mHScrollPos, mVScrollPos; // scroll position in characters
+    unsigned int mBlinkStartTime;
+	unsigned int mMax;
+
+	bool mWordWrap, mMultiLine, mAutoScroll, mPasswordBox;
+	wchar_t mPasswordChar;
+	UIAlignment mHAlign, mVAlign;
+
+    unsigned int mScrollBarWidth;
+    std::shared_ptr<UIScrollBar> mVScrollBar;
+
+	std::vector<std::wstring> mBrokenText;
+	std::vector<int> mBrokenTextPositions;
+
+	RectangleShape<2, int> mCurrentTextRect, mFrameRect;
+
+private:
+
+	BaseUI* mUI;
+
+	std::shared_ptr<Visual> mVisual;
+	std::shared_ptr<VisualEffect> mEffect;
+
+	std::shared_ptr<Visual> mVisualBackground;
+};
+
+#endif
+

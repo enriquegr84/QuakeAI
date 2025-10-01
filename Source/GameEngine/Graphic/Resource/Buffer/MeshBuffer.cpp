@@ -1,0 +1,183 @@
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
+// This file is part of the "Irrlicht Engine".
+// For conditions of distribution and use, see copyright notice in irrlicht.h
+
+#include "MeshBuffer.h"
+
+#include "Mathematic/Surface/RectangleMesh.h"
+
+MeshBuffer::MeshBuffer()
+	: BaseMeshBuffer(0, 0)
+{
+	mMaterial = std::make_shared<Material>();
+}
+
+MeshBuffer::MeshBuffer(VertexFormat const& vformat, uint32_t numVertices,
+	uint32_t numPrimitives, size_t indexSize)
+	: BaseMeshBuffer(numPrimitives, 0)
+{
+	mVFormat = vformat;
+
+	mVertice = CreateVBuffer(numVertices);
+	if (!mVertice)
+		LogError("Error creating vertex buffer");
+
+	mIndice = CreateIBuffer(numPrimitives, indexSize);
+	if (!mIndice)
+		LogError("Error creating index buffer");
+
+	mMaterial = std::make_shared<Material>();
+}
+
+MeshBuffer::~MeshBuffer()
+{
+
+}
+
+std::shared_ptr<VertexBuffer> MeshBuffer::CreateVBuffer(unsigned int numVertices)
+{
+	auto vbuffer = std::make_shared<VertexBuffer>(mVFormat, numVertices);
+	if (vbuffer)
+	{
+		// Get geometric channels.
+		mPositions = GetGeometricChannel(vbuffer, VA_POSITION, 1.0f);
+		mNormals = GetGeometricChannel(vbuffer, VA_NORMAL, 0.0f);
+		mTangents = GetGeometricChannel(vbuffer, VA_TANGENT, 0.0f);
+		mBitangents = GetGeometricChannel(vbuffer, VA_BINORMAL, 0.0f);
+
+		// Get color channels that are to be assigned values.
+		// Clear the mAssignColors element in case any elements were set by a
+		// previous creation call.
+		std::set<DFType> required;
+		required.insert(DF_R32G32B32A32_FLOAT);
+		for (unsigned int unit = 0; unit < VA_MAX_COLOR_UNITS; ++unit)
+		{
+			mColors[unit] = vbuffer->GetChannel(VA_COLOR, unit, required);
+			if (mColors[unit])
+			{
+				mAssignColors[unit] = true;
+			}
+			else
+			{
+				mAssignColors[unit] = false;
+			}
+		}
+
+		// Get texture coordinate channels that are to be assigned values.
+		// Clear the mAssignTCoords element in case any elements were set by a
+		// previous creation call.
+		required.clear();
+		required.insert(DF_R32G32_FLOAT);
+		for (unsigned int unit = 0; unit < VA_MAX_TCOORD_UNITS; ++unit)
+		{
+			mTCoords[unit] = vbuffer->GetChannel(VA_TEXCOORD, unit, required);
+			if (mTCoords[unit])
+			{
+				mAssignTCoords[unit] = true;
+			}
+			else
+			{
+				mAssignTCoords[unit] = false;
+			}
+		}
+
+		vbuffer->SetUsage(Resource::DYNAMIC_UPDATE);
+	}
+	return vbuffer;
+}
+
+std::shared_ptr<IndexBuffer> MeshBuffer::CreateIBuffer(unsigned int numTriangles, size_t indexSize)
+{
+	auto ibuffer = std::make_shared<IndexBuffer>(IP_TRIMESH, numTriangles, indexSize);
+	if (ibuffer)
+	{
+		ibuffer->SetUsage(Resource::IMMUTABLE);
+	}
+	return ibuffer;
+}
+
+char* MeshBuffer::GetGeometricChannel(
+	std::shared_ptr<VertexBuffer> const& vbuffer, VASemantic semantic, float w)
+{
+	char* channel = nullptr;
+	int index = mVFormat.GetIndex(semantic, 0);
+	if (index >= 0)
+	{
+		channel = vbuffer->GetChannel(semantic, 0, std::set<DFType>());
+		LogAssert(channel != 0, "Unexpected condition.");
+		if (mVFormat.GetType(index) == DF_R32G32B32A32_FLOAT)
+		{
+			// Fill in the w-components.
+			int const numVertices = vbuffer->GetNumElements();
+			for (int i = 0; i < numVertices; ++i)
+			{
+				float* tuple4 = reinterpret_cast<float*>(
+					channel + i * mVFormat.GetVertexSize());
+				tuple4[3] = w;
+			}
+		}
+	}
+	return channel;
+}
+
+void MeshBuffer::SetPosition(unsigned int i, Vector3<float> const& pos)
+{
+	Position(i) = pos;
+}
+
+void MeshBuffer::SetNormal(unsigned int i, Vector3<float> const& nor)
+{
+	if (mNormals)
+	{
+		Normal(i) = nor;
+	}
+}
+
+void MeshBuffer::SetTangent(unsigned int i, Vector3<float> const& tan)
+{
+	if (mTangents)
+	{
+		Tangent(i) = tan;
+	}
+}
+
+void MeshBuffer::SetBinormal(unsigned int i, Vector3<float> const& bin)
+{
+	if (mBitangents)
+	{
+		Bitangent(i) = bin;
+	}
+}
+
+void MeshBuffer::SetColor(unsigned int i, Vector4<float> const& cl)
+{
+	for (unsigned int unit = 0; unit < VA_MAX_COLOR_UNITS; ++unit)
+	{
+		if (mAssignColors[unit])
+		{
+			Color(unit, i) = cl;
+		}
+	}
+}
+
+void MeshBuffer::SetTCoord(unsigned int i, Vector2<float> const& tcd)
+{
+	for (unsigned int unit = 0; unit < VA_MAX_TCOORD_UNITS; ++unit)
+	{
+		if (mAssignTCoords[unit])
+		{
+			TCoord(unit, i) = tcd;
+		}
+	}
+}
+
+void MeshBuffer::ReverseTriangleOrder(IndexBuffer* ibuffer)
+{
+	unsigned int const numTriangles = ibuffer->GetNumPrimitives();
+	for (unsigned int t = 0; t < numTriangles; ++t)
+	{
+		unsigned int v0, v1, v2;
+		ibuffer->GetTriangle(t, v0, v1, v2);
+		ibuffer->SetTriangle(t, v0, v2, v1);
+	}
+}

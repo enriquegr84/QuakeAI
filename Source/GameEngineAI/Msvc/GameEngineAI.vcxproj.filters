@@ -1,0 +1,524 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\Quake\Quake.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeApp.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeCameraController.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeEvents.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeNetwork.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakePlayerController.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeResources.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeStd.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeView.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeActorFactory.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeLevelManager.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeLevel.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeAIView.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeAIManager.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\AmmoPickup.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\ArmorPickup.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\BaseFire.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\BasePickup.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\BaseTarget.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\BaseTrigger.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\GrenadeFire.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\HealthPickup.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\ItemPickup.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\LocationTarget.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\PlasmaFire.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\PlayerActor.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\PushTrigger.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\RocketFire.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\SpeakerTarget.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\TeleporterTrigger.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\WeaponPickup.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Subgames.h">
+      <Filter>Quake\Games</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Graphics\Hud.h">
+      <Filter>Quake\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Graphics\GUI\UIKeyChange.h">
+      <Filter>Quake\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Graphics\GUI\UIVolumeChange.h">
+      <Filter>Quake\Graphics\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\About.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\BaseMenu.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\Content.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\DlgContentStore.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\DlgDeleteContent.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\Local.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\MenuSettings.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Forms\Menu\Online.h">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Data\MetricsBackend.h">
+      <Filter>Quake\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Data\Huddata.h">
+      <Filter>Quake\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Graphics\ProfilerGraph.h">
+      <Filter>Quake\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Games\Actors\ModelComponent.h">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeAIEditorView.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Editor\CameraController.h">
+      <Filter>Quake\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Graphics\GraphNode.h">
+      <Filter>Quake\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\Graphics\PathNode.h">
+      <Filter>Quake\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakePhysic.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\QuakeAIAnalyzerView.h">
+      <Filter>Quake</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Quake\Quake.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeApp.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeCameraController.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeEvents.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakePlayerController.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeStd.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeView.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeActorFactory.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeLevelManager.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeLevel.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeAIView.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeAIManager.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\AmmoPickup.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\ArmorPickup.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\GrenadeFire.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\HealthPickup.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\ItemPickup.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\LocationTarget.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\PlasmaFire.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\PlayerActor.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\PushTrigger.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\RocketFire.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\SpeakerTarget.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\TeleporterTrigger.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\WeaponPickup.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Subgames.cpp">
+      <Filter>Quake\Games</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Graphics\Hud.cpp">
+      <Filter>Quake\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Graphics\GUI\UIKeyChange.cpp">
+      <Filter>Quake\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Graphics\GUI\UIVolumeChange.cpp">
+      <Filter>Quake\Graphics\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\About.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\BaseMenu.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\Content.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\DlgContentStore.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\DlgDeleteContent.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\Local.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\MenuSettings.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Forms\Menu\Online.cpp">
+      <Filter>Quake\Games\Forms\Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Data\MetricsBackend.cpp">
+      <Filter>Quake\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Data\Huddata.cpp">
+      <Filter>Quake\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Graphics\ProfilerGraph.cpp">
+      <Filter>Quake\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Games\Actors\ModelComponent.cpp">
+      <Filter>Quake\Games\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeAIEditorView.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Editor\CameraController.cpp">
+      <Filter>Quake\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Graphics\GraphNode.cpp">
+      <Filter>Quake\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Graphics\PathNode.cpp">
+      <Filter>Quake\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakePhysic.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\QuakeAIAnalyzerView.cpp">
+      <Filter>Quake</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Quake">
+      <UniqueIdentifier>{8b320331-9d33-4f90-9d5f-797a46e33574}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets">
+      <UniqueIdentifier>{730e7a8c-be5c-4373-8ede-326f80fcc828}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Effects">
+      <UniqueIdentifier>{ec0346dd-c08b-48f4-b638-5186041c2d11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Maps">
+      <UniqueIdentifier>{4ee07a91-d06b-4c54-a4ad-7d39afcdb471}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Models">
+      <UniqueIdentifier>{a9d26be8-a604-440e-8fa4-ce18d7cfe237}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Music">
+      <UniqueIdentifier>{0770c20c-a918-4147-af5f-475cd0cb48d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Players">
+      <UniqueIdentifier>{c6476514-6dd5-4118-a51a-414bf9fcf3af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Target">
+      <UniqueIdentifier>{39de2003-f205-4418-9be0-7081c386aff1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Trigger">
+      <UniqueIdentifier>{c9e4aba0-4508-4241-bd68-bf73b9bde5af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Models\Ammo">
+      <UniqueIdentifier>{1d43b345-230b-4223-ae9c-69fc545fb1c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Models\Armor">
+      <UniqueIdentifier>{756f2734-9fa7-4b20-84d4-3ca113c06cf0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Models\Health">
+      <UniqueIdentifier>{41b29970-3ecb-45a2-933a-d5d661067a5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Models\Item">
+      <UniqueIdentifier>{5244bea8-f3ee-456a-ae94-a8ddcc16353d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Models\Weapon">
+      <UniqueIdentifier>{b4ccc65e-1eb6-4a15-9fd3-1fdee97213fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\World">
+      <UniqueIdentifier>{7a6f25d5-eb83-4248-9812-453472e9f9fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Games">
+      <UniqueIdentifier>{dcf55b06-fd20-4e50-9060-b567da12833c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Games\Actors">
+      <UniqueIdentifier>{b776f8ec-1190-4353-8f40-10d50a499331}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Graphics">
+      <UniqueIdentifier>{f3dd1eef-d36e-43a9-98b5-1070b2907757}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Graphics\GUI">
+      <UniqueIdentifier>{e22aeba6-6a79-4f6a-a6bb-f7e3b5e9551d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Games\Forms">
+      <UniqueIdentifier>{36330ecd-eb12-409a-97fd-fdd05eec4fb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Games\Forms\Menu">
+      <UniqueIdentifier>{61d4d556-1443-476d-903c-ec9f456a12b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Data">
+      <UniqueIdentifier>{ec183c9e-1e4f-4137-8ff7-cede4404924e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Assets\Sky">
+      <UniqueIdentifier>{c7c6b329-0c41-4f5c-abe1-352fe3ef1c6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\Editor">
+      <UniqueIdentifier>{8a5ad109-4b4b-4a0c-be00-893bab875ec6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\bleed.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\bulletexplosion.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\grenadeexplosion.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\lightningexplosion.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\lightningfire.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\plasmaexplosion.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\plasmagunfire.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\railexplosion.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\railgunfire.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\rocketexplosion.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\rocketlauncherfire.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Maps\bloodrun.xml">
+      <Filter>Quake\Assets\Maps</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Ammo\bullet.xml">
+      <Filter>Quake\Assets\Models\Ammo</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Ammo\cell.xml">
+      <Filter>Quake\Assets\Models\Ammo</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Ammo\grenade.xml">
+      <Filter>Quake\Assets\Models\Ammo</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Ammo\lightning.xml">
+      <Filter>Quake\Assets\Models\Ammo</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Ammo\rocket.xml">
+      <Filter>Quake\Assets\Models\Ammo</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Ammo\shell.xml">
+      <Filter>Quake\Assets\Models\Ammo</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Ammo\slug.xml">
+      <Filter>Quake\Assets\Models\Ammo</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Armor\armorbody.xml">
+      <Filter>Quake\Assets\Models\Armor</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Armor\armorcombat.xml">
+      <Filter>Quake\Assets\Models\Armor</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Armor\armorshard.xml">
+      <Filter>Quake\Assets\Models\Armor</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Health\health.xml">
+      <Filter>Quake\Assets\Models\Health</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Health\healthlarge.xml">
+      <Filter>Quake\Assets\Models\Health</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Health\healthmega.xml">
+      <Filter>Quake\Assets\Models\Health</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Health\healthsmall.xml">
+      <Filter>Quake\Assets\Models\Health</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Item\quad.xml">
+      <Filter>Quake\Assets\Models\Item</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\gaunlet.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\grenadelauncher.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\lightning.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\machinegun.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\plasmagun.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\railgun.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\rocketlauncher.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Models\Weapon\shotgun.xml">
+      <Filter>Quake\Assets\Models\Weapon</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Music\music.xml">
+      <Filter>Quake\Assets\Music</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Players\ai_player.xml">
+      <Filter>Quake\Assets\Players</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Players\player.xml">
+      <Filter>Quake\Assets\Players</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Players\remote_player.xml">
+      <Filter>Quake\Assets\Players</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Target\location.xml">
+      <Filter>Quake\Assets\Target</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Target\speaker.xml">
+      <Filter>Quake\Assets\Target</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Trigger\push.xml">
+      <Filter>Quake\Assets\Trigger</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Trigger\teleporter.xml">
+      <Filter>Quake\Assets\Trigger</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Sky\afternoon_sky.xml">
+      <Filter>Quake\Assets\Sky</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\World\Quake\Bloodrun.xml">
+      <Filter>Quake\Assets\World</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\grenadelauncherfire.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+    <Xml Include="..\..\..\Assets\Actors\Quake\Effects\rocketghostlauncherfire.xml">
+      <Filter>Quake\Assets\Effects</Filter>
+    </Xml>
+  </ItemGroup>
+</Project>

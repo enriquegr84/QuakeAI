@@ -1,0 +1,553 @@
+//========================================================================
+// QuakeAIView.cpp : AI Controller class
+//
+// Part of the GameEngine Application
+//
+// GameEngine is the sample application that encapsulates much of the source code
+// discussed in "Game Coding Complete - 4th Edition" by Mike McShaffry and David
+// "Rez" Graham, published by Charles River Media. 
+// ISBN-10: 1133776574 | ISBN-13: 978-1133776574
+//
+// If this source code has found it's way to you, and you think it has helped you
+// in any way, do the authors a favor and buy a new copy of the book - there are 
+// detailed explanations in it that compliment this code well. Buy a copy at Amazon.com
+// by clicking here: 
+//    http://www.amazon.com/gp/product/1133776574/ref=olp_product_details?ie=UTF8&me=&seller=
+//
+// There's a companion web site at http://www.mcshaffry.com/GameCode/
+// 
+// The source code is managed and maintained through Google Code: 
+//    http://code.google.com/p/GameEngine/
+//
+// (c) Copyright 2012 Michael L. McShaffry and David Graham
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser GPL v3
+// as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See 
+// http://www.gnu.org/licenses/lgpl-3.0.txt for more details.
+//
+// You should have received a copy of the GNU Lesser GPL v3
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
+//========================================================================
+
+#include "QuakeStd.h"
+
+#include "QuakePlayerController.h"
+#include "QuakeAIView.h"
+#include "QuakeEvents.h"
+#include "QuakeApp.h"
+#include "Quake.h"
+
+#include "Games/Actors/PushTrigger.h"
+#include "Games/Actors/TeleporterTrigger.h"
+
+#include "Core/OS/OS.h"
+#include "Core/Logger/Logger.h"
+#include "Core/Event/EventManager.h"
+
+#include "Physic/PhysicEventListener.h"
+
+#include "AI/AIManager.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// QuakeAIView::QuakeAIView
+//
+
+QuakeAIView::QuakeAIView()
+	: BaseGameView()
+{
+	mYaw = 0.0f;
+	mPitchTarget = 0.0f;
+
+	mOrientation = 1;
+	mStationaryTime = 0;
+
+	mMaxJumpSpeed = 3.4f;
+	mMaxFallSpeed = 240.0f;
+	mMaxRotateSpeed = 180.0f;
+	mMoveSpeed = 6.0f;
+	mJumpSpeed = 3.4f;
+	mJumpMoveSpeed = 10.0f;
+	mFallSpeed = 0.0f;
+	mRotateSpeed = 0.0f;
+
+	mViewId = INVALID_GAME_VIEW_ID;
+	mPlayerId = INVALID_ACTOR_ID;
+}
+
+//
+// QuakeAIView::~QuakeAIView
+//
+QuakeAIView::~QuakeAIView(void)
+{
+	//LogInformation("AI Destroying QuakeAIView");
+}
+
+//  class QuakeAIView::OnAttach
+void QuakeAIView::OnAttach(GameViewId vid, ActorId actorId)
+{
+	mViewId = vid;
+	mPlayerId = actorId;
+
+	mPathingGraph = GameLogic::Get()->GetAIManager()->GetPathingGraph();
+	std::shared_ptr<Actor> pGameActor(GameLogic::Get()->GetActor(mPlayerId).lock());
+	std::shared_ptr<TransformComponent> pTransformComponent(
+		pGameActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+	if (pTransformComponent)
+	{
+		EulerAngles<float> yawPitchRoll;
+		yawPitchRoll.mAxis[1] = 1;
+		yawPitchRoll.mAxis[2] = 2;
+		pTransformComponent->GetTransform().GetRotation(yawPitchRoll);
+
+		mPitchTarget = yawPitchRoll.mAngle[1] * (float)GE_C_RAD_TO_DEG;
+
+		mAbsoluteTransform.SetRotation(pTransformComponent->GetRotation());
+		mAbsoluteTransform.SetTranslation(pTransformComponent->GetPosition());
+	}
+}
+
+//Stationary movement
+void QuakeAIView::Stationary(unsigned long deltaMs)
+{
+	Vector3<float> position = mAbsoluteTransform.GetTranslation();
+	Matrix4x4<float> rotation = Rotation<4, float>(
+		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+
+	// This will give us the "look at" vector 
+	// in world space - we'll use that to move.
+	Vector4<float> atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+	atWorld = rotation * atWorld;
+#else
+	atWorld = atWorld * rotation;
+#endif
+
+	Vector3<float> scale =
+		GameLogic::Get()->GetGamePhysics()->GetScale(mPlayerId) / 2.f;
+
+	Transform start;
+	start.SetRotation(rotation);
+	start.SetTranslation(mAbsoluteTransform.GetTranslationW1() 
+		+ scale[2] * Vector4<float>::Unit(AXIS_Y));
+
+	Transform end;
+	end.SetRotation(rotation);
+	end.SetTranslation(mAbsoluteTransform.GetTranslationW1() +
+		atWorld * 500.f + scale[2] * Vector4<float>::Unit(AXIS_Y));
+
+	Vector3<float> collision, collisionNormal;
+	collision = end.GetTranslation();
+	ActorId actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
+		mPlayerId, start, end, collision, collisionNormal);
+	if (Length(collision - position) < 50.f)
+	{
+		mStationaryTime += deltaMs;
+		if (mStationaryTime > 100)
+		{
+			//Choose randomly which way too look for obstacles
+			int sign = Randomizer::Rand() % 2 ? 1 : -1;
+			mYaw += 130.f * sign;
+		}
+	}
+	else mStationaryTime = 0;
+}
+
+// Cliff control
+void QuakeAIView::Cliff()
+{
+	Matrix4x4<float> rotation = Rotation<4, float>(
+		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+
+	// This will give us the "look at" vector 
+	// in world space - we'll use that to move.
+	Vector4<float> atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+	atWorld = rotation * atWorld;
+#else
+	atWorld = atWorld * rotation;
+#endif
+
+	Vector3<float> position = HProject(
+		mAbsoluteTransform.GetTranslationW1() + atWorld * 10.f);
+
+	Transform start;
+	start.SetRotation(rotation);
+	start.SetTranslation(position);
+
+	Transform end;
+	end.SetRotation(rotation);
+	end.SetTranslation(mAbsoluteTransform.GetTranslationW1() + 
+		atWorld * 10.f - Vector4<float>::Unit(AXIS_Y) * 300.f);
+
+	Vector3<float> collision, collisionNormal;
+	collision = end.GetTranslation();
+	ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
+		start.GetTranslation(), end.GetTranslation(), collision, collisionNormal);
+
+	//Check whether we are close to a cliff
+	if (abs(collision[2] - position[2]) > 60.f)
+	{
+		//Choose randomly which way too look for getting out the cliff
+		int sign = Randomizer::Rand() % 2 ? 1 : -1;
+
+		// Smoothly turn 110º and check raycasting until we meet a minimum distance
+		for (int angle = 1; angle <= 110; angle++)
+		{
+			rotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y),
+				(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
+
+			atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+			atWorld = rotation * atWorld;
+#else
+			atWorld = atWorld * rotation;
+#endif
+
+			start.SetRotation(rotation);
+			end.SetRotation(rotation);
+			end.SetTranslation(mAbsoluteTransform.GetTranslationW1() +
+				atWorld * 100.f - Vector4<float>::Unit(AXIS_Y) * 300.f);
+
+			collision = end.GetTranslation();
+			ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
+				start.GetTranslation(), end.GetTranslation(), collision, collisionNormal);
+			if (abs(collision[2] - position[2]) <= 60.f)
+			{
+				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+				mYaw += angle * sign;
+				return;
+			}
+		}
+
+		//If we haven't find a way out we proceed exactly the same but in the opposite direction
+		sign *= -1;
+		for (int angle = 1; angle <= 110; angle++)
+		{
+			rotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y),
+				(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
+
+			atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+			atWorld = rotation * atWorld;
+#else
+			atWorld = atWorld * rotation;
+#endif
+
+			start.SetRotation(rotation);
+			end.SetRotation(rotation);
+			end.SetTranslation(mAbsoluteTransform.GetTranslationW1() +
+				atWorld * 100.f - Vector4<float>::Unit(AXIS_Y) * 300.f);
+
+			collision = end.GetTranslation();
+			ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
+				start.GetTranslation(), end.GetTranslation(), collision, collisionNormal);
+			if (abs(collision[2] - position[2]) <= 60.f)
+			{
+				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+				mYaw += angle * sign;
+				return;
+			}
+		}
+
+		//if we couldnt find any way out then we make a hard turn
+		mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+		mYaw += 130.f * sign;
+	}
+}
+
+//Smooth movement
+void QuakeAIView::Smooth(unsigned long deltaMs)
+{
+	Vector3<float> position = mAbsoluteTransform.GetTranslation();
+	Matrix4x4<float> rotation = Rotation<4, float>(
+		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+
+	// This will give us the "look at" vector 
+	// in world space - we'll use that to move.
+	Vector4<float> atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+	atWorld = rotation * atWorld;
+#else
+	atWorld = atWorld * rotation;
+#endif
+
+	Vector3<float> scale = 
+		GameLogic::Get()->GetGamePhysics()->GetScale(mPlayerId) / 2.f;
+
+	Transform start;
+	start.SetRotation(rotation);
+	start.SetTranslation(mAbsoluteTransform.GetTranslationW1() 
+		+ scale[2] * Vector4<float>::Unit(AXIS_Y));
+
+	Transform end;
+	end.SetRotation(rotation);
+	end.SetTranslation(mAbsoluteTransform.GetTranslationW1() + 
+		atWorld * 500.f + scale[2] * Vector4<float>::Unit(AXIS_Y));
+
+	Vector3<float> collision, collisionNormal;
+	collision = end.GetTranslation();
+	ActorId actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
+		mPlayerId, start, end, collision, collisionNormal);
+	if (Length(collision - position) < 80.f)
+	{
+		//Choose randomly which way too look for obstacles
+		int sign = Randomizer::Rand() % 2 ? 1 : -1;
+
+		// Smoothly turn 90º and check raycasting until we meet a minimum distance
+		for (int angle = 1; angle <= 90; angle++)
+		{
+			rotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y),
+				(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
+
+			atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+			atWorld = rotation * atWorld;
+#else
+			atWorld = atWorld * rotation;
+#endif
+
+			start.SetRotation(rotation);
+			end.SetRotation(rotation);
+			end.SetTranslation(mAbsoluteTransform.GetTranslationW1() + 
+				atWorld * 500.f + scale[2] * Vector4<float>::Unit(AXIS_Y));
+
+			collision = end.GetTranslation();
+			actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
+				mPlayerId, start, end, collision, collisionNormal);
+			if (Length(collision - position) > 80.f)
+			{
+				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+				mYaw += angle * sign;
+				return;
+			}
+		}
+
+		//If we haven't find a way out we proceed exactly the same but in the opposite direction
+		sign *= -1;
+		for (int angle = 1; angle <= 90; angle++)
+		{
+			rotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y),
+				(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
+
+			atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+			atWorld = rotation * atWorld;
+#else
+			atWorld = atWorld * rotation;
+#endif
+
+			start.SetRotation(rotation);
+			end.SetRotation(rotation);
+			end.SetTranslation(mAbsoluteTransform.GetTranslationW1() + 
+				atWorld * 500.f + scale[2] * Vector4<float>::Unit(AXIS_Y));
+
+			collision = end.GetTranslation();
+			actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
+				mPlayerId, start, end, collision, collisionNormal);
+			if (Length(collision - position) > 80.f)
+			{
+				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+				mYaw += angle * sign;
+				return;
+			}
+		}
+
+		//if we couldnt find any way out the stationary function will take care of it.
+		mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+	}
+	else
+	{
+		mYaw += 0.03f * deltaMs * mOrientation;
+	}
+}
+
+
+//  class QuakeAIView::OnUpdate			- Chapter 10, page 283
+void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
+{
+	return; 
+
+	std::shared_ptr<PlayerActor> pPlayerActor(
+		std::dynamic_pointer_cast<PlayerActor>(
+		GameLogic::Get()->GetActor(mPlayerId).lock()));
+	if (!pPlayerActor) return;
+
+	std::shared_ptr<TransformComponent> pTransformComponent(
+		pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+	if (pTransformComponent)
+	{
+		if (pPlayerActor->GetAction().triggerTeleporter != INVALID_ACTOR_ID)
+		{
+			std::shared_ptr<Actor> pItemActor(
+				std::dynamic_pointer_cast<Actor>(
+				GameLogic::Get()->GetActor(pPlayerActor->GetAction().triggerTeleporter).lock()));
+			std::shared_ptr<TeleporterTrigger> pTeleporterTrigger =
+				pItemActor->GetComponent<TeleporterTrigger>(TeleporterTrigger::Name).lock();
+
+			EulerAngles<float> yawPitchRoll;
+			yawPitchRoll.mAxis[1] = 1;
+			yawPitchRoll.mAxis[2] = 2;
+			pTeleporterTrigger->GetTarget().GetRotation(yawPitchRoll);
+			mYaw = yawPitchRoll.mAngle[2] * (float)GE_C_RAD_TO_DEG;
+			mPitchTarget = -yawPitchRoll.mAngle[1] * (float)GE_C_RAD_TO_DEG;
+
+			EventManager::Get()->TriggerEvent(
+				std::make_shared<QuakeEventDataTeleportActor>(mPlayerId));
+		}
+		else
+		{
+			std::shared_ptr<PhysicComponent> pPhysicComponent(
+				pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+			if (pPhysicComponent)
+			{
+				pPlayerActor->GetAction().actionType = 0;
+				pPlayerActor->GetAction().actionType |= ACTION_MOVEFORWARD;
+
+				Vector4<float> velocity = Vector4<float>::Zero();
+				if (pPhysicComponent->OnGround())
+				{
+					mFallSpeed = 0.0f;
+
+					if (pPlayerActor->GetAction().triggerPush != INVALID_ACTOR_ID)
+					{
+						float push;
+						Vector3<float> direction;
+						std::shared_ptr<Actor> pItemActor(
+							std::dynamic_pointer_cast<Actor>(
+							GameLogic::Get()->GetActor(pPlayerActor->GetAction().triggerPush).lock()));
+						std::shared_ptr<PushTrigger> pPushTrigger =
+							pItemActor->GetComponent<PushTrigger>(PushTrigger::Name).lock();
+
+						Vector3<float> targetPosition = pPushTrigger->GetTarget().GetTranslation();
+						Vector3<float> playerPosition = pTransformComponent->GetPosition();
+						direction = targetPosition - playerPosition;
+						push = Length(direction);
+						Normalize(direction);
+
+						direction[0] *= push / 90.f;
+						direction[1] *= push / 90.f;
+						direction[2] = push / 30.f;
+						velocity = HLift(direction, 0.f);
+
+						pPlayerActor->GetAction().actionType |= ACTION_JUMP;
+					}
+					else
+					{
+						mPitchTarget = 0.f;
+						mPitchTarget = std::max(-85.f, std::min(85.f, mPitchTarget));
+						mPitch = 90 * ((mPitchTarget + 85.f) / 170.f) - 45.f;
+
+						Stationary(deltaMs);
+						Smooth(deltaMs);
+						Cliff();
+
+						// Calculate the new rotation matrix from the camera
+						// yaw and pitch (zrotate and xrotate).
+						Matrix4x4<float> yawRotation = Rotation<4, float>(
+							AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+						Matrix4x4<float> rotation = yawRotation;
+						Matrix4x4<float> pitchRotation = Rotation<4, float>(
+							AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), mPitch * (float)GE_C_DEG_TO_RAD));
+
+						mAbsoluteTransform.SetRotation(yawRotation * pitchRotation);
+						mAbsoluteTransform.SetTranslation(pTransformComponent->GetPosition());
+
+						// This will give us the "look at" vector 
+						// in world space - we'll use that to move.
+						Vector4<float> atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+						atWorld = rotation * atWorld;
+#else
+						atWorld = atWorld * rotation;
+#endif
+						Normalize(atWorld);
+
+						if (pPlayerActor->GetAction().actionType & ACTION_JUMP)
+						{
+							Vector4<float> upWorld = Vector4<float>::Unit(AXIS_Y);
+							Vector4<float> direction = atWorld + upWorld;
+							Normalize(direction);
+
+							direction[0] *= mJumpMoveSpeed;
+							direction[1] *= mJumpMoveSpeed;
+							direction[2] *= mJumpSpeed;
+							velocity = direction;
+						}
+						else
+						{
+							atWorld *= mMoveSpeed;
+							velocity = atWorld;
+						}
+
+						// update node rotation matrix
+						pitchRotation = Rotation<4, float>(
+							AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), mPitchTarget * (float)GE_C_DEG_TO_RAD));
+						pTransformComponent->SetRotation(yawRotation * pitchRotation);
+					}
+					pPlayerActor->GetAction().actionType |= ACTION_RUN;
+				}
+				else
+				{
+					mFallSpeed += deltaMs / (pPhysicComponent->GetJumpSpeed() * 0.5f);
+					if (mFallSpeed > mMaxFallSpeed) mFallSpeed = mMaxFallSpeed;
+
+					// Calculate the new rotation matrix from the camera
+					// yaw and pitch (zrotate and xrotate).
+					Matrix4x4<float> yawRotation = Rotation<4, float>(
+						AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+					Matrix4x4<float> rotation = yawRotation;
+					Matrix4x4<float> pitchRotation = Rotation<4, float>(
+						AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), mPitch * (float)GE_C_DEG_TO_RAD));
+
+					// This will give us the "look at" vector 
+					// in world space - we'll use that to move.
+					Vector4<float> atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+					atWorld = rotation * atWorld;
+#else
+					atWorld = atWorld * rotation;
+#endif
+					Normalize(atWorld);
+
+					Vector4<float> upWorld = -Vector4<float>::Unit(AXIS_Y);
+					Vector4<float> direction = atWorld + upWorld;
+					Normalize(direction);
+
+					direction[0] *= pPhysicComponent->GetJumpSpeed() * (mFallSpeed / 4.f);
+					direction[1] *= pPhysicComponent->GetJumpSpeed() * (mFallSpeed / 4.f);
+					direction[2] = -pPhysicComponent->GetJumpSpeed() * mFallSpeed;
+					velocity = direction;
+
+					pPlayerActor->GetAction().actionType |= ACTION_FALLEN;
+				}
+
+				if (pPlayerActor->GetState().moveType == PM_DEAD)
+				{
+					pPlayerActor->PlayerSpawn();
+					pPlayerActor->GetAction().actionType = 0;
+				}
+				else
+				{
+					EventManager::Get()->TriggerEvent(
+						std::make_shared<QuakeEventDataRotateActor>(mPlayerId, mAbsoluteTransform));
+
+					pPlayerActor->UpdateTimers(deltaMs);
+					pPlayerActor->UpdateWeapon(deltaMs);
+					pPlayerActor->UpdateMovement(HProject(velocity));
+				}
+			}
+		}
+	}
+}

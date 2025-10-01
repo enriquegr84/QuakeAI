@@ -1,0 +1,86 @@
+//========================================================================
+// QuakeEvents.cpp : defines game-specific events for Quake
+//
+// Part of the GameEngine Application
+//
+// GameEngine is the sample application that encapsulates much of the source code
+// discussed in "Game Coding Complete - 4th Edition" by Mike McShaffry and David
+// "Rez" Graham, published by Charles River Media. 
+// ISBN-10: 1133776574 | ISBN-13: 978-1133776574
+//
+// If this source code has found it's way to you, and you think it has helped you
+// in any way, do the authors a favor and buy a new copy of the book - there are 
+// detailed explanations in it that compliment this code well. Buy a copy at Amazon.com
+// by clicking here: 
+//    http://www.amazon.com/gp/product/1133776574/ref=olp_product_details?ie=UTF8&me=&seller=
+//
+// There's a companion web site at http://www.mcshaffry.com/GameCode/
+// 
+// The source code is managed and maintained through Google Code: 
+//    http://code.google.com/p/GameEngine/
+//
+// (c) Copyright 2012 Michael L. McShaffry and David Graham
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser GPL v3
+// as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See 
+// http://www.gnu.org/licenses/lgpl-3.0.txt for more details.
+//
+// You should have received a copy of the GNU Lesser GPL v3
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
+//========================================================================
+
+#include "QuakeStd.h"
+#include "QuakeEvents.h"
+
+const BaseEventType QuakeEventDataDeleteContentStore::skEventType(0xb2324eb2);
+const BaseEventType QuakeEventDataOpenContentStore::skEventType(0x7f6e1d09);
+const BaseEventType QuakeEventDataOpenGameSelection::skEventType(0x9f4c3871);
+const BaseEventType QuakeEventDataChangeGameSelection::skEventType(0xa0d1e6d9);
+
+const BaseEventType QuakeEventDataShowForm::skEventType(0xb1753432);
+
+const BaseEventType QuakeEventDataInitChat::skEventType(0xe44a7188);
+const BaseEventType QuakeEventDataUpdateChat::skEventType(0xd9aeb777);
+
+const BaseEventType QuakeEventDataGameInit::skEventType(0xa88b0c6);
+const BaseEventType QuakeEventDataGameReady::skEventType(0x2186f971);
+
+const BaseEventType QuakeEventDataPlaySoundAt::skEventType(0xc4d06192);
+const BaseEventType QuakeEventDataPlaySoundType::skEventType(0x2693bb0d);
+const BaseEventType QuakeEventDataStopSound::skEventType(0x56266141);
+const BaseEventType QuakeEventDataFadeSound::skEventType(0xd5ded2b6);
+const BaseEventType QuakeEventDataRemoveSounds::skEventType(0xbbdd20a1);
+
+const BaseEventType QuakeEventDataChangeVolume::skEventType(0xf968e78c);
+const BaseEventType QuakeEventDataChangeMenu::skEventType(0x413d0bf5);
+
+const BaseEventType QuakeEventDataHandleMedia::skEventType(0x7d84febb);
+
+const BaseEventType QuakeEventDataFireWeapon::skEventType(0x1b15b6a7);
+const BaseEventType QuakeEventDataChangeWeapon::skEventType(0xcee385cc);
+
+const BaseEventType QuakeEventDataSplashDamage::skEventType(0x23e5bdcb);
+const BaseEventType QuakeEventDataDeadActor::skEventType(0xaf50e7db);
+const BaseEventType QuakeEventDataTeleportActor::skEventType(0xe2a39f17);
+const BaseEventType QuakeEventDataSpawnActor::skEventType(0x92f851da);
+const BaseEventType QuakeEventDataPushActor::skEventType(0x47fda8e7);
+const BaseEventType QuakeEventDataJumpActor::skEventType(0xfeee009e);
+const BaseEventType QuakeEventDataMoveActor::skEventType(0xeeaa0a40);
+const BaseEventType QuakeEventDataFallActor::skEventType(0x47d33df3);
+const BaseEventType QuakeEventDataRotateActor::skEventType(0xed6973fe);
+
+const BaseEventType QuakeEventDataGameplayUIUpdate::skEventType(0x1002ded2);
+const BaseEventType QuakeEventDataSetControlledActor::skEventType(0xbe5e3388);
+
+const BaseEventType QuakeEventDataHudAdd::skEventType(0x13d927ac);
+const BaseEventType QuakeEventDataHudRemove::skEventType(0x78cd485f);
+const BaseEventType QuakeEventDataHudChange::skEventType(0xf16a289a);
+const BaseEventType QuakeEventDataHudSetFlags::skEventType(0x81b9f248);
+const BaseEventType QuakeEventDataHudSetParam::skEventType(0xa5c1b5b0);

@@ -1,0 +1,503 @@
+// Copyright (C) 2002-2012 Nikolaus Gebhardt / Thomas Alten
+// This file is part of the "Irrlicht Engine".
+// For conditions of distribution and use, see copyright notice in irrlicht.h
+
+#ifndef MESHMD3_H
+#define MESHMD3_H
+
+#include "Graphic/Scene/Mesh/Mesh.h"
+
+#include "Mathematic/Algebra/Rotation.h"
+
+// include this file right before the data structures to be 1-aligned
+// and add to each structure the PACK_STRUCT define just like this:
+// struct mystruct
+// {
+//	...
+// } PACK_STRUCT;
+// Always declare unpack right after the last type declared
+// like this, and do not put any other types with different alignment
+// in between!
+
+// byte-align structures
+#if defined(_MSC_VER) || defined(__BORLANDC__) || defined (__BCPLUSPLUS__)
+#	pragma warning(disable: 4103)
+#	pragma pack( push, packing )
+#	pragma pack( 1 )
+#	define PACK_STRUCT
+#elif defined( __DMC__ )
+#	pragma pack( push, 1 )
+#	define PACK_STRUCT
+#elif defined( __GNUC__ )
+// Using pragma pack might work with earlier gcc versions already, but
+// it started to be necessary with gcc 4.7 on mingw unless compiled with -mno-ms-bitfields.
+// And I found some hints on the web that older gcc versions on the other hand had sometimes
+// trouble with pragma pack while they worked with __attribute__((packed)).
+#	if (__GNUC__ > 4 ) || ((__GNUC__ == 4 ) && (__GNUC_MINOR__ >= 7))
+#		pragma pack( push, packing )
+#		pragma pack( 1 )
+#		define PACK_STRUCT
+#	else
+#		define PACK_STRUCT	__attribute__((packed))
+#endif
+#else
+#	error compiler not supported
+#endif
+
+// master scale factor for all vertices in a MD3 model
+#define MD3_XYZ_SCALE        (1.0f/64.0f)
+
+//! this holds the header info of the MD3 file
+struct MD3Header
+{
+	char headerID[4];	//id of file, always "IDP3"
+	unsigned int	version;	//this is a version number, always 15
+	char fileName[68];	//sometimes left Blank... 65 chars, 32bit aligned == 68 chars
+	int	numFrames;	//number of KeyFrames
+	unsigned int	numTags;	//number of 'tags' per frame
+	unsigned int	numMeshes;	//number of meshes/skins
+	unsigned int	numMaxSkins;	//maximum number of unique skins used in md3 file. artefact md2
+	unsigned int	frameStart;	//starting position of frame-structur
+	unsigned int	tagStart;	//starting position of tag-structures
+	unsigned int	tagEnd;		//ending position of tag-structures/starting position of mesh-structures
+	unsigned int	fileSize;
+} PACK_STRUCT;
+
+//! this holds the header info of an MD3 mesh section
+struct MD3MeshHeader
+{
+	char meshID[4];		//id, must be IDP3
+	char meshName[68];	//name of mesh 65 chars, 32 bit aligned == 68 chars
+
+	unsigned int numFrames;		//number of meshframes in mesh
+	unsigned int numShader;		//number of skins in mesh
+	unsigned int numVertices;	//number of vertices
+	unsigned int numTriangles;	//number of Triangles
+
+	unsigned int offsetTriangles;	//starting position of Triangle data, relative to start of Mesh_Header
+	unsigned int offsetShaders;	//size of header
+	unsigned int offsetSt;		//starting position of texvector data, relative to start of Mesh_Header
+	unsigned int vertexStart;	//starting position of vertex data,relative to start of Mesh_Header
+	int offsetEnd;
+} PACK_STRUCT;
+
+//! Compressed Vertex Data
+struct MD3Vertex
+{
+	short position[3];
+	unsigned short normal;
+} PACK_STRUCT;
+
+//! Texture Coordinate
+struct MD3TexCoord
+{
+	float u;
+	float v;
+} PACK_STRUCT;
+
+//! Triangle Index
+struct MD3Face
+{
+	int index[3];
+} PACK_STRUCT;
+
+//! An attachment point for another MD3 model.
+struct MD3Tag
+{
+	char name[64];		//name of 'tag' as it's usually called in the md3 files 
+						//try to see it as a sub-mesh/seperate mesh-part.
+	float position[3];	//relative position of tag
+	float rotation[9];	//3x3 rotation direction of tag
+} PACK_STRUCT;
+
+// Default alignment
+#if defined(_MSC_VER) || defined(__BORLANDC__) || defined (__BCPLUSPLUS__)
+#	pragma pack( pop, packing )
+#elif defined (__DMC__)
+#	pragma pack( pop )
+#elif defined( __GNUC__ )
+#   if (__GNUC__ > 4 ) || ((__GNUC__ == 4 ) && (__GNUC_MINOR__ >= 7))
+#	    pragma pack( pop, packing )
+#   endif
+#endif
+
+#undef PACK_STRUCT
+
+enum MD3Model
+{
+	MD3_HEAD = 0,
+	MD3_UPPER,
+	MD3_LOWER,
+	MD3_WEAPON,
+	MD3_NUMMODELS
+};
+
+struct AnimationData
+{
+	AnimationData() : mAnimationType(0), 
+		mBeginFrame(0), mEndFrame(0), mLoopFrame(0), mFramesPerSecond(0.f)
+	{
+
+	}
+
+	int mBeginFrame;
+	int mEndFrame;
+	int mLoopFrame;
+	float mFramesPerSecond;
+	int mAnimationType;
+};
+
+//! Holding Frame Data for a Mesh
+struct MD3MeshBuffer
+{
+	MD3MeshHeader mMeshHeader;
+
+	std::vector<MD3Face> mFaces;
+	std::vector<MD3TexCoord> mTexCoords;
+	std::vector<Vector3<float>> mNormals;
+	std::vector<Vector3<float>> mPositions;
+};
+
+//! hold a tag info for connecting meshes
+/** Basically its an alternate way to describe a transformation. */
+struct MD3QuaternionTag
+{
+	virtual ~MD3QuaternionTag()
+	{
+		mPosition[0] = 0.f;
+	}
+
+	// construct copy constructor
+	MD3QuaternionTag(const MD3QuaternionTag & copyMe)
+	{
+		*this = copyMe;
+	}
+
+	// default constructor
+	MD3QuaternionTag() {}
+
+	// construct for searching
+	MD3QuaternionTag(const std::string& name)
+		: mName(name) 
+	{
+	
+	}
+
+	// construct from a position and euler angles in degrees
+	MD3QuaternionTag(const Vector3<float> &pos, Vector3<float> &angle)
+		: mPosition(pos)
+	{
+		mRotation = Quaternion<float>(HLift(angle * (float)GE_C_DEG_TO_RAD, 0.f));
+	}
+
+	// set to matrix
+	void Setto(Matrix4x4<float> &m)
+	{
+		m = Matrix4x4<float>(Rotation<4, float>(mRotation));
+		m.SetRow(3, HLift(mPosition, 0.f));
+	}
+
+	bool operator == (const MD3QuaternionTag &other) const
+	{
+		return mName == other.mName;
+	}
+
+	MD3QuaternionTag & operator=(const MD3QuaternionTag & copyMe)
+	{
+		mName = copyMe.mName;
+		mPosition = copyMe.mPosition;
+		mRotation = copyMe.mRotation;
+		return *this;
+	}
+
+	std::string mName;
+	Vector3<float> mPosition;
+	Quaternion<float> mRotation;
+};
+
+//! holds a associative list of named quaternions
+struct MD3QuaternionTagList
+{
+	MD3QuaternionTagList()
+	{
+	}
+
+	// construct copy constructor
+	MD3QuaternionTagList(const MD3QuaternionTagList& copyMe)
+	{
+		*this = copyMe;
+	}
+
+	virtual ~MD3QuaternionTagList() {}
+
+	size_t Size() const
+	{
+		return mContainer.size();
+	}
+
+	const MD3QuaternionTag& operator[](unsigned int index) const
+	{
+		return mContainer[index];
+	}
+
+	MD3QuaternionTag& operator[](unsigned int index)
+	{
+		return mContainer[index];
+	}
+
+	void Pushback(const MD3QuaternionTag& other)
+	{
+		mContainer.push_back(other);
+	}
+
+	MD3QuaternionTagList& operator = (const MD3QuaternionTagList & copyMe)
+	{
+		mContainer = copyMe.mContainer;
+		return *this;
+	}
+
+private:
+	std::vector<MD3QuaternionTag> mContainer;
+};
+
+// Forward declarations
+class MD3Mesh;
+
+typedef std::vector<std::shared_ptr<MD3Mesh>> MD3MeshList;
+
+//! md3 mesh data
+class MD3Mesh : public std::enable_shared_from_this<MD3Mesh>
+{
+public:
+	MD3Mesh() : mInterPolShift(0), mLoopMode(0), mParent(nullptr), mMeshRender(true),
+		mNumTags(0), mNumFrames(0), mCurrentFrame(0), mCurrentAnimation(0)
+	{
+
+	}
+
+	MD3Mesh(std::string name) : 
+		mName(name), mInterPolShift(0), mLoopMode(0), mParent(nullptr), mMeshRender(true),
+		mNumTags(0), mNumFrames(0), mCurrentFrame(0), mCurrentAnimation(0)
+	{
+
+	}
+
+	virtual ~MD3Mesh()
+	{
+		mBufferInterpol.clear();
+
+		// delete all children
+		DetachAllChildren();
+	}
+
+	void SetInterpolationShift(unsigned int shift, unsigned int loopMode);
+
+	// MD3 Mesh
+	std::string GetName() { return mName; }
+
+	std::shared_ptr<MD3Mesh> GetRootMesh();
+	std::shared_ptr<MD3Mesh> GetMesh(std::string meshName);
+	void GetMeshes(std::vector<std::shared_ptr<MD3Mesh>>& meshes);
+
+	bool UpdateMesh(int frame, int detailLevel, int startFrameLoop, int endFrameLoop);
+	std::shared_ptr<MD3Mesh> CreateMesh(std::string parentMesh, std::string newMesh);
+
+	std::shared_ptr<MD3Mesh> GetParent() { return mParent; }
+	void SetParent(std::shared_ptr<MD3Mesh> parent){ mParent = parent; }
+
+	int AttachChild(std::shared_ptr<MD3Mesh> const& child);
+	int DetachChild(std::shared_ptr<MD3Mesh> const& child);
+	std::shared_ptr<MD3Mesh> DetachChildAt(int i);
+	void DetachAllChildren();
+
+	MD3MeshList& GetChildren() { return mChildren; }
+
+	//! returns amount of mesh buffers.
+	size_t GetMeshBufferCount() const;
+
+	//! returns pointer to a mesh buffer
+	std::shared_ptr<BaseMeshBuffer> GetMeshBuffer(unsigned int nr) const;
+
+	//! Returns pointer to a mesh buffer which fits a material
+	std::shared_ptr<BaseMeshBuffer> GetMeshBuffer(const Material &material) const;
+
+	//! Adds a new meshbuffer to the mesh, access it as last one
+	void AddMeshBuffer(BaseMeshBuffer* meshBuffer);
+
+	std::shared_ptr<MeshBuffer> CreateMeshBuffer(const std::shared_ptr<MD3MeshBuffer>& source);
+
+    //! Returns an axis aligned bounding box of the mesh.
+    /** \return A bounding box of this mesh is returned. */
+    virtual BoundingBox<float>& GetBoundingBox();
+
+	void BuildFrameNr(bool loop, unsigned int timeMs);
+	void BuildVertexArray(unsigned int meshId, unsigned int frameA, unsigned int frameB, float interpolate);
+	void BuildTagArray(unsigned int frameA, unsigned int frameB, float interpolate);
+
+    //! recalculates the bounding box
+    void RecalculateBoundingBox();
+
+	//! tags
+	bool IsTagMesh();
+	MD3QuaternionTag& GetTagInterpolation();
+	std::shared_ptr<MD3Mesh> GetTagMesh(std::string tagName);
+
+	//! rendering
+	void SetRenderMesh(bool render);
+	bool IsRenderMesh() { return mMeshRender; }
+
+	//! animations
+	float GetCurrentFrame() { return mCurrentFrame; }
+	void SetCurrentFrame(float currentFrame) { mCurrentFrame = currentFrame; }
+	void SetCurrentAnimation( unsigned int currentAnim) { mCurrentAnimation = currentAnim; }
+	unsigned int GetCurrentAnimation() { return mCurrentAnimation; }
+	size_t GetAnimationCount();
+	AnimationData& GetAnimation(unsigned int nr);
+	void AddAnimation(AnimationData& animation);
+
+	//! model
+	bool LoadModel(std::wstring& path);
+
+protected:
+
+	inline unsigned int Conditional(const int condition, const unsigned int a, const unsigned int b)
+	{
+		return ((-condition >> 31) & (a ^ b)) ^ b;
+	}
+
+	// -------------------------------------------------------------------------------
+	/** @brief
+	*  @param iNormal Input normal vector in latitude/longitude form
+	*  @param afOut Pointer to an array of three floats to receive the result
+	*/
+	inline void LatLngNormalToVec3(short iNormal, float* afOut)
+	{
+		float lat = (float)((iNormal >> 8u) & 0xff);
+		float lng = (float)((iNormal & 0xff));
+		const float invVal(float(1.0) / float(128.0));
+		lat *= float(GE_C_PI) * invVal;
+		lng *= float(GE_C_PI) * invVal;
+
+		afOut[0] = cos(lat) * sin(lng);
+		afOut[1] = sin(lat) * sin(lng);
+		afOut[2] = cos(lng);
+	}
+
+private:
+
+	std::string mName;
+	MD3MeshList mChildren;
+	std::shared_ptr<MD3Mesh> mParent;
+
+	//! Cache Animation Info
+	struct CacheAnimationInfo
+	{
+		CacheAnimationInfo(int frame = -1, int start = -1, int end = -1) :
+			mFrame(frame), mStartFrameLoop(start), mEndFrameLoop(end)
+		{
+
+		}
+
+		bool operator == (const CacheAnimationInfo &other) const
+		{
+			return 0 == memcmp(this, &other, sizeof(CacheAnimationInfo));
+		}
+		int mFrame;				// The current index into animations 
+		int mStartFrameLoop;	// The start index into animations 
+		int mEndFrameLoop;		// The end index into animations 
+	};
+	CacheAnimationInfo mCurrent;
+	unsigned int mCurrentAnimation;
+	std::vector<AnimationData> mAnimations;
+
+	int mNumFrames;
+	float mCurrentFrame;
+
+	unsigned int mLoopMode;
+	unsigned int mInterPolShift;	// The next frame of animation to interpolate too
+	bool mMeshRender;	// activate renderization of the mesh
+
+	//! tag data
+	unsigned int mNumTags;
+	MD3QuaternionTagList mTags;
+	MD3QuaternionTag mTagInterpol;
+
+    //! The bounding box of this mesh
+    BoundingBox<float> mBoundingBox;
+
+	std::vector<std::shared_ptr<MD3MeshBuffer>> mBuffer;
+	std::vector<std::shared_ptr<MeshBuffer>> mBufferInterpol;
+};
+
+class AnimateMeshMD3 : public BaseAnimatedMesh
+{
+public:
+
+	//! constructor
+	AnimateMeshMD3();
+
+	//! destructor
+	virtual ~AnimateMeshMD3();
+
+	virtual std::shared_ptr<BaseMesh> GetMesh(
+		int frame, int detailLevel, int startFrameLoop, int endFrameLoop);
+
+	virtual MeshType GetMeshType() const;
+
+	//! returns amount of mesh buffers.
+	virtual size_t GetMeshBufferCount() const;
+
+	//! returns pointer to a mesh buffer
+	virtual std::shared_ptr<BaseMeshBuffer> GetMeshBuffer(unsigned int nr) const;
+
+	//! Returns pointer to a mesh buffer which fits a material
+	virtual std::shared_ptr<BaseMeshBuffer> GetMeshBuffer(const Material &material) const;
+
+	//! Adds a new meshbuffer to the mesh, access it as last one
+	void AddMeshBuffer(BaseMeshBuffer* meshBuffer);
+
+	void SetMD3Mesh(std::shared_ptr<MD3Mesh>& md3Mesh)
+	{
+		mRootMesh = md3Mesh;
+	}
+
+	std::shared_ptr<MD3Mesh> GetMD3Mesh() const
+	{
+		return mRootMesh;
+	}
+
+	std::shared_ptr<MD3Mesh> GetMD3Mesh(std::string meshName) const
+	{
+		return mRootMesh->GetMesh(meshName);
+	}
+
+    virtual BoundingBox<float>& GetBoundingBox()
+    {
+        return mRootMesh->GetBoundingBox();
+    }
+
+	//! Gets the default animation speed of the animated mesh.
+	/** \return Amount of frames per second. If the amount is 0, it is a static, non animated mesh. */
+	virtual float GetAnimationSpeed() const
+	{
+		return mFramesPerSecond;
+	}
+
+	/** \param fps Frames per second to play the animation with. If the amount is 0, it is not animated.
+	The actual speed is set in the scene node the mesh is instantiated in.*/
+	virtual void SetAnimationSpeed(float fps)
+	{
+		mFramesPerSecond = fps;
+	}
+
+	//! Gets the frame count of the animated mesh.
+	virtual size_t GetFrameCount() const;
+
+private:
+
+	float mFramesPerSecond;
+	std::shared_ptr<MD3Mesh> mRootMesh;
+};
+
+#endif
+

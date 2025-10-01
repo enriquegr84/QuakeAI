@@ -1,0 +1,264 @@
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
+// This file is part of the "Irrlicht Engine".
+// For conditions of distribution and use, see copyright notice in irrlicht.h
+
+#include "BoxNode.h"
+
+#include "Graphic/Renderer/Renderer.h"
+#include "Graphic/Scene/Scene.h"
+
+//#include "Scenes/Mesh/MeshBuffer.h"
+
+//! constructor
+BoxNode::BoxNode(const ActorId actorId, PVWUpdater* updater,
+	const std::shared_ptr<Texture2>& texture, Vector2<float> texScale, Vector3<float> size)
+	:	Node(actorId, NT_BOX), mSize(size), mShadow(0)
+{
+	mPVWUpdater = updater;
+
+	mBlendState = std::make_shared<BlendState>();
+	mDepthStencilState = std::make_shared<DepthStencilState>();
+	mRasterizerState = std::make_shared<RasterizerState>();
+
+	struct Vertex
+	{
+		Vector3<float> position;
+		Vector2<float> tcoord;
+		Vector3<float> normal;
+	};
+	VertexFormat vformat;
+	vformat.Bind(VA_POSITION, DF_R32G32B32_FLOAT, 0);
+	vformat.Bind(VA_TEXCOORD, DF_R32G32_FLOAT, 0);
+	vformat.Bind(VA_NORMAL, DF_R32G32B32_FLOAT, 0);
+
+	MeshFactory mf;
+	mf.SetVertexFormat(vformat);
+	mf.SetVertexBufferUsage(Resource::DYNAMIC_UPDATE);
+	mVisual = mf.CreateBox(mSize[0], mSize[1], mSize[2]);
+
+	// Multiply the texture coordinates by a factor to enhance the wrap-around.
+	std::shared_ptr<VertexBuffer> vbuffer = mVisual->GetVertexBuffer();
+	unsigned int numVertices = vbuffer->GetNumElements();
+	Vertex* vertex = vbuffer->Get<Vertex>();
+	for (unsigned int i = 0; i < numVertices; ++i)
+	{
+		vertex[i].tcoord[0] *= texScale[0];
+		vertex[i].tcoord[1] *= texScale[1];
+	}
+
+	// Create the visual effect.  The world up-direction is (0,1,0).  Choose
+	// the light to point down.
+	mMaterial = std::make_shared<Material>();
+	mMaterial->mEmissive = { 0.0f, 0.0f, 0.0f, 1.0f };
+	mMaterial->mAmbient = { 0.5f, 0.5f, 0.5f, 1.0f };
+	mMaterial->mDiffuse = { 0.5f, 0.5f, 0.5f, 1.0f };
+	mMaterial->mSpecular = { 1.0f, 1.0f, 1.0f, 0.75f };
+
+	std::shared_ptr<Lighting> lighting = std::make_shared<Lighting>();
+	std::shared_ptr<LightCameraGeometry> geometry = std::make_shared<LightCameraGeometry>();
+
+	std::vector<std::string> path;
+#if defined(_OPENGL_)
+	path.push_back("Effects/PointLightTextureEffectVS.glsl");
+	path.push_back("Effects/PointLightTextureEffectPS.glsl");
+#else
+	path.push_back("Effects/PointLightTextureEffectVS.hlsl");
+	path.push_back("Effects/PointLightTextureEffectPS.hlsl");
+#endif
+	std::shared_ptr<ResHandle> resHandle =
+		ResCache::Get()->GetHandle(&BaseResource(ToWideString(path.front())));
+
+	const std::shared_ptr<ShaderResourceExtraData>& extra =
+		std::static_pointer_cast<ShaderResourceExtraData>(resHandle->GetExtra());
+	if (!extra->GetProgram())
+		extra->GetProgram() = ProgramFactory::Get()->CreateFromFiles(path.front(), path.back(), "");
+
+	mEffect = std::make_shared<PointLightTextureEffect>(
+		ProgramFactory::Get()->CreateFromProgram(extra->GetProgram()), 
+		mPVWUpdater->GetUpdater(), mMaterial, lighting, geometry, texture, 
+		SamplerState::MIN_L_MAG_L_MIP_L, SamplerState::WRAP, SamplerState::WRAP);
+	mVisual->SetEffect(mEffect);
+	mVisual->UpdateModelBound();
+	mPVWUpdater->Subscribe(mWorldTransform, mEffect->GetPVWMatrixConstant());
+}
+
+BoxNode::~BoxNode()
+{
+	mPVWUpdater->Unsubscribe(mVisual->GetEffect()->GetPVWMatrixConstant());
+}
+
+//! prerender
+bool BoxNode::PreRender(Scene *pScene)
+{
+	if (IsVisible())
+	{
+		// because this node supports rendering of mixed mode meshes consisting of
+		// transparent and solid material at the same time, we need to go through all
+		// materials, check of what type they are and register this node for the right
+		// render pass according to that.
+
+		int transparentCount = 0;
+		int solidCount = 0;
+
+		// count transparent and solid materials in this scene node
+		for (unsigned int i = 0; i < GetMaterialCount(); ++i)
+		{
+			if (GetMaterial(i)->IsTransparent())
+				++transparentCount;
+			else
+				++solidCount;
+
+			if (solidCount && transparentCount)
+				break;
+		}
+
+		// register according to material types counted
+		if (!pScene->IsCulled(this))
+		{
+			if (solidCount)
+				pScene->AddToRenderQueue(RP_SOLID, shared_from_this());
+
+			if (transparentCount)
+				pScene->AddToRenderQueue(RP_TRANSPARENT, shared_from_this());
+		}
+	}
+
+	return Node::PreRender(pScene);
+}
+
+//
+// BoxSceneNode::Render					- Chapter 16, page 550
+//
+bool BoxNode::Render(Scene *pScene)
+{
+	if (!Renderer::Get())
+		return false;
+
+	if (mShadow)
+		mShadow->UpdateShadowVolumes(pScene);
+
+	for (unsigned int i = 0; i < GetMaterialCount(); ++i)
+	{
+		if (GetMaterial(i)->Update(mBlendState))
+			Renderer::Get()->Unbind(mBlendState);
+		if (GetMaterial(i)->Update(mDepthStencilState))
+			Renderer::Get()->Unbind(mDepthStencilState);
+		if (GetMaterial(i)->Update(mRasterizerState))
+			Renderer::Get()->Unbind(mRasterizerState);
+	}
+
+	Renderer::Get()->SetBlendState(mBlendState);
+	Renderer::Get()->SetDepthStencilState(mDepthStencilState);
+	Renderer::Get()->SetRasterizerState(mRasterizerState);
+
+	Renderer* renderer = Renderer::Get();
+	renderer->Update(mVisual->GetVertexBuffer());
+	renderer->Draw(mVisual);
+
+	Renderer::Get()->SetDefaultBlendState();
+	Renderer::Get()->SetDefaultDepthStencilState();
+	Renderer::Get()->SetDefaultRasterizerState();
+
+	return true;
+}
+
+//! returns the axis aligned bounding box of this node
+BoundingBox<float>& BoxNode::GetBoundingBox()
+{
+    return mBoundingBox;
+}
+
+//! Removes a child from this scene node.
+//! Implemented here, to be able to remove the shadow properly, if there is one,
+//! or to remove attached childs.
+int BoxNode::DetachChild(std::shared_ptr<Node> const& child)
+{
+	if (child && mShadow == child)
+		mShadow = 0;
+
+	if (Node::DetachChild(child))
+		return true;
+
+	return false;
+}
+
+
+//! Creates shadow volume scene node as child of this node
+//! and returns a pointer to it.
+std::shared_ptr<ShadowVolumeNode> BoxNode::AddShadowVolumeNode(const ActorId actorId,
+	Scene* pScene, const std::shared_ptr<BaseMesh>& shadowMesh, bool zfailmethod, float infinity)
+{
+	/*
+	if (!Renderer::Get()->QueryFeature(VDF_STENCIL_BUFFER))
+		return nullptr;
+	*/
+	mShadow = std::shared_ptr<ShadowVolumeNode>(new ShadowVolumeNode(
+		actorId, mPVWUpdater, shadowMesh, zfailmethod, infinity));
+	shared_from_this()->AttachChild(mShadow);
+
+	return mShadow;
+}
+
+//! Returns the visual based on the zero based index i. To get the amount 
+//! of visuals used by this scene node, use GetVisualCount(). 
+//! This function is needed for inserting the node into the scene hierarchy 
+//! at an optimal position for minimizing renderstate changes, but can also 
+//! be used to directly modify the visual of a scene node.
+std::shared_ptr<Visual> const& BoxNode::GetVisual(unsigned int i)
+{
+	return mVisual;
+}
+
+//! return amount of visuals of this scene node.
+size_t BoxNode::GetVisualCount() const
+{
+	return 1;
+}
+
+//! returns the material based on the zero based index i. To get the amount
+//! of materials used by this scene node, use GetMaterialCount().
+//! This function is needed for inserting the node into the scene hirachy on a
+//! optimal position for minimizing renderstate changes, but can also be used
+//! to directly modify the material of a scene node.
+std::shared_ptr<Material> const& BoxNode::GetMaterial(unsigned int i)
+{
+	return mMaterial;
+}
+
+//! returns amount of materials used by this scene node.
+size_t BoxNode::GetMaterialCount() const
+{
+	return 1;
+}
+
+//! Sets the texture of the specified layer in all materials of this scene node to the new texture.
+/** \param textureLayer Layer of texture to be set. Must be a value smaller than MATERIAL_MAX_TEXTURES.
+\param texture New texture to be used. */
+void BoxNode::SetMaterialTexture(unsigned int textureLayer, std::shared_ptr<Texture2> texture)
+{
+	if (textureLayer >= MATERIAL_MAX_TEXTURES)
+		return;
+
+	for (unsigned int i = 0; i<GetMaterialCount(); ++i)
+		GetMaterial(i)->SetTexture(textureLayer, texture);
+
+	for (unsigned int i = 0; i < GetVisualCount(); ++i)
+	{
+		std::shared_ptr<Visual> visual = GetVisual(i);
+		if (visual)
+		{
+			std::shared_ptr<PointLightTextureEffect> textureEffect =
+				std::dynamic_pointer_cast<PointLightTextureEffect>(visual->GetEffect());
+			if (textureEffect)
+				textureEffect->SetTexture(texture);
+		}
+	}
+}
+
+//! Sets the material type of all materials in this scene node to a new material type.
+/** \param newType New type of material to be set. */
+void BoxNode::SetMaterialType(MaterialType newType)
+{
+	for (unsigned int i = 0; i<GetMaterialCount(); ++i)
+		GetMaterial(i)->mType = newType;
+}
