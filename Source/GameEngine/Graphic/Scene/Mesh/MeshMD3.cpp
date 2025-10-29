@@ -570,17 +570,17 @@ bool MD3Mesh::LoadModel(std::wstring& path)
 
 		// Fill in all triangles
 		const float scale = (1.f / 64.f);
-		for (unsigned int i = 0; i < meshHeader.numVertices * meshHeader.numFrames; ++i)
+		for (unsigned int j = 0; j < meshHeader.numVertices * meshHeader.numFrames; ++j)
 		{
 			// Read vertices
-			Vector3<float>& position = buf->mPositions[i];
-			position[0] = vertices[i].position[0] * scale;
-			position[1] = vertices[i].position[1] * scale;
-			position[2] = vertices[i].position[2] * scale;
+			Vector3<float>& position = buf->mPositions[j];
+			position[0] = vertices[j].position[0] * scale;
+			position[1] = vertices[j].position[1] * scale;
+			position[2] = vertices[j].position[2] * scale;
 
 			// Convert the normal vector to uncompressed float3 format
-			Vector3<float>& normal = buf->mNormals[i];
-			LatLngNormalToVec3(vertices[i].normal, (float*)&normal);
+			Vector3<float>& normal = buf->mNormals[j];
+			LatLngNormalToVec3(vertices[j].normal, (float*)&normal);
 		}
 
 		//! store meshBuffer
