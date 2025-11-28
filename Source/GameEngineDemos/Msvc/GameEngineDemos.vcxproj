@@ -393,6 +393,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\AreaLightsApp.h" />
     <ClInclude Include="..\AreaLightsView.h" />
     <ClInclude Include="..\GameDemo\GameDemo.h" />
     <ClInclude Include="..\GameDemo\GameDemoAIManager.h" />
@@ -404,7 +405,6 @@
     <ClInclude Include="..\GameDemo\GameDemoResources.h" />
     <ClInclude Include="..\GameDemo\GameDemoStd.h" />
     <ClInclude Include="..\GameDemo\GameDemoView.h" />
-    <ClInclude Include="..\AreaLightsApp.h" />
     <ClInclude Include="..\Minecraft\Data\CloudParams.h" />
     <ClInclude Include="..\Minecraft\Data\Database.h" />
     <ClInclude Include="..\Minecraft\Data\Huddata.h" />
@@ -543,6 +543,7 @@
     <ClInclude Include="..\TriangleDemoApp.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\AreaLightsApp.cpp" />
     <ClCompile Include="..\AreaLightsView.cpp" />
     <ClCompile Include="..\GameDemo\GameDemo.cpp" />
     <ClCompile Include="..\GameDemo\GameDemoAIManager.cpp" />
@@ -552,7 +553,6 @@
     <ClCompile Include="..\GameDemo\GameDemoManager.cpp" />
     <ClCompile Include="..\GameDemo\GameDemoStd.cpp" />
     <ClCompile Include="..\GameDemo\GameDemoView.cpp" />
-    <ClCompile Include="..\AreaLightsApp.cpp" />
     <ClCompile Include="..\Minecraft\Data\Database.cpp" />
     <ClCompile Include="..\Minecraft\Data\Huddata.cpp" />
     <ClCompile Include="..\Minecraft\Data\Metadata.cpp" />

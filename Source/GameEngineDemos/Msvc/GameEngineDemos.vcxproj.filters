@@ -32,7 +32,6 @@
     <ClInclude Include="..\GameDemo\GameDemoAIManager.h">
       <Filter>Demo</Filter>
     </ClInclude>
-    <ClInclude Include="..\AreaLightsApp.h" />
     <ClInclude Include="..\AreaLightsView.h" />
     <ClInclude Include="..\Minecraft\MinecraftApp.h">
       <Filter>Minecraft</Filter>
@@ -439,6 +438,7 @@
     <ClInclude Include="..\Minecraft\Graphics\ObjectMesh.h">
       <Filter>Minecraft\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="..\AreaLightsApp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\TriangleDemoApp.cpp" />
@@ -466,7 +466,6 @@
     <ClCompile Include="..\GameDemo\GameDemoAIManager.cpp">
       <Filter>Demo</Filter>
     </ClCompile>
-    <ClCompile Include="..\AreaLightsApp.cpp" />
     <ClCompile Include="..\AreaLightsView.cpp" />
     <ClCompile Include="..\Minecraft\MinecraftApp.cpp">
       <Filter>Minecraft</Filter>
@@ -852,6 +851,7 @@
     <ClCompile Include="..\Minecraft\Graphics\ObjectMesh.cpp">
       <Filter>Minecraft\Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="..\AreaLightsApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Demo">

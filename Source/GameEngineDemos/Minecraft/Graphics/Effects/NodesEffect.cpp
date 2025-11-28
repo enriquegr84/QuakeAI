@@ -37,30 +37,30 @@ NodesEffect::NodesEffect(
         SetCameraOffset({ 0.0f, 0.0f, 0.0f });
         SetAnimationTimer(0.f);
 
-        mProgram->GetPShader()->Set("SkyBgColor", mSkyBgColor);
-        mProgram->GetPShader()->Set("FogDistance", mFogDistance);
+        mProgram->GetPixelShader()->Set("SkyBgColor", mSkyBgColor);
+        mProgram->GetPixelShader()->Set("FogDistance", mFogDistance);
 
-        mProgram->GetVShader()->Set("DayLight", mDayLight);
-        mProgram->GetVShader()->Set("CameraOffset", mCameraOffset);
-        if (mProgram->GetVShader()->Get("AnimationTimer") != -1)
-            mProgram->GetVShader()->Set("AnimationTimer", mAnimationTimer);
+        mProgram->GetVertexShader()->Set("DayLight", mDayLight);
+        mProgram->GetVertexShader()->Set("CameraOffset", mCameraOffset);
+        if (mProgram->GetVertexShader()->Get("AnimationTimer") != -1)
+            mProgram->GetVertexShader()->Set("AnimationTimer", mAnimationTimer);
 
-        mProgram->GetVShader()->Set("WMatrix", mWMatrixConstant);
-        mProgram->GetVShader()->Set("VWMatrix", mVWMatrixConstant);
-        mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+        mProgram->GetVertexShader()->Set("WMatrix", mWMatrixConstant);
+        mProgram->GetVertexShader()->Set("VWMatrix", mVWMatrixConstant);
+        mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 
 #if defined(_OPENGL_)
-        mProgram->GetPShader()->Set("baseSampler", mTextures);
-        mProgram->GetPShader()->Set("baseSampler", mSampler);
+        mProgram->GetPixelShader()->Set("baseSampler", mTextures);
+        mProgram->GetPixelShader()->Set("baseSampler", mSampler);
 #else
-        mProgram->GetPShader()->Set("baseTextureArray", mTextures);
+        mProgram->GetPixelShader()->Set("baseTextureArray", mTextures);
 #endif
 
 #if defined(_OPENGL_)
-        mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+        mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 #else
-        mProgram->GetPShader()->Set("baseSampler", mSampler);
-        mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+        mProgram->GetPixelShader()->Set("baseSampler", mSampler);
+        mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 #endif
     }
 }
@@ -117,27 +117,27 @@ void NodesEffect::SetFogDistance(float const& fogDistance)
 void NodesEffect::SetWMatrixConstant(std::shared_ptr<ConstantBuffer> const& wMatrix)
 {
     mWMatrixConstant = wMatrix;
-    mProgram->GetVShader()->Set("WMatrix", mWMatrixConstant);
+    mProgram->GetVertexShader()->Set("WMatrix", mWMatrixConstant);
 }
 void NodesEffect::SetVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& vwMatrix)
 {
     mVWMatrixConstant = vwMatrix;
-    mProgram->GetVShader()->Set("VWMatrix", mVWMatrixConstant);
+    mProgram->GetVertexShader()->Set("VWMatrix", mVWMatrixConstant);
 }
 void NodesEffect::SetPVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& pvwMatrix)
 {
     mPVWMatrixConstant = pvwMatrix;
-    mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+    mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 }
 
 void NodesEffect::SetTextures(std::shared_ptr<Texture2Array> const& textures)
 {
     mTextures = textures;
 #if defined(_OPENGL_)
-    mProgram->GetPShader()->Set("baseSampler", mTextures);
-    mProgram->GetPShader()->Set("baseSampler", mSampler);
+    mProgram->GetPixelShader()->Set("baseSampler", mTextures);
+    mProgram->GetPixelShader()->Set("baseSampler", mSampler);
 #else
-    mProgram->GetPShader()->Set("baseTextureArray", mTextures);
+    mProgram->GetPixelShader()->Set("baseTextureArray", mTextures);
 #endif
 
 }

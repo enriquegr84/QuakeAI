@@ -7,15 +7,15 @@ StarsEffect::StarsEffect(std::shared_ptr<VisualProgram> const& program)
     {
         mStarColor = std::make_shared<ConstantBuffer>(sizeof(Vector4<float>), true);
 
-        mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
-        mProgram->GetVShader()->Set("StarColor", mStarColor);
+        mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
+        mProgram->GetVertexShader()->Set("StarColor", mStarColor);
     }
 }
 
 void StarsEffect::SetPVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& pvwMatrix)
 {
     mPVWMatrixConstant = pvwMatrix;
-    mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+    mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 }
 
 std::shared_ptr<ConstantBuffer> const& StarsEffect::GetStarColor() const

@@ -41,24 +41,54 @@
 
 #include "GameEngineStd.h"
 
-#include "Physic/Physic.h"
-
 #include "Application/Settings.h"
 
+#if defined(PHYSX) && defined(_WIN64)
+
+#include "Physic/PhysX.h"
+
+
 /////////////////////////////////////////////////////////////////////////////
-// QuakePhysics
+// QuakePhysX
 //
-//   The implementation of QuakePhysics interface using the Bullet SDK.
+//   The implementation of QuakePhysX interface using the PhysX SDK.
 //
 /////////////////////////////////////////////////////////////////////////////
 
-class QuakePhysics : public BulletPhysics
+class QuakePhysX : public PhysX
 {
 
 public:
 
-	QuakePhysics();				// [mrmike] This was changed post-press to add event registration!
-	virtual ~QuakePhysics();
+	QuakePhysX(); // [mrmike] This was changed post-press to add event registration!
+	virtual ~QuakePhysX();
+
+	virtual void OnUpdate(float deltaSeconds) override;
+
+	virtual void AddCharacterController(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
+		const std::string& densityStr, const std::string& physicMaterial) override;
+
+	virtual void GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& transforms);
+};
+
+#else
+
+#include "Physic/BulletPhysic.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// QuakeBulletPhysics
+//
+//   The implementation of QuakeBulletPhysics interface using the Bullet SDK.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+class QuakeBulletPhysics : public BulletPhysics
+{
+
+public:
+
+	QuakeBulletPhysics();				// [mrmike] This was changed post-press to add event registration!
+	virtual ~QuakeBulletPhysics();
 
 	virtual void OnUpdate(float deltaSeconds) override;
 
@@ -70,7 +100,7 @@ public:
 
 class BulletCharacterController : public btKinematicCharacterController
 {
-	friend class QuakePhysics;
+	friend class QuakeBulletPhysics;
 
 public:
 	BulletCharacterController(ActorId playerId, btPairCachingGhostObject* ghostObject,
@@ -125,6 +155,8 @@ private:
 
 	ActorId mPlayerId;
 };
+
+#endif
 
 extern BaseGamePhysic* CreateQuakePhysics();
 

@@ -54,6 +54,65 @@
 #include "Game/Actor/Actor.h"
 #include "Game/Actor/TransformComponent.h"
 
+#if defined(PHYSX) && defined(_WIN64)
+
+QuakePhysX::QuakePhysX() : PhysX()
+{
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// QuakePhysX::~QuakePhysX
+//
+QuakePhysX::~QuakePhysX()
+{
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// QuakePhysX::OnUpdate
+//
+void QuakePhysX::OnUpdate(float const deltaSeconds)
+{
+	PhysX::OnUpdate(deltaSeconds);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// QuakePhysX::AddCharacterController
+//
+void QuakePhysX::AddCharacterController(
+	const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
+	const std::string& densityStr, const std::string& physicMaterial)
+{
+	PhysX::AddCharacterController(dimensions, pGameActor, densityStr, physicMaterial);
+}
+
+void QuakePhysX::GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& interpolations)
+{
+	LogError("TODO");
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// CreateQuakePhysics 
+//   The free function that creates an object that implements the BaseGamePhysic interface.
+//
+BaseGamePhysic* CreateQuakePhysics()
+{
+	std::unique_ptr<BaseGamePhysic> gamePhysics;
+	gamePhysics.reset(new QuakePhysX);
+
+	if (gamePhysics.get() && !gamePhysics->Initialize())
+	{
+		// physics failed to initialize.  delete it.
+		gamePhysics.reset();
+	}
+
+	return gamePhysics.release();
+}
+
+#else
 
 /////////////////////////////////////////////////////////////////////////////
 // helpers for conversion to and from Bullet's data types
@@ -125,7 +184,7 @@ void BulletCharacterController::updateState()
 {
 	bool isGround = onGround();
 	Transform transform = btTransformToTransform(m_ghostObject->getWorldTransform());
-	mInterpolations.push_back({transform, isGround });
+	mInterpolations.push_back({ transform, isGround });
 
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 	aiManager->SetPlayerGround(mPlayerId, isGround);
@@ -214,7 +273,7 @@ void BulletCharacterController::updateState()
 			EventManager::Get()->TriggerEvent(
 				std::make_shared<EventDataMoveActor>(mPlayerId, velocity, fall));
 		}
-	}	
+	}
 }
 
 ///BulletCharacterController
@@ -244,27 +303,27 @@ void BulletCharacterController::getInterpolations(std::vector<std::pair<Transfor
 }
 
 
-QuakePhysics::QuakePhysics() : BulletPhysics()
+QuakeBulletPhysics::QuakeBulletPhysics() : BulletPhysics()
 {
 
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// QuakePhysics::~QuakePhysics
+// QuakeBulletPhysics::~QuakeBulletPhysics
 //
-QuakePhysics::~QuakePhysics()
+QuakeBulletPhysics::~QuakeBulletPhysics()
 {
 
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// BulletPhysics::OnUpdate
+// QuakeBulletPhysics::OnUpdate
 //
-void QuakePhysics::OnUpdate(float const deltaSeconds)
+void QuakeBulletPhysics::OnUpdate(float const deltaSeconds)
 {
 	ActorIDToBulletActionMap::const_iterator itAction = mActorIdToAction.begin();
-	for (;itAction != mActorIdToAction.end(); itAction++)
+	for (; itAction != mActorIdToAction.end(); itAction++)
 	{
 		if (BulletCharacterController* const controller =
 			dynamic_cast<BulletCharacterController*>(itAction->second))
@@ -280,9 +339,9 @@ void QuakePhysics::OnUpdate(float const deltaSeconds)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// BulletPhysics::AddCharacterController
+// QuakeBulletPhysics::AddCharacterController
 //
-void QuakePhysics::AddCharacterController(
+void QuakeBulletPhysics::AddCharacterController(
 	const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 	const std::string& densityStr, const std::string& physicMaterial)
 {
@@ -332,7 +391,7 @@ void QuakePhysics::AddCharacterController(
 	ghostObject->setCollisionShape(collisionShape);
 	ghostObject->setCollisionFlags(
 		btCollisionObject::CF_KINEMATIC_OBJECT | btCollisionObject::CF_CHARACTER_OBJECT);
-	BulletCharacterController* controller = 
+	BulletCharacterController* controller =
 		new BulletCharacterController(actorId, ghostObject, collisionShape, 16.f);
 	controller->setGravity(mDynamicsWorld->getGravity());
 
@@ -345,7 +404,7 @@ void QuakePhysics::AddCharacterController(
 	mCollisionObjectToActorId[ghostObject] = actorId;
 }
 
-void QuakePhysics::GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& interpolations)
+void QuakeBulletPhysics::GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& interpolations)
 {
 	if (btCollisionObject* const pCollisionObject = FindBulletCollisionObject(id))
 	{
@@ -375,13 +434,14 @@ void QuakePhysics::GetInterpolations(const ActorId id, std::vector<std::pair<Tra
 BaseGamePhysic* CreateQuakePhysics()
 {
 	std::unique_ptr<BaseGamePhysic> gamePhysics;
-	gamePhysics.reset( new QuakePhysics );
+	gamePhysics.reset(new QuakeBulletPhysics);
 
 	if (gamePhysics.get() && !gamePhysics->Initialize())
 	{
 		// physics failed to initialize.  delete it.
 		gamePhysics.reset();
 	}
-
 	return gamePhysics.release();
 }
+
+#endif

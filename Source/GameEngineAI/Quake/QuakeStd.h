@@ -4,6 +4,8 @@
 
 #include "GameEngineStd.h"
 
+//#undef PHYSX
+
 // angle indexes
 #define	AXIS_X	0
 #define	AXIS_Z	1

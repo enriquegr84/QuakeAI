@@ -25,35 +25,35 @@ InterlacedMergeEffect::InterlacedMergeEffect(std::shared_ptr<VisualProgram> cons
 		mFlagSampler->mMode[0] = mode0;
 		mFlagSampler->mMode[1] = mode1;
 
-		mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+		mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 #if defined(_OPENGL_)
-		mProgram->GetPShader()->Set("baseSampler", base);
-		mProgram->GetPShader()->Set("normalSampler", normal);
-		mProgram->GetPShader()->Set("flagSampler", flag);
+		mProgram->GetPixelShader()->Set("baseSampler", base);
+		mProgram->GetPixelShader()->Set("normalSampler", normal);
+		mProgram->GetPixelShader()->Set("flagSampler", flag);
 #else
-		mProgram->GetPShader()->Set("baseTexture", base);
-		mProgram->GetPShader()->Set("normalTexture", normal);
-		mProgram->GetPShader()->Set("flagTexture", flag);
+		mProgram->GetPixelShader()->Set("baseTexture", base);
+		mProgram->GetPixelShader()->Set("normalTexture", normal);
+		mProgram->GetPixelShader()->Set("flagTexture", flag);
 #endif
-		mProgram->GetPShader()->Set("baseSampler", mBaseSampler);
-		mProgram->GetPShader()->Set("normalSampler", mNormalSampler);
-		mProgram->GetPShader()->Set("flagSampler", mFlagSampler);
+		mProgram->GetPixelShader()->Set("baseSampler", mBaseSampler);
+		mProgram->GetPixelShader()->Set("normalSampler", mNormalSampler);
+		mProgram->GetPixelShader()->Set("flagSampler", mFlagSampler);
 	}
 }
 
 void InterlacedMergeEffect::SetPVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& pvwMatrix)
 {
 	mPVWMatrixConstant = pvwMatrix;
-	mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+	mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 }
 
 void InterlacedMergeEffect::SetBaseTexture(std::shared_ptr<Texture2> const& texture)
 {
 	mBaseTexture = texture;
 #if defined(_OPENGL_)
-	mProgram->GetPShader()->Set("baseSampler", mBaseTexture);
+	mProgram->GetPixelShader()->Set("baseSampler", mBaseTexture);
 #else
-	mProgram->GetPShader()->Set("baseTexture", mBaseTexture);
+	mProgram->GetPixelShader()->Set("baseTexture", mBaseTexture);
 #endif
 }
 
@@ -61,9 +61,9 @@ void InterlacedMergeEffect::SetNormalTexture(std::shared_ptr<Texture2> const& te
 {
 	mNormalTexture = texture;
 #if defined(_OPENGL_)
-	mProgram->GetPShader()->Set("normalSampler", mNormalTexture);
+	mProgram->GetPixelShader()->Set("normalSampler", mNormalTexture);
 #else
-	mProgram->GetPShader()->Set("normalTexture", mNormalTexture);
+	mProgram->GetPixelShader()->Set("normalTexture", mNormalTexture);
 #endif
 }
 
@@ -71,8 +71,8 @@ void InterlacedMergeEffect::SetFlagTexture(std::shared_ptr<Texture2> const& text
 {
 	mFlagTexture = texture;
 #if defined(_OPENGL_)
-	mProgram->GetPShader()->Set("flagSampler", mFlagTexture);
+	mProgram->GetPixelShader()->Set("flagSampler", mFlagTexture);
 #else
-	mProgram->GetPShader()->Set("flagTexture", mFlagTexture);
+	mProgram->GetPixelShader()->Set("flagTexture", mFlagTexture);
 #endif
 }

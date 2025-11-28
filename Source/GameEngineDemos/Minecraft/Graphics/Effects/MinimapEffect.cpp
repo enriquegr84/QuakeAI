@@ -21,17 +21,17 @@ MinimapEffect::MinimapEffect(std::shared_ptr<VisualProgram> const& program,
 		mNormalSampler->mMode[1] = mode1;
 
 		SetYawVec({ 0.0f, 0.0f, 0.0f });
-		mProgram->GetPShader()->Set("YawVec", mYawVec);
-		mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+		mProgram->GetPixelShader()->Set("YawVec", mYawVec);
+		mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 #if defined(_OPENGL_)
-		mProgram->GetPShader()->Set("baseSampler", base);
-		mProgram->GetPShader()->Set("normalSampler", normal);
+		mProgram->GetPixelShader()->Set("baseSampler", base);
+		mProgram->GetPixelShader()->Set("normalSampler", normal);
 #else
-		mProgram->GetPShader()->Set("baseTexture", base);
-		mProgram->GetPShader()->Set("normalTexture", normal);
+		mProgram->GetPixelShader()->Set("baseTexture", base);
+		mProgram->GetPixelShader()->Set("normalTexture", normal);
 #endif
-		mProgram->GetPShader()->Set("baseSampler", mBaseSampler);
-		mProgram->GetPShader()->Set("normalSampler", mNormalSampler);
+		mProgram->GetPixelShader()->Set("baseSampler", mBaseSampler);
+		mProgram->GetPixelShader()->Set("normalSampler", mNormalSampler);
     }
 }
 
@@ -49,16 +49,16 @@ void MinimapEffect::SetYawVec(Vector3<float> const& yawVec)
 void MinimapEffect::SetPVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& pvwMatrix)
 {
     mPVWMatrixConstant = pvwMatrix;
-    mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+    mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 }
 
 void MinimapEffect::SetBaseTexture(std::shared_ptr<Texture2> const& texture)
 {
 	mBaseTexture = texture;
 #if defined(_OPENGL_)
-	mProgram->GetPShader()->Set("baseSampler", mBaseTexture);
+	mProgram->GetPixelShader()->Set("baseSampler", mBaseTexture);
 #else
-	mProgram->GetPShader()->Set("baseTexture", mBaseTexture);
+	mProgram->GetPixelShader()->Set("baseTexture", mBaseTexture);
 #endif
 }
 
@@ -66,8 +66,8 @@ void MinimapEffect::SetNormalTexture(std::shared_ptr<Texture2> const& texture)
 {
 	mNormalTexture = texture;
 #if defined(_OPENGL_)
-	mProgram->GetPShader()->Set("normalSampler", mNormalTexture);
+	mProgram->GetPixelShader()->Set("normalSampler", mNormalTexture);
 #else
-	mProgram->GetPShader()->Set("normalTexture", mNormalTexture);
+	mProgram->GetPixelShader()->Set("normalTexture", mNormalTexture);
 #endif
 }

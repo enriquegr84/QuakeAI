@@ -247,6 +247,12 @@
     <Filter Include="Graphic\Scene\Element\Animator">
       <UniqueIdentifier>{97664ccf-2480-4489-a9d9-c9311b87a2f5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Physic\3rdParty\physx">
+      <UniqueIdentifier>{eb1d6836-8407-4d8c-a168-47eb63be6a04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Physic\3rdParty\physx\include">
+      <UniqueIdentifier>{25a3eb20-8896-4b8c-bc45-3477e9bc1003}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\GameEngineStd.cpp" />
@@ -640,9 +646,6 @@
     <ClCompile Include="..\Physic\Physic.cpp">
       <Filter>Physic</Filter>
     </ClCompile>
-    <ClCompile Include="..\Physic\PhysicDebugDrawer.cpp">
-      <Filter>Physic</Filter>
-    </ClCompile>
     <ClCompile Include="..\Physic\PhysicEventListener.cpp">
       <Filter>Physic</Filter>
     </ClCompile>
@@ -1021,9 +1024,6 @@
     <ClCompile Include="..\Graphic\Renderer\OpenGL4\OpenGLHelper.cpp">
       <Filter>Graphic\Renderer\OpenGL4</Filter>
     </ClCompile>
-    <ClCompile Include="..\Physic\Importer\Bsp\BspConverter.cpp">
-      <Filter>Physic\Importer\Bsp</Filter>
-    </ClCompile>
     <ClCompile Include="..\Physic\Importer\Bsp\BspLoader.cpp">
       <Filter>Physic\Importer\Bsp</Filter>
     </ClCompile>
@@ -1164,6 +1164,18 @@
     </ClCompile>
     <ClCompile Include="..\Graphic\Renderer\OpenGL4\Shader\GLSLShader.cpp">
       <Filter>Graphic\Renderer\OpenGL4\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Physic\BulletPhysic.cpp">
+      <Filter>Physic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Physic\BulletDebugDrawer.cpp">
+      <Filter>Physic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Physic\PhysX.cpp">
+      <Filter>Physic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Physic\PhysXDebugDrawer.cpp">
+      <Filter>Physic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1643,9 +1655,6 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="..\Physic\Physic.h">
-      <Filter>Physic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Physic\PhysicDebugDrawer.h">
       <Filter>Physic</Filter>
     </ClInclude>
     <ClInclude Include="..\Physic\PhysicEventListener.h">
@@ -2451,6 +2460,21 @@
     </ClInclude>
     <ClInclude Include="..\Graphic\Renderer\OpenGL4\Shader\GLSLShader.h">
       <Filter>Graphic\Renderer\OpenGL4\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Physic\BulletPhysic.h">
+      <Filter>Physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Physic\BulletDebugDrawer.h">
+      <Filter>Physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Physic\PhysX.h">
+      <Filter>Physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Physic\PhysXDebugDrawer.h">
+      <Filter>Physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Physic\PhysicStd.h">
+      <Filter>Physic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -57,7 +57,7 @@ GameDemoLogic::GameDemoLogic() : GameLogic()
 
 	mThread = new GameDemoLogicThread(this);
 
-	mPhysics.reset(CreateGamePhysics());
+	mPhysics.reset(CreateBulletPhysics());
 	RegisterAllDelegates();
 }
 

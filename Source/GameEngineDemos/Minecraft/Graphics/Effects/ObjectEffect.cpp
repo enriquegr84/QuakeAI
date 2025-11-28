@@ -25,20 +25,20 @@ ObjectEffect::ObjectEffect(std::shared_ptr<VisualProgram> const& program,
 		SetSkyBgColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 		SetFogDistance(0.f);
 
-		mProgram->GetPShader()->Set("EmissiveColor", mEmissiveColor);
-		mProgram->GetPShader()->Set("SkyBgColor", mSkyBgColor);
-		mProgram->GetPShader()->Set("FogDistance", mFogDistance);
+		mProgram->GetPixelShader()->Set("EmissiveColor", mEmissiveColor);
+		mProgram->GetPixelShader()->Set("SkyBgColor", mSkyBgColor);
+		mProgram->GetPixelShader()->Set("FogDistance", mFogDistance);
 
-		mProgram->GetVShader()->Set("WMatrix", mWMatrixConstant);
-		mProgram->GetVShader()->Set("VWMatrix", mVWMatrixConstant);
-		mProgram->GetVShader()->Set("PVMatrix", mPVMatrixConstant);
-		//mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+		mProgram->GetVertexShader()->Set("WMatrix", mWMatrixConstant);
+		mProgram->GetVertexShader()->Set("VWMatrix", mVWMatrixConstant);
+		mProgram->GetVertexShader()->Set("PVMatrix", mPVMatrixConstant);
+		//mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 #if defined(_OPENGL_)
-		mProgram->GetPShader()->Set("baseSampler", texture);
+		mProgram->GetPixelShader()->Set("baseSampler", texture);
 #else
-		mProgram->GetPShader()->Set("baseTexture", texture);
+		mProgram->GetPixelShader()->Set("baseTexture", texture);
 #endif
-		mProgram->GetPShader()->Set("baseSampler", mSampler);
+		mProgram->GetPixelShader()->Set("baseSampler", mSampler);
 	}
 }
 
@@ -58,22 +58,22 @@ std::shared_ptr<ConstantBuffer> const& ObjectEffect::GetFogDistance() const
 void ObjectEffect::SetWMatrixConstant(std::shared_ptr<ConstantBuffer> const& wMatrix)
 {
 	mWMatrixConstant = wMatrix;
-	mProgram->GetVShader()->Set("WMatrix", mWMatrixConstant);
+	mProgram->GetVertexShader()->Set("WMatrix", mWMatrixConstant);
 }
 void ObjectEffect::SetVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& vwMatrix)
 {
 	mVWMatrixConstant = vwMatrix;
-	mProgram->GetVShader()->Set("VWMatrix", mVWMatrixConstant);
+	mProgram->GetVertexShader()->Set("VWMatrix", mVWMatrixConstant);
 }
 void ObjectEffect::SetPVMatrixConstant(std::shared_ptr<ConstantBuffer> const& pvMatrix)
 {
 	mPVMatrixConstant = pvMatrix;
-	mProgram->GetVShader()->Set("PVMatrix", mPVWMatrixConstant);
+	mProgram->GetVertexShader()->Set("PVMatrix", mPVWMatrixConstant);
 }
 void ObjectEffect::SetPVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& pvwMatrix)
 {
 	mPVWMatrixConstant = pvwMatrix;
-	mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+	mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 }
 
 void ObjectEffect::SetEmissiveColor(Vector4<float> const& emissiveColor)
@@ -96,8 +96,8 @@ void ObjectEffect::SetTexture(std::shared_ptr<Texture2> const& texture)
 {
 	mTexture = texture;
 #if defined(_OPENGL_)
-	mProgram->GetPShader()->Set("baseSampler", mTexture);
+	mProgram->GetPixelShader()->Set("baseSampler", mTexture);
 #else
-	mProgram->GetPShader()->Set("baseTexture", mTexture);
+	mProgram->GetPixelShader()->Set("baseTexture", mTexture);
 #endif
 }

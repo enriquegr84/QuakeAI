@@ -13,28 +13,28 @@ SelectionEffect::SelectionEffect(std::shared_ptr<VisualProgram> const& program,
         mSampler->mMode[0] = mode0;
         mSampler->mMode[1] = mode1;
 
-        mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+        mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 #if defined(_OPENGL_)
-        mProgram->GetPShader()->Set("baseSampler", texture);
+        mProgram->GetPixelShader()->Set("baseSampler", texture);
 #else
-        mProgram->GetPShader()->Set("baseTexture", texture);
+        mProgram->GetPixelShader()->Set("baseTexture", texture);
 #endif
-        mProgram->GetPShader()->Set("baseSampler", mSampler);
+        mProgram->GetPixelShader()->Set("baseSampler", mSampler);
     }
 }
 
 void SelectionEffect::SetPVWMatrixConstant(std::shared_ptr<ConstantBuffer> const& pvwMatrix)
 {
     mPVWMatrixConstant = pvwMatrix;
-    mProgram->GetVShader()->Set("PVWMatrix", mPVWMatrixConstant);
+    mProgram->GetVertexShader()->Set("PVWMatrix", mPVWMatrixConstant);
 }
 
 void SelectionEffect::SetTexture(std::shared_ptr<Texture2> const& texture)
 {
     mTexture = texture;
 #if defined(_OPENGL_)
-    mProgram->GetPShader()->Set("baseSampler", mTexture);
+    mProgram->GetPixelShader()->Set("baseSampler", mTexture);
 #else
-    mProgram->GetPShader()->Set("baseTexture", mTexture);
+    mProgram->GetPixelShader()->Set("baseTexture", mTexture);
 #endif
 }

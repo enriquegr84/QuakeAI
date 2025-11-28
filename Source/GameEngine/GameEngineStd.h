@@ -9,6 +9,7 @@
 
 #include "Core/CoreStd.h"
 #include "Game/GameStd.h"
+#include "Physic/PhysicStd.h"
 #include "Graphic/GraphicStd.h"
 #include "Mathematic/MathematicStd.h"
 

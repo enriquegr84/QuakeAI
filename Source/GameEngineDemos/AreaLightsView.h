@@ -39,7 +39,6 @@
 #ifndef AREALIGHTSVIEW_H
 #define AREALIGHTSVIEW_H
 
-
 #include "Core/Event/EventManager.h"
 
 #include "Game/View/HumanView.h"

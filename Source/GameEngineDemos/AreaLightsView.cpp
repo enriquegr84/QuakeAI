@@ -36,6 +36,8 @@
 //
 //========================================================================
 
+#include "GameEngineStd.h"
+
 #include "Graphic/Renderer/Renderer.h"
 #include "Graphic/Image/ImageResource.h"
 

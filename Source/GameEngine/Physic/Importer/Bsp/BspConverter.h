@@ -18,26 +18,17 @@ subject to the following restrictions:
 
 #include "BspLoader.h"
 
-#include "LinearMath/btVector3.h"
-#include "LinearMath/btAlignedObjectArray.h"
-#include "BulletCollision/CollisionShapes/btTriangleMesh.h"
-
 ///BspConverter turns a loaded bsp level into convex parts (vertices)
 class BspConverter
 {
 	public:
 
-		void CreateCurvedSurfaceBezier(BspLoader& bspLoader, BSPSurface* surface, bool isConvexSurface);
-		void ConvertBsp(BspLoader& bspLoader, 
-			const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreSurfaces, float scaling);
+		virtual void CreateCurvedSurfaceBezier(BspLoader& bspLoader, BSPSurface* surface, bool isConvexSurface) = 0;
+		virtual void ConvertBsp(BspLoader& bspLoader, 
+			const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreSurfaces, float scaling) = 0;
 		virtual ~BspConverter()
 		{
 		}
-
-		///this callback is called for each brush that succesfully converted into vertices
-		virtual void AddConvexVerticesCollider(btAlignedObjectArray<btVector3>& vertices) = 0;
-		virtual void AddTriangleMeshCollider(btTriangleIndexVertexArray* mesh) = 0;
-
 };
 
 #endif //BSP_CONVERTER_H

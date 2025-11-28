@@ -14,6 +14,7 @@
 
 #include "AreaLightsApp.h"
 #include "AreaLightsView.h"
+
 /*
 //----------------------------------------------------------------------------
 int main(int numArguments, char* arguments[])
