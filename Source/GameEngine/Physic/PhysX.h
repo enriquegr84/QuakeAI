@@ -44,6 +44,8 @@
 #include "Physic/Physic.h"
 #include "Physic/PhysicEventListener.h"
 
+#if defined(PHYSX) && defined(_WIN64)
+
 #include "PxPhysicsAPI.h"
 
 #include "PhysXDebugDrawer.h"
@@ -178,7 +180,8 @@ protected:
 
 	// keep track of the existing controllers: To check them for updates
 	// to the actors' positions, and to remove them when their lives are over.
-	std::map<PxController*, PxVec3> mCCTMove, mCCTFall, mCCTJump;
+	std::map<PxController*, bool> mCCTGround;
+	std::map<PxController*, PxVec3> mCCTMove, mCCTJump, mCCTJumpAccel, mCCTFall, mCCTFallAccel;
 	typedef std::map<ActorId, PxController*> ActorIDToPhysXControllerMap;
 	ActorIDToPhysXControllerMap mActorIdToController;
 	PxController* FindPhysXController(ActorId id) const;
@@ -198,5 +201,7 @@ protected:
 	void AddShape(std::shared_ptr<Actor> pGameActor, PxShape* shape,
 		float mass, const std::string& physicMaterial);
 };
+
+#endif
 
 #endif

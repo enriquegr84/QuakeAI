@@ -10,6 +10,8 @@
 
 #include "Graphic/Scene/Hierarchy/Visual.h"
 
+#if defined(PHYSX) && defined(_WIN64)
+
 #include "PxPhysicsAPI.h"
 
 using namespace physx;
@@ -43,5 +45,7 @@ private:
 
 	PxScene* mScene = NULL;
 };
+
+#endif
 
 #endif

@@ -38,6 +38,8 @@
 
 #include "PhysXDebugDrawer.h"
 
+#if defined(PHYSX) && defined(_WIN64)
+
 #include "Application/GameApplication.h"
 
 #include "Graphic/Renderer/Renderer.h"
@@ -116,3 +118,5 @@ void PhysXDebugDrawer::Render()
 	renderer->Update(vbuffer);
 	renderer->Draw(visual);
 }
+
+#endif

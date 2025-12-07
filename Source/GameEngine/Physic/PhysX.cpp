@@ -38,6 +38,8 @@
  
 #include "PhysX.h"
 
+#if defined(PHYSX) && defined(_WIN64)
+
 #include "Game/Actor/Actor.h"
 #include "Game/Actor/TransformComponent.h"
 
@@ -266,9 +268,10 @@ public:
 			{
 				if (bspLoader.mDShaders[surface.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 				{
+					/*
 					if (ignoreSurfaces.find(i) != ignoreSurfaces.end())
 						continue;
-
+					*/
 					bool isConvexSurface = convexSurfaces.find(i) != convexSurfaces.end() ? true : false;
 					CreateCurvedSurfaceBezier(bspLoader, &surface, isConvexSurface);
 				}
@@ -380,6 +383,10 @@ public:
 
 			rigidStatic->attachShape(*shape);
 			mPhysics->mScene->addActor(*rigidStatic);
+
+			// 6. CLEANUP (you own the shape reference count now!
+			shape->release(); // VERY IMPORTANT in PhysX 5
+			convexMesh->release(); // also release the mesh when no longer needed
 		}
 	}
 
@@ -414,7 +421,7 @@ public:
 			meshDesc.triangles.data = indices.begin();
 
 			// Important flags for good cooking results
-			//meshDesc.flags = PxMeshFlag::eFLIPNORMALS; // only if your winding is CW
+			meshDesc.flags = PxMeshFlag::eFLIPNORMALS; // only if your winding is CW
 
 			// Optional but recommended: midphase structure (faster queries)
 			//meshDesc.flags |= PxMeshFlag::e16_BIT_INDICES; // use only if vertex count < 65536
@@ -434,7 +441,7 @@ public:
 			// disable mesh cleaning - perform mesh validation on development configurations
 			cookingParams.meshPreprocessParams = PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
 			// disable edge precompute, edges are set for each triangle, slows contact generation
-			cookingParams.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
+			cookingParams.meshPreprocessParams = PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
 
 			PxTriangleMesh* triangleMesh = PxCreateTriangleMesh(cookingParams, meshDesc, mPhysics->mPhysicsSystem->getPhysicsInsertionCallback());
 			PX_ASSERT(triangleMesh);
@@ -452,6 +459,10 @@ public:
 
 			rigidStatic->attachShape(*shape);
 			mPhysics->mScene->addActor(*rigidStatic);
+
+			// 6. CLEANUP (you own the shape reference count now!
+			shape->release(); // VERY IMPORTANT in PhysX 5
+			triangleMesh->release(); // also release the mesh when no longer needed
 		}
 	}
 
@@ -541,10 +552,8 @@ bool PhysX::Initialize()
 	mPhysicsSystem = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, PxTolerancesScale(), true, mPvd);
 	mDispatcher = PxDefaultCpuDispatcherCreate(2);
 
-	//PxVec3 gravity = Vector3ToPxVector3(Settings::Get()->GetVector3("default_gravity"));
-
 	PxSceneDesc sceneDesc(mPhysicsSystem->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(0.f, 0.f, -9.81f);
+	sceneDesc.gravity = Vector3ToPxVector3(Settings::Get()->GetVector3("default_gravity"));
 	sceneDesc.cpuDispatcher = mDispatcher;
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 	mScene = mPhysicsSystem->createScene(sceneDesc);
@@ -569,21 +578,6 @@ bool PhysX::Initialize()
 //
 void PhysX::OnUpdate( float const deltaSeconds )
 {
-	for (auto& actorController : mActorIdToController)
-	{
-		PxController* const controller = actorController.second;
-		PxVec3 velocity = mCCTMove[controller];
-
-		PxControllerFilters filters;
-		PxU32 flags = controller->move(velocity, 0.001f, deltaSeconds, filters);
-
-		PxControllerState state;
-		controller->getState(state);
-
-		if (state.touchedShape != nullptr)
-			printf("surprise MF %f", deltaSeconds);
-	}
-
 	mScene->simulate(deltaSeconds);
 	mScene->fetchResults(true);
 }
@@ -769,9 +763,12 @@ void PhysX::AddCharacterController(
 	PX_ASSERT(controller);
 	
 	// add it to the collection to be checked for changes in SyncVisibleScene
-	mCCTMove[controller] = PxVec3(PxZERO::PxZero);
-	mCCTFall[controller] = PxVec3(PxZERO::PxZero);
-	mCCTJump[controller] = PxVec3(PxZERO::PxZero);
+	mCCTGround[controller] = false;
+	mCCTJump[controller] = PxVec3(PxZero);
+	mCCTFall[controller] = PxVec3(PxZero);
+	mCCTJumpAccel[controller] = PxVec3(PxZero);
+	mCCTFallAccel[controller] = PxVec3(PxZero);
+	mCCTMove[controller] = mScene->getGravity();
 	mActorIdToController[actorID] = controller;
 	mActorIdToCollisionObject[actorID] = controller->getActor();
 	mCollisionObjectToActorId[controller->getActor()] = actorID;
@@ -906,10 +903,17 @@ Transform PhysX::GetTransform(const ActorId id)
 //
 void PhysX::SetTransform(ActorId actorId, const Transform& trans)
 {
-	if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId))
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
+	{
+		PxTransform transform = TransformToPxTransform(trans);
+		controller->setPosition(PxExtendedVec3(transform.p.x, transform.p.y, transform.p.z));
+		controller->getActor()->setKinematicTarget(transform);
+	}
+	else if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId))
 	{
 		// warp the body to the new position
-		collisionObject->setGlobalPose(TransformToPxTransform(trans));
+		PxTransform transform = TransformToPxTransform(trans);
+		collisionObject->setGlobalPose(transform);
 	}
 }
 
@@ -1070,10 +1074,7 @@ bool PhysX::OnGround(ActorId aid)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(aid)))
 	{
-		PxControllerState state;
-		controller->getState(state);
-
-		return (state.touchedActor != nullptr);
+		return mCCTGround[controller];
 	}
 	return false;
 }
@@ -1092,7 +1093,6 @@ void PhysX::Move(ActorId aid, const Vector3<float>& dir)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(aid)))
 	{
-		printf("\n actorId %u strength %f vel %f %f %f", aid, Length(dir), dir[0], dir[1], dir[2]);
 		mCCTMove[controller] = Vector3ToPxVector3(dir);
 	}
 }
@@ -1160,3 +1160,5 @@ MaterialData PhysX::LookupMaterialData(const std::string& materialStr)
     else
         return MaterialData(0, 0);
 }
+
+#endif

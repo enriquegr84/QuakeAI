@@ -1,4 +1,4 @@
-//========================================================================
+﻿//========================================================================
 // QuakePhysic.cpp : Implements the BaseGamePhysic interface with Bullet
 //
 // Part of the GameEngine Application
@@ -70,12 +70,72 @@ QuakePhysX::~QuakePhysX()
 
 }
 
+
+bool IsGrounded(const PxController* controller, const PxScene* scene)
+{
+	PxControllerState controllerState;
+	controller->getState(controllerState);
+	//printf("\n grounded %u ", controllerState.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
+	return (controllerState.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // QuakePhysX::OnUpdate
 //
 void QuakePhysX::OnUpdate(float const deltaSeconds)
 {
+	for (auto& actorController : mActorIdToController)
+	{
+		PxController* const controller = actorController.second;
+		PxVec3 velocity = mCCTMove[controller] * deltaSeconds;
+
+		if (mCCTJump[controller].z > 0.f)  //jump condition
+		{
+			if (mCCTGround[controller])
+			{
+				// Instantly teleport the capsule upward by a small amount (e.g. 0.01–0.1)
+				PxExtendedVec3 upOffset = PxExtendedVec3(0.f, 0.f, 0.1f);   // small upward nudge
+				controller->setPosition(controller->getPosition() + upOffset);
+
+				// Then apply upward velocity via the displacement vector
+				mCCTJumpAccel[controller] = mCCTJump[controller];
+				velocity = mCCTJumpAccel[controller];
+				//printf("\n physx initial jump %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], deltaSeconds);
+			}
+			else if (mCCTJumpAccel[controller].z > 0.f)
+			{
+				mCCTJumpAccel[controller].z -= mCCTJump[controller].z * deltaSeconds;
+				velocity = mCCTJumpAccel[controller];
+				//printf("\n physx jumping %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], deltaSeconds);
+			}
+		}
+
+		if (!mCCTGround[controller]) //fall acceleration
+		{
+			mCCTFallAccel[controller] += mCCTFall[controller] * deltaSeconds;
+			velocity += mCCTFallAccel[controller];
+			//printf("\n physx falling %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], deltaSeconds);
+		}
+
+		PxControllerFilters filters;
+		PxU32 flags = controller->move(velocity, 0.001f, deltaSeconds, filters);
+	}
+
 	PhysX::OnUpdate(deltaSeconds);
+
+	for (auto& actorController : mActorIdToController)
+	{
+		PxController* const controller = actorController.second;
+		mCCTGround[controller] = IsGrounded(controller, mScene);
+		if (mCCTGround[controller])
+		{
+			mCCTJump[controller] = PxVec3(PxZero);
+			mCCTFall[controller] = PxVec3(PxZero);
+			mCCTJumpAccel[controller] = PxVec3(PxZero);
+			mCCTFallAccel[controller] = PxVec3(PxZero);
+		}
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
