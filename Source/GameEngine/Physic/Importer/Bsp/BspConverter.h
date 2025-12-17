@@ -24,8 +24,8 @@ class BspConverter
 	public:
 
 		virtual void CreateCurvedSurfaceBezier(BspLoader& bspLoader, BSPSurface* surface, bool isConvexSurface) = 0;
-		virtual void ConvertBsp(BspLoader& bspLoader, 
-			const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreSurfaces, float scaling) = 0;
+		virtual void ConvertBsp(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+			const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces, float scaling) = 0;
 		virtual ~BspConverter()
 		{
 		}

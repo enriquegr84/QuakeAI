@@ -70,8 +70,7 @@ QuakePlayerController::QuakePlayerController(
 	mGravity = Settings::Get()->GetVector3("default_gravity");
 	mRespawnTimeMs = 0;
 
-	mMaxPushSpeed = Vector3<float>{
-		PUSHTRIGGER_JUMP_SPEED_XZ, PUSHTRIGGER_JUMP_SPEED_XZ, PUSHTRIGGER_JUMP_SPEED_Y };
+	mMaxPushSpeed = Vector3<float>{12.f, 12.f, 28.f };
 	mMaxJumpSpeed = Vector3<float>{12.f, 12.f, 16.f };
 	mMaxFallSpeed = Vector3<float>{30.f, 30.f, 60.f };
 	mMaxMoveSpeed = 300.f;
@@ -416,9 +415,6 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 					if (pPlayerActor->GetAction().triggerPush != INVALID_ACTOR_ID)
 					{
-						mFallSpeed = Vector3<float>{
-							PUSHTRIGGER_FALL_SPEED_XZ, PUSHTRIGGER_FALL_SPEED_XZ, PUSHTRIGGER_FALL_SPEED_Y };
-
 						std::shared_ptr<Actor> pItemActor(
 							std::dynamic_pointer_cast<Actor>(
 								GameLogic::Get()->GetActor(pPlayerActor->GetAction().triggerPush).lock()));
@@ -428,7 +424,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						Vector3<float> targetPosition = pPushTrigger->GetTarget().GetTranslation();
 						Vector3<float> playerPosition = pTransformComponent->GetPosition();
 						Vector3<float> direction = targetPosition - playerPosition;
-						float push = mPushSpeed[AXIS_Y] + direction[AXIS_Y] * 0.01f;
+						float push = mPushSpeed[AXIS_Y] + direction[AXIS_Y] * 0.05f;
 						direction[AXIS_Y] = 0;
 						Normalize(direction);
 

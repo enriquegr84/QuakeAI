@@ -70,16 +70,6 @@ QuakePhysX::~QuakePhysX()
 
 }
 
-
-bool IsGrounded(const PxController* controller, const PxScene* scene)
-{
-	PxControllerState controllerState;
-	controller->getState(controllerState);
-	//printf("\n grounded %u ", controllerState.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
-	return (controllerState.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // QuakePhysX::OnUpdate
 //
@@ -120,22 +110,48 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 
 		PxControllerFilters filters;
 		PxU32 flags = controller->move(velocity, 0.001f, deltaSeconds, filters);
-	}
 
-	PhysX::OnUpdate(deltaSeconds);
+		PxControllerState controllerState;
+		controller->getState(controllerState);
 
-	for (auto& actorController : mActorIdToController)
-	{
-		PxController* const controller = actorController.second;
-		mCCTGround[controller] = IsGrounded(controller, mScene);
+		//check if CCT is onground
+		mCCTGround[controller] = (controllerState.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
 		if (mCCTGround[controller])
 		{
 			mCCTJump[controller] = PxVec3(PxZero);
 			mCCTFall[controller] = PxVec3(PxZero);
 			mCCTJumpAccel[controller] = PxVec3(PxZero);
 			mCCTFallAccel[controller] = PxVec3(PxZero);
+
+			PxExtendedVec3 footPosition = controller->getFootPosition();
+
+			QuakeLogic* quake = dynamic_cast<QuakeLogic*>(GameLogic::Get());
+			std::vector<std::shared_ptr<Actor>> triggers;
+			quake->GetTriggerActors(triggers);
+			for (auto& trigger : triggers)
+			{
+				std::shared_ptr<PushTrigger> pTriggerPushComponent(
+					trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock());
+				if (pTriggerPushComponent)
+				{
+					PxShape* triggerShape;
+					PxRigidActor* triggerActor = FindPhysXCollisionObject(trigger->GetId());
+					triggerActor->getShapes(&triggerShape, 1);
+
+					bool dist = PxGeometryQuery::pointDistance(PxVec3((float)footPosition.x, (float)footPosition.y, (float)footPosition.z),
+						triggerShape->getGeometry(), triggerShape->getActor()->getGlobalPose() * triggerShape->getLocalPose());
+					if (dist <= 0.0f)
+					{
+						std::shared_ptr<EventDataPhysTriggerEnter> pEvent(
+							new EventDataPhysTriggerEnter(trigger->GetId(), actorController.first));
+						BaseEventManager::Get()->TriggerEvent(pEvent);
+					}
+				}
+			}
 		}
 	}
+
+	PhysX::OnUpdate(deltaSeconds);
 }
 
 /////////////////////////////////////////////////////////////////////////////

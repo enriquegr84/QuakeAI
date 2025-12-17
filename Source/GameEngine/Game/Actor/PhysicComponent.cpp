@@ -120,6 +120,13 @@ bool PhysicComponent::Init(tinyxml2::XMLElement* pData)
 			mIgnoreSurfaces.insert(std::atoi(ignoreSurface.c_str()));
 	}
 
+	tinyxml2::XMLElement* pIgnoreConvexSurface = pData->FirstChildElement("IgnoreConvexSurface");
+	if (pIgnoreConvexSurface)
+	{
+		for (auto const& ignoreConvexSurface : StringSplit(Trim(pIgnoreConvexSurface->FirstChild()->Value()), ','))
+			mIgnoreConvexSurfaces.insert(std::atoi(ignoreConvexSurface.c_str()));
+	}
+
     return true;
 }
 
@@ -197,6 +204,14 @@ tinyxml2::XMLElement* PhysicComponent::GenerateXml(void)
 	}
 	pBaseElement->LinkEndChild(pIgnoreSurface);
 
+	tinyxml2::XMLElement* pIgnoreConvexSurface = doc.NewElement("IgnoreConvexSurface");
+	for (int ignoreConvexSurface : mIgnoreConvexSurfaces)
+	{
+		tinyxml2::XMLText* pIgnoreConvexSurfaceText = doc.NewText(std::to_string(ignoreConvexSurface).c_str());
+		pIgnoreConvexSurface->LinkEndChild(pIgnoreConvexSurfaceText);
+	}
+	pBaseElement->LinkEndChild(pIgnoreConvexSurface);
+
     return pBaseElement;
 }
 
@@ -229,7 +244,7 @@ void PhysicComponent::PostInit(void)
 			{
 				const std::shared_ptr<BspResourceExtraData>& extra =
 					std::static_pointer_cast<BspResourceExtraData>(resHandle->GetExtra());
-				gamePhysics->AddBSP(extra->GetLoader(), mConvexSurfaces, mIgnoreSurfaces, mOwner, mDensity, mMaterial);
+				gamePhysics->AddBSP(extra->GetLoader(), mConvexSurfaces, mIgnoreSurfaces, mIgnoreConvexSurfaces, mOwner, mDensity, mMaterial);
 			}
 		}
 		else if (mShape == "PointCloud")

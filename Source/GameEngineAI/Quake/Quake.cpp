@@ -3517,7 +3517,11 @@ void QuakeLogic::LoadActors(BspLoader& bspLoader)
 								const BSPModel& model = bspLoader.mDModels[modelnr];
 								const BSPBrush& brush = bspLoader.mDBrushes[model.firstBrush];
 								std::vector<Plane3<float>> planes;
-								Vector3<float> scale = { 1.5f, 1.5f, 1.0f };
+								Vector3<float> scale;
+								if (className == "trigger_push")
+									scale = { 1.25f, 1.25f, 1.0f };
+								else
+									scale = { 1.5f, 1.5f, 1.0f };
 								for (int p = 0; p < brush.numSides; p++)
 								{
 									int sideid = brush.firstSide + p;

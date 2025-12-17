@@ -230,14 +230,14 @@ public:
 			int vertStride = sizeof(btVector3);
 			int indexStride = 3 * sizeof(int);
 			btTriangleIndexVertexArray* mesh = new btTriangleIndexVertexArray(
-				bezier.indices.size() / 3, bezierIndices, indexStride,
-				bezier.vertices.size(), (btScalar*)&bezierVertices[0].x(), vertStride);
+				(int)(bezier.indices.size() / 3), bezierIndices, indexStride,
+				(int)bezier.vertices.size(), (btScalar*)&bezierVertices[0].x(), vertStride);
 			AddTriangleMeshCollider(mesh);
 		}
 	}
 
-	virtual void ConvertBsp(BspLoader& bspLoader,
-		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreSurfaces, float scaling)
+	virtual void ConvertBsp(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+		const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces, float scaling)
 	{
 		bspLoader.ParseEntities();
 
@@ -285,6 +285,9 @@ public:
 				{
 					if (bspLoader.mDShaders[brush.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 					{
+						if (ignoreConvexSurfaces.find(i) != ignoreConvexSurfaces.end())
+							continue;
+
 						brush.shaderNum = -1;
 
 						for (int p = 0; p < brush.numSides; p++)
@@ -779,8 +782,8 @@ void BulletPhysics::AddTrigger(const Vector3<float> &dimension,
 /////////////////////////////////////////////////////////////////////////////
 // BulletPhysics::AddBSP
 //
-void BulletPhysics::AddBSP(BspLoader& bspLoader, 
-	const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreSurfaces,
+void BulletPhysics::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+	const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 	std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial)
 {
 	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
@@ -792,7 +795,7 @@ void BulletPhysics::AddBSP(BspLoader& bspLoader,
 
 	BspToBulletConverter bspToBullet(this, pStrongActor, mass, physicMaterial);
 	float bspScaling = 1.0f;
-	bspToBullet.ConvertBsp(bspLoader, convexSurfaces, ignoreSurfaces, bspScaling);
+	bspToBullet.ConvertBsp(bspLoader, convexSurfaces, ignoreSurfaces, ignoreConvexSurfaces, bspScaling);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -925,12 +928,12 @@ void BulletPhysics::AddConvexVertices(Plane3<float>* planes, int numPlanes, cons
 	btAlignedObjectArray<btVector3>	vertices;
 	btGeometryUtil::getVerticesFromPlaneEquations(planeEquations, vertices);
 
-	btConvexHullShape* shape = new btConvexHullShape(&(vertices[0].getX()), vertices.size());
+	btAABB aabb;
+	aabb.invalidate();
+	for (int i = 0; i < vertices.size(); ++i)
+		aabb.merge_point(vertices[i]);
 
-	btVector3 aabbMin(0, 0, 0), aabbMax(0, 0, 0);
-	shape->getAabb(btTransform::getIdentity(), aabbMin, aabbMax);
-
-	btVector3 const aabbCenter = aabbMin + (aabbMax - aabbMin) / 2.f;
+	btVector3 const aabbCenter = aabb.m_min + (aabb.m_max - aabb.m_min) / 2.f;
 	btVector3 const scaling = Vector3TobtVector3(scale);
 	for (int i = 0; i < vertices.size(); ++i)
 	{
@@ -939,8 +942,7 @@ void BulletPhysics::AddConvexVertices(Plane3<float>* planes, int numPlanes, cons
 		vertices[i] += aabbCenter;
 	}
 
-	delete shape;
-	shape = new btConvexHullShape(&(vertices[0].getX()), vertices.size());
+	btConvexHullShape* shape = new btConvexHullShape(&(vertices[0].getX()), vertices.size());
 
 	// lookup the material
 	MaterialData material(LookupMaterialData(physicMaterial));

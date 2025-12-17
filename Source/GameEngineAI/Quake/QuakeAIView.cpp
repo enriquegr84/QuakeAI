@@ -1342,6 +1342,7 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 //  class QuakeAIView::OnUpdate			- Chapter 10, page 283
 void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 {
+	return;
 	if (!mEnabled)
 		return;
 

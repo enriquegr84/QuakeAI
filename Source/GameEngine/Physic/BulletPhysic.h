@@ -122,8 +122,8 @@ public:
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimension,
 		std::weak_ptr<Actor> pGameActor, const std::string& physicMaterial) override;
-	virtual void AddBSP(BspLoader& bspLoader, 
-		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreSurfaces,
+	virtual void AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+		const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 		std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial) override;
 	virtual void AddCharacterController(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 		const std::string& densityStr, const std::string& physicMaterial) override;
