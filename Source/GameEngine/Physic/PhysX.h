@@ -103,7 +103,7 @@ public:
 	virtual void AddTrigger(const Vector3<float>& dimension,
 		std::weak_ptr<Actor> pGameActor, const std::string& physicMaterial) override;
 	virtual void AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
-		const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
+		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 		std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial) override;
 	virtual void AddCharacterController(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 		const std::string& densityStr, const std::string& physicMaterial) override;
@@ -228,11 +228,10 @@ protected:
 	void SendCollisionPairRemoveEvent(PxRigidActor const* body0, PxRigidActor const* body1);
 
 	// common functionality used by AddSphere, AddBox, etc
-	void AddShape(std::shared_ptr<Actor> pGameActor, PxShape* shape,
+	void AddShape(std::shared_ptr<Actor> pGameActor, PxGeometry& geometry,
 		float mass, const std::string& physicMaterial);
 
 	// helper for cleaning up objects
-	void RemoveTriggerObject(PxRigidActor* removeMe);
 	void RemoveCollisionObject(PxRigidActor* removeMe);
 };
 

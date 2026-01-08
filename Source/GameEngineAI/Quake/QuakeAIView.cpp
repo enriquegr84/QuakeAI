@@ -43,6 +43,15 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 	mGravity = Settings::Get()->GetVector3("default_gravity");
 	mRespawnTimeMs = 0;
 
+#if defined(PHYSX) && defined(_WIN64)
+
+	mMaxPushSpeed = Vector3<float>{ 10.f, 10.f, 22.f };
+	mMaxJumpSpeed = Vector3<float>{ 10.f, 10.f, 12.f };
+	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 40.f };
+	mMaxMoveSpeed = 300.f;
+
+#else
+
 	mMaxPushSpeed = Vector3<float>{
 		PUSHTRIGGER_JUMP_SPEED_XZ, PUSHTRIGGER_JUMP_SPEED_XZ, PUSHTRIGGER_JUMP_SPEED_Y };
 	mMaxJumpSpeed = Vector3<float>{
@@ -50,6 +59,8 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 	mMaxFallSpeed = Vector3<float>{
 		DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_Y };
 	mMaxMoveSpeed = DEFAULT_MOVE_SPEED;
+
+#endif
 
 	mPushSpeed = mMaxPushSpeed;
 	mJumpSpeed = mMaxJumpSpeed;
@@ -1342,7 +1353,6 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 //  class QuakeAIView::OnUpdate			- Chapter 10, page 283
 void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 {
-	return;
 	if (!mEnabled)
 		return;
 
@@ -1398,8 +1408,16 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 				{
 					UpdateActionPlan(AT_PUSH);
 
+#if defined(PHYSX) && defined(_WIN64)
+
+					mFallSpeed = mMaxFallSpeed;
+
+#else
+
 					mFallSpeed = Vector3<float>{
 						PUSHTRIGGER_FALL_SPEED_XZ, PUSHTRIGGER_FALL_SPEED_XZ, PUSHTRIGGER_FALL_SPEED_Y };
+
+#endif
 
 					std::shared_ptr<Actor> pItemActor(std::dynamic_pointer_cast<Actor>(
 						GameLogic::Get()->GetActor(pPlayerActor->GetAction().triggerPush).lock()));
@@ -1409,7 +1427,16 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					Vector3<float> targetPosition = pPushTrigger->GetTarget().GetTranslation();
 					Vector3<float> playerPosition = pPhysicComponent->GetTransform().GetTranslation();
 					Vector3<float> direction = targetPosition - playerPosition;
-					float push = mPushSpeed[AXIS_Y] + direction[AXIS_Y] * 0.01f;
+					float push = mPushSpeed[AXIS_Y];
+#if defined(PHYSX) && defined(_WIN64)
+
+					push += direction[AXIS_Y] * 0.04f;
+
+#else
+
+					push += direction[AXIS_Y] * 0.01f;
+
+#endif
 					direction[AXIS_Y] = 0;
 					Normalize(direction);
 
@@ -1652,6 +1679,11 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 							velocity = HProject(direction);
 							velocity *= mMoveSpeed;
+#if defined(PHYSX) && defined(_WIN64)
+
+							velocity[AXIS_Y] = mGravity[AXIS_Y];
+
+#endif
 						}
 
 						fall = mGravity;
@@ -1889,7 +1921,15 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 			pPlayerActor->UpdateTimers(deltaMs);
 			pPlayerActor->UpdateWeapon(deltaMs);
+#if defined(PHYSX) && defined(_WIN64)
+
+			pPlayerActor->UpdateMovement(mGravity, mGravity);
+
+#else
+
 			pPlayerActor->UpdateMovement(Vector3<float>::Zero(), mGravity);
+
+#endif
 		}
 	}
 

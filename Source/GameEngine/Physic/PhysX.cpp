@@ -250,7 +250,7 @@ public:
 	}
 
 	virtual void ConvertBsp(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
-		const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces, float scaling)
+		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces, float scaling)
 	{
 		bspLoader.ParseEntities();
 
@@ -268,6 +268,9 @@ public:
 			{
 				if (bspLoader.mDShaders[surface.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 				{
+					if (ignorePhysSurfaces.find(i) != ignorePhysSurfaces.end())
+						continue;
+
 					bool isConvexSurface = convexSurfaces.find(i) != convexSurfaces.end() ? true : false;
 					CreateCurvedSurfaceBezier(bspLoader, &surface, isConvexSurface);
 				}
@@ -295,9 +298,6 @@ public:
 				{
 					if (bspLoader.mDShaders[brush.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 					{
-						if (ignoreConvexSurfaces.find(i) != ignoreConvexSurfaces.end())
-							continue;
-
 						brush.shaderNum = -1;
 
 						for (int p = 0; p < brush.numSides; p++)
@@ -628,10 +628,48 @@ void PhysX::SyncVisibleScene()
 /////////////////////////////////////////////////////////////////////////////
 // PhysX::AddShape
 //
-void PhysX::AddShape(std::shared_ptr<Actor> pGameActor, PxShape* shape,
+void PhysX::AddShape(std::shared_ptr<Actor> pGameActor, PxGeometry& geometry,
 	float mass, const std::string& physicMaterial)
 {
-    LogAssert(pGameActor, "no actor");
+	LogAssert(pGameActor, "no actor");
+
+	ActorId actorID = pGameActor->GetId();
+	LogAssert(mActorIdToCollisionObject.find(actorID) == mActorIdToCollisionObject.end(),
+		"Actor with more than one physics body?");
+
+	Transform transform;
+	std::shared_ptr<TransformComponent> pTransformComponent =
+		pGameActor->GetComponent<TransformComponent>(TransformComponent::Name).lock();
+	LogAssert(pTransformComponent, "no transform");
+	if (pTransformComponent)
+	{
+		transform = pTransformComponent->GetTransform();
+	}
+	else
+	{
+		// Physics can't work on an actor that doesn't have a TransformComponent!
+		return;
+	}
+
+	// lookup the material
+	MaterialData material(LookupMaterialData(physicMaterial));
+	// Create the material
+	PxMaterial* materialPtr = mPhysicsSystem->createMaterial(
+		material.mFriction, material.mFriction, material.mRestitution);
+
+	// create the collision body, which specifies the shape of the object
+	PxShape* shape = mPhysicsSystem->createShape(geometry, *materialPtr, true);
+
+	// Attach the shape to your actor
+	PxRigidDynamic* rigidDynamic = mPhysicsSystem->createRigidDynamic(TransformToPxTransform(transform));
+	rigidDynamic->attachShape(*shape);
+
+	// Release the shape reference (actor now owns it)
+	shape->release();
+
+	// add it to the collection to be checked for changes in SyncVisibleScene
+	mActorIdToCollisionObject[actorID] = rigidDynamic;
+	mCollisionObjectToActorId[rigidDynamic] = actorID;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -718,7 +756,7 @@ void PhysX::AddTrigger(const Vector3<float> &dimension,
 // PhysX::AddBSP
 //
 void PhysX::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
-	const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
+	const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 	std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial)
 {
 	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
@@ -730,7 +768,7 @@ void PhysX::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSu
 
 	BspToPhysXConverter bspToPhysX(this, pStrongActor, mass, physicMaterial);
 	float bspScaling = 1.0f;
-	bspToPhysX.ConvertBsp(bspLoader, convexSurfaces, ignoreSurfaces, ignoreConvexSurfaces, bspScaling);
+	bspToPhysX.ConvertBsp(bspLoader, convexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -780,11 +818,20 @@ void PhysX::AddCharacterController(
 void PhysX::AddSphere(float const radius, std::weak_ptr<Actor> pGameActor, 
 	const std::string& densityStr, const std::string& physicMaterial)
 {
+	LogError("TODO");
+
 	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
     if (!pStrongActor)
         return;  // FUTURE WORK - Add a call to the error log here
 
-	LogError("TODO");
+	// calculate absolute mass from specificGravity
+	float specificGravity = LookupSpecificGravity(densityStr);
+	float const volume = (4.f / 3.f) * (float)GE_C_PI * radius * radius * radius;
+	float const mass = volume * specificGravity;
+
+	// add a shape using the sphere geometry
+	PxSphereGeometry sphereGeom(radius);
+	AddShape(pStrongActor, sphereGeom, mass, physicMaterial);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -793,11 +840,20 @@ void PhysX::AddSphere(float const radius, std::weak_ptr<Actor> pGameActor,
 void PhysX::AddBox(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 	const std::string& densityStr, const std::string& physicMaterial)
 {
+	LogError("TODO");
+
 	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
     if (!pStrongActor)
         return;  // FUTURE WORK: Add a call to the error log here
 
-	LogError("TODO");
+	// calculate absolute mass from specificGravity
+	float specificGravity = LookupSpecificGravity(densityStr);
+	float const volume = dimensions[0] * dimensions[1] * dimensions[2];
+	float const mass = volume * specificGravity;
+
+	// add a shape using the sphere geometry
+	PxBoxGeometry boxGeom(dimensions[0], dimensions[1], dimensions[2]);
+	AddShape(pStrongActor, boxGeom, mass, physicMaterial);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -862,7 +918,7 @@ void PhysX::AddConvexVertices(Plane3<float>* planes, int numPlanes, const Vector
 
 	PxRigidStatic* rigidStatic = mPhysicsSystem->createRigidStatic(PxTransform(PxIDENTITY::PxIdentity));
 	PxConvexMeshGeometry convexMeshGeom(convexMesh);
-	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
+	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
 
@@ -884,7 +940,64 @@ void PhysX::AddPointCloud(Vector3<float> *verts, int numPoints, std::weak_ptr<Ac
     if (!pStrongActor)
         return;  // FUTURE WORK: Add a call to the error log here
 
-	LogError("TODO");
+	Transform transform;
+	std::shared_ptr<TransformComponent> pTransformComponent =
+		pStrongActor->GetComponent<TransformComponent>(TransformComponent::Name).lock();
+	LogAssert(pTransformComponent, "no transform");
+	if (pTransformComponent)
+	{
+		transform = pTransformComponent->GetTransform();
+	}
+	else
+	{
+		// Physics can't work on an actor that doesn't have a TransformComponent!
+		return;
+	}
+
+	// Setup the convex mesh descriptor
+	PxConvexMeshDesc convexDesc;
+
+	// We provide points only, therefore the PxConvexFlag::eCOMPUTE_CONVEX flag must be specified
+	convexDesc.points.count = numPoints;
+	convexDesc.points.stride = sizeof(PxVec3);
+	convexDesc.points.data = verts;
+	convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+
+	PxTolerancesScale scale;
+	PxCookingParams cookingParams(scale);
+
+	// Use the new (default) PxConvexMeshCookingType::eQUICKHULL
+	cookingParams.convexMeshCookingType = PxConvexMeshCookingType::eQUICKHULL;
+
+	PxDefaultMemoryOutputStream buf;
+	if (!PxCookConvexMesh(cookingParams, convexDesc, buf))
+		return;
+
+	PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+	PxConvexMesh* convexMesh = mPhysicsSystem->createConvexMesh(input);
+	PX_ASSERT(convexMesh);
+
+	// lookup the material
+	MaterialData material(LookupMaterialData(physicMaterial));
+	PxMaterial* materialPtr = mPhysicsSystem->createMaterial(
+		material.mFriction, material.mFriction, material.mRestitution);
+
+	PxRigidDynamic* rigidDynamic = mPhysicsSystem->createRigidDynamic(TransformToPxTransform(transform));
+	PxConvexMeshGeometry convexMeshGeom(convexMesh);
+	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
+	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
+	PX_ASSERT(shape);
+
+	rigidDynamic->attachShape(*shape);
+	mScene->addActor(*rigidDynamic);
+
+	// 6. CLEANUP (you own the shape reference count now!
+	shape->release(); // VERY IMPORTANT in PhysX 5
+	convexMesh->release(); // also release the mesh when no longer needed
+
+	// add it to the collection to be checked for changes in SyncVisibleScene
+	mActorIdToCollisionObject[pStrongActor->GetId()] = rigidDynamic;
+	mCollisionObjectToActorId[rigidDynamic] = pStrongActor->GetId();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -897,7 +1010,73 @@ void PhysX::AddPointCloud(Plane3<float> *planes, int numPlanes, std::weak_ptr<Ac
 	if (!pStrongActor)
 		return;  // FUTURE WORK: Add a call to the error log here
 
-	LogError("TODO");
+	Transform transform;
+	std::shared_ptr<TransformComponent> pTransformComponent =
+		pStrongActor->GetComponent<TransformComponent>(TransformComponent::Name).lock();
+	LogAssert(pTransformComponent, "no transform");
+	if (pTransformComponent)
+	{
+		transform = pTransformComponent->GetTransform();
+	}
+	else
+	{
+		// Physics can't work on an actor that doesn't have a TransformComponent!
+		return;
+	}
+
+	PxArray<PxPlane> planeEquations;
+	for (int i = 0; i < numPlanes; ++i)
+	{
+		PxPlane planeEq = PxPlane(planes[i].mNormal[0], planes[i].mNormal[1], planes[i].mNormal[2], -planes[i].mConstant);
+		planeEquations.pushBack(planeEq);
+	}
+	PxArray<PxVec3>	vertices;
+	GetVerticesFromPlaneEquations(planeEquations, vertices);
+
+	// Setup the convex mesh descriptor
+	PxConvexMeshDesc convexDesc;
+
+	// We provide points only, therefore the PxConvexFlag::eCOMPUTE_CONVEX flag must be specified
+	convexDesc.points.count = vertices.size();
+	convexDesc.points.stride = sizeof(PxVec3);
+	convexDesc.points.data = vertices.begin();
+	convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+
+	PxTolerancesScale scale;
+	PxCookingParams cookingParams(scale);
+
+	// Use the new (default) PxConvexMeshCookingType::eQUICKHULL
+	cookingParams.convexMeshCookingType = PxConvexMeshCookingType::eQUICKHULL;
+
+	PxDefaultMemoryOutputStream buf;
+	if (!PxCookConvexMesh(cookingParams, convexDesc, buf))
+		return;
+
+	PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+	PxConvexMesh* convexMesh = mPhysicsSystem->createConvexMesh(input);
+	PX_ASSERT(convexMesh);
+
+	// lookup the material
+	MaterialData material(LookupMaterialData(physicMaterial));
+	PxMaterial* materialPtr = mPhysicsSystem->createMaterial(
+		material.mFriction, material.mFriction, material.mRestitution);
+
+	PxRigidDynamic* rigidDynamic = mPhysicsSystem->createRigidDynamic(TransformToPxTransform(transform));
+	PxConvexMeshGeometry convexMeshGeom(convexMesh);
+	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
+	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
+	PX_ASSERT(shape);
+
+	rigidDynamic->attachShape(*shape);
+	mScene->addActor(*rigidDynamic);
+
+	// 6. CLEANUP (you own the shape reference count now!
+	shape->release(); // VERY IMPORTANT in PhysX 5
+	convexMesh->release(); // also release the mesh when no longer needed
+
+	// add it to the collection to be checked for changes in SyncVisibleScene
+	mActorIdToCollisionObject[pStrongActor->GetId()] = rigidDynamic;
+	mCollisionObjectToActorId[rigidDynamic] = pStrongActor->GetId();
 }
 
 
@@ -909,6 +1088,14 @@ void PhysX::AddPointCloud(Plane3<float> *planes, int numPlanes, std::weak_ptr<Ac
 void PhysX::RemoveActor(ActorId id)
 {
 	LogError("TODO");
+
+	if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(id))
+	{
+		// destroy the body and all its components
+		RemoveCollisionObject(collisionObject);
+		mActorIdToCollisionObject.erase(id);
+		mCollisionObjectToActorId.erase(collisionObject);
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -925,6 +1112,12 @@ void PhysX::RenderDiagnostics()
 void PhysX::ApplyForce(ActorId aid, const Vector3<float>& velocity)
 {
 	LogError("TODO");
+
+	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(aid))
+	{
+		PxRigidDynamic* const rigidDynamic = dynamic_cast<PxRigidDynamic*>(rigidActor);
+		rigidDynamic->addForce(Vector3ToPxVector3(velocity));
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -933,6 +1126,12 @@ void PhysX::ApplyForce(ActorId aid, const Vector3<float>& velocity)
 void PhysX::ApplyTorque(ActorId aid, const Vector3<float>& velocity)
 {
 	LogError("TODO");
+
+	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(aid))
+	{
+		PxRigidDynamic* const rigidDynamic = dynamic_cast<PxRigidDynamic*>(rigidActor);
+		rigidDynamic->addTorque(Vector3ToPxVector3(velocity));
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -943,6 +1142,12 @@ void PhysX::ApplyTorque(ActorId aid, const Vector3<float>& velocity)
 void PhysX::GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& interpolations)
 {
 	LogError("TODO");
+
+	PxRigidActor* const rigidActor = FindPhysXCollisionObject(id);
+	LogAssert(rigidActor, "no collision object");
+
+	const PxTransform& actorTransform = rigidActor->getGlobalPose();
+	interpolations.push_back({ PxTransformToTransform(actorTransform), true });
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -994,6 +1199,11 @@ void PhysX::StopActor(ActorId actorId)
 void PhysX::SetCollisionFlags(ActorId actorId, int collisionFlags)
 {
 	LogError("TODO");
+
+	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
+	{
+		rigidActor->setActorFlags(PxActorFlags(collisionFlags));
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1002,6 +1212,16 @@ void PhysX::SetCollisionFlags(ActorId actorId, int collisionFlags)
 void PhysX::SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) 
 {
 	LogError("TODO");
+
+	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
+	{
+		PxShape* shape = nullptr;
+		rigidActor->getShapes(&shape, 1);
+
+		PxFilterData filterData;
+		filterData.word3 = ignoreActorId;  // e.g., assign each actor a unique ID
+		shape->setSimulationFilterData(filterData);
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1028,7 +1248,38 @@ bool PhysX::FindIntersection(ActorId actorId, const Vector3<float>& point)
 ActorId PhysX::CastRay(const Vector3<float>& origin, const Vector3<float>& end, 
 	Vector3<float>& collisionPoint, Vector3<float>& collisionNormal)
 {
-	LogError("TODO");
+	// Single directional raycast
+	Vector3<float> dir = end - origin;
+	float rayDist = Length(dir);
+	PxVec3 rayDir = Vector3ToPxVector3(dir);
+	rayDir.normalize();
+
+	PxRaycastBuffer hit;
+	PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative raycast (perfect here)
+
+	PxQueryFilterData filter;
+	filter.flags = PxQueryFlag::eSTATIC;
+	bool hasHit = mScene->raycast(
+		Vector3ToPxVector3(origin),			// start
+		rayDir, rayDist,					// ray dir + dist
+		hit,								// Output
+		hitFlags,							// IMPACT + NORMAL
+		filter);
+
+	if (hasHit && hit.hasAnyHits()) {
+
+		for (unsigned int hitIdx = 0; hitIdx < hit.getNbAnyHits(); hitIdx++)
+		{
+			const PxRaycastHit& raycastHit = hit.getAnyHit(hitIdx);
+
+			collisionPoint = PxVector3ToVector3(raycastHit.position);
+			collisionNormal = PxVector3ToVector3(raycastHit.normal);
+			return FindActorID(raycastHit.actor);
+		}
+	}
+
+	collisionPoint = NULL;
+	collisionNormal = NULL;
 	return INVALID_ACTOR_ID;
 }
 
@@ -1040,7 +1291,35 @@ void PhysX::CastRay(
 	std::vector<Vector3<float>>& collisionPoints, 
 	std::vector<Vector3<float>>& collisionNormals)
 {
-	LogError("TODO");
+	// Single directional raycast
+	Vector3<float> dir = end - origin;
+	float rayDist = Length(dir);
+	PxVec3 rayDir = Vector3ToPxVector3(dir);
+	rayDir.normalize();
+
+	PxRaycastBuffer hit;
+	PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative raycast (perfect here)
+
+	PxQueryFilterData filter;
+	filter.flags = PxQueryFlag::eSTATIC;
+	bool hasHit = mScene->raycast(
+		Vector3ToPxVector3(origin),			// start
+		rayDir, rayDist,					// ray dir + dist
+		hit,								// Output
+		hitFlags,							// IMPACT + NORMAL
+		filter);
+
+	if (hasHit && hit.hasAnyHits()) {
+
+		for (unsigned int hitIdx = 0; hitIdx < hit.getNbAnyHits(); hitIdx++)
+		{
+			const PxRaycastHit& raycastHit = hit.getAnyHit(hitIdx);
+
+			collisionPoints.push_back(PxVector3ToVector3(raycastHit.position));
+			collisionNormals.push_back(PxVector3ToVector3(raycastHit.normal));
+			collisionActors.push_back(FindActorID(raycastHit.actor));
+		}
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1048,7 +1327,52 @@ void PhysX::CastRay(
 ActorId PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& end,
 	std::optional<Vector3<float>>& collisionPoint, std::optional<Vector3<float>>& collisionNormal)
 {
-	LogError("TODO");
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(aId)))
+	{
+		// 1. Get current pose(CCT is always upright)
+		Vector3<float> startPos = origin.GetTranslation();
+		PxVec3 centerPos(startPos[0], startPos[1], startPos[2]);
+		PxTransform pose(centerPos, PxQuat(PxIdentity));  // Identity rotation
+
+		// 2. Get exact capsule geometry
+		PxShape* shape = nullptr;
+		controller->getActor()->getShapes(&shape, 1);
+		const PxGeometry& capsuleGeom = shape->getGeometry();  // radius, halfHeight
+
+		// 3. Single directional sweep
+		Vector3<float> dir = end.GetTranslation() - origin.GetTranslation();
+		float sweepDist = Length(dir);
+		PxVec3 sweepDir = Vector3ToPxVector3(dir);
+		sweepDir.normalize();
+
+		PxSweepBuffer hit;
+		PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative sweep (perfect here)
+
+		PxQueryFilterData filter;
+		filter.flags = PxQueryFlag::eSTATIC;
+		bool hasHit = mScene->sweep(
+			capsuleGeom, pose,			// Shape + start pose
+			sweepDir, sweepDist,		// Sweep dir + dist
+			hit,						// Output
+			hitFlags,					// IMPACT + NORMAL
+			filter);
+
+		if (hasHit && hit.hasAnyHits()) {
+
+			for (unsigned int hitIdx = 0; hitIdx < hit.getNbAnyHits(); hitIdx++)
+			{
+				const PxSweepHit& sweepHit = hit.getAnyHit(hitIdx);
+
+				collisionPoint = PxVector3ToVector3(sweepHit.position);
+				collisionNormal = PxVector3ToVector3(sweepHit.normal);
+				return FindActorID(sweepHit.actor);
+			}
+		}
+
+		collisionPoint = std::nullopt;
+		collisionNormal = std::nullopt;
+		return INVALID_ACTOR_ID;
+	}
 	return INVALID_ACTOR_ID;
 }
 
@@ -1058,7 +1382,48 @@ void PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& e
 	std::vector<ActorId>& collisionActors, std::vector<Vector3<float>>& collisionPoints, 
 	std::vector<Vector3<float>>& collisionNormals)
 {
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(aId)))
+	{
+		// 1. Get current pose(CCT is always upright)
+		Vector3<float> startPos = origin.GetTranslation();
+		PxVec3 centerPos(startPos[0], startPos[1], startPos[2]);
+		PxTransform pose(centerPos, PxQuat(PxIdentity));  // Identity rotation
 
+		// 2. Get exact capsule geometry
+		PxShape* shape = nullptr;
+		controller->getActor()->getShapes(&shape, 1);
+		const PxGeometry& capsuleGeom = shape->getGeometry();  // radius, halfHeight
+
+		// 3. Single directional sweep
+		Vector3<float> dir = end.GetTranslation() - origin.GetTranslation();
+		float sweepDist = Length(dir);
+		PxVec3 sweepDir = Vector3ToPxVector3(dir);
+		sweepDir.normalize();
+
+		PxSweepBuffer hit;
+		PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative sweep (perfect here)
+
+		PxQueryFilterData filter;
+		filter.flags = PxQueryFlag::eSTATIC;
+		bool hasHit = mScene->sweep(
+			capsuleGeom, pose,			// Shape + start pose
+			sweepDir, sweepDist,		// Sweep dir + dist
+			hit,						// Output
+			hitFlags,					// IMPACT + NORMAL
+			filter);
+
+		if (hasHit && hit.hasAnyHits()) {
+
+			for (unsigned int hitIdx = 0; hitIdx < hit.getNbAnyHits(); hitIdx++)
+			{
+				const PxSweepHit& sweepHit = hit.getAnyHit(hitIdx);
+
+				collisionPoints.push_back(PxVector3ToVector3(sweepHit.position));
+				collisionNormals.push_back(PxVector3ToVector3(sweepHit.normal));
+				collisionActors.push_back(FindActorID(sweepHit.actor));
+			}
+		}
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1129,7 +1494,13 @@ void PhysX::SetVelocity(ActorId actorId, const Vector3<float>& vel)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
-		controller->getActor()->setLinearVelocity(Vector3ToPxVector3(vel));
+		PxControllerFilters filters;
+		PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
+	}
+	else if (PxRigidDynamic* const body = dynamic_cast<PxRigidDynamic*>(FindPhysXCollisionObject(actorId)))
+	{
+		// set velocity
+		body->setLinearVelocity(Vector3ToPxVector3(vel));
 	}
 }
 
@@ -1149,14 +1520,26 @@ void PhysX::SetAngularVelocity(ActorId actorId, const Vector3<float>& vel)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
-		controller->getActor()->setAngularVelocity(Vector3ToPxVector3(vel));
+		PxControllerFilters filters;
+		PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
+	}
+	else if (PxRigidDynamic* const body = dynamic_cast<PxRigidDynamic*>(FindPhysXCollisionObject(actorId)))
+	{
+		// set angular velocity
+		body->setAngularVelocity(Vector3ToPxVector3(vel));
 	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void PhysX::Translate(ActorId actorId, const Vector3<float>& vec)
 {
-	LogError("TODO");
+	/*
+	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
+	{
+		PxRigidDynamic* const rigidDynamic = dynamic_cast<PxRigidDynamic*>(rigidActor);
+		rigidDynamic->translate(Vector3ToPxVector3(vec));
+	}
+	*/
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1175,6 +1558,32 @@ bool PhysX::OnGround(ActorId aid)
 bool PhysX::CheckPenetration(ActorId aid)
 {
 	LogError("TODO");
+
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(aid)))
+	{
+		// Get the controller's shape (capsule or box)
+		PxRigidDynamic* actor = controller->getActor();  // From PxController
+		PxShape* shape = nullptr;
+		actor->getShapes(&shape, 1);
+
+		// Get current global pose
+		PxTransform globalPose = actor->getGlobalPose();
+
+		// Perform an overlap query (any geometry type)
+		PxOverlapBuffer hit;
+		PxQueryFilterData filterData;  // Customize filtering if needed (e.g., ignore dynamics)
+		filterData.flags |= PxQueryFlag::eSTATIC;  // Or filter as appropriate
+
+		bool isPenetrating = mScene->overlap(shape->getGeometry(), globalPose, hit, filterData);
+
+		if (isPenetrating && hit.hasBlock)
+		{
+			// Penetration detected with hit.block.actor / hit.block.shape
+			// Optionally resolve manually, e.g., by moving the controller
+			return true;
+		}
+	}
+
 	return false;
 }
 
@@ -1232,39 +1641,6 @@ void PhysX::SetRotation(ActorId actorId, const Transform& trans)
 	}
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// PhysX::RemoveTriggerObject
-//
-//    Removes a trigger object from the game world
-//
-void PhysX::RemoveTriggerObject(PxRigidActor* const removeMe)
-{
-	/* first remove the object from the physics sim
-	//mDynamicsWorld->removeCollisionObject(removeMe);
-
-	// if the object is a RigidBody (all of ours are RigidBodies, but it's good to be safe)
-	if (PxRigidActor* const body = PxRigidActor::upcast(removeMe))
-	{
-		// delete the components of the object
-		delete body->getMotionState();
-		delete body->getCollisionShape();
-		delete body->getUserPointer();
-		delete body->getUserPointer();
-
-		for (int ii = body->getNumConstraintRefs() - 1; ii >= 0; --ii)
-		{
-			btTypedConstraint* const constraint = body->getConstraintRef(ii);
-			mDynamicsWorld->removeConstraint(constraint);
-			delete constraint;
-		}
-	}
-
-	delete removeMe;
-	*/
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // PhysX::RemoveCollisionObject
 //
@@ -1272,28 +1648,12 @@ void PhysX::RemoveTriggerObject(PxRigidActor* const removeMe)
 //
 void PhysX::RemoveCollisionObject(PxRigidActor* const removeMe)
 {
-	/* first remove the object from the physics sim
-	//mDynamicsWorld->removeCollisionObject(removeMe);
+	// Remove from scene first (if added)
+	if (removeMe->getScene())
+		removeMe->getScene()->removeActor(*removeMe);
 
-	// if the object is a RigidBody (all of ours are RigidBodies, but it's good to be safe)
-	if (btRigidBody* const body = btRigidBody::upcast(removeMe))
-	{
-		// delete the components of the object
-		delete body->getMotionState();
-		delete body->getCollisionShape();
-		delete body->getUserPointer();
-		delete body->getUserPointer();
-
-		for (int ii = body->getNumConstraintRefs() - 1; ii >= 0; --ii)
-		{
-			btTypedConstraint* const constraint = body->getConstraintRef(ii);
-			mDynamicsWorld->removeConstraint(constraint);
-			delete constraint;
-		}
-	}
-
-	delete removeMe;
-	*/
+	// Then release the actor
+	removeMe->release();
 }
 
 void ContactReportCallback::onTrigger(PxTriggerPair* pairs, PxU32 nPairs)

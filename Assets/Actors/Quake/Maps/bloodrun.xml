@@ -9,8 +9,8 @@
 			<PhysicsMaterial>Normal</PhysicsMaterial>
 			<Mesh>art\quake\games\bloodrun\bloodrun.bsp</Mesh>
       <ConvexSurface>30,31,32,33,34,35,36,37,38,39,53,54,90,91,92,105,106,107,108,109,110,111,112,113,114,206,207,208</ConvexSurface>
-      <IgnoreSurface>26,27,28,29,42,43,44,45,80,81,82,83,84,85,86,87,88,89,139,140,141,142,171,172,173,174,200,201</IgnoreSurface>
-      <IgnoreConvexSurface>2433,2434</IgnoreConvexSurface>
+      <IgnoreBSPSurface>26,27,28,29,42,43,44,45,80,81,82,83,84,85,86,87,88,89,139,140,141,142,171,172,173,174,200,201</IgnoreBSPSurface>
+      <IgnorePhysSurface>80,81,82,83,84,85,86,87,88,89,200,201</IgnorePhysSurface>
     </PhysicsComponent>
 	<MeshRenderComponent>
 		<Mesh>art\quake\games\bloodrun\bloodrun.pk3</Mesh>

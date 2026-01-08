@@ -121,7 +121,7 @@ protected:
     std::string mDensity;
     std::string mMaterial;
 
-	std::unordered_set<int> mIgnoreSurfaces, mConvexSurfaces, mIgnoreConvexSurfaces;
+	std::unordered_set<int> mConvexSurfaces, mIgnoreBSPSurfaces, mIgnorePhysSurfaces;
 	
 	Vector3<float> mRigidBodyLocation; // rigid body is offset from the position of the actor.
 	Vector3<float> mRigidBodyOrientation;	// ditto, orientation

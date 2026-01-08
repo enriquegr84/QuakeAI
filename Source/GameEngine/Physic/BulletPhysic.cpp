@@ -237,7 +237,7 @@ public:
 	}
 
 	virtual void ConvertBsp(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
-		const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces, float scaling)
+		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces, float scaling)
 	{
 		bspLoader.ParseEntities();
 
@@ -255,7 +255,7 @@ public:
 			{
 				if (bspLoader.mDShaders[surface.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 				{
-					if (ignoreSurfaces.find(i) != ignoreSurfaces.end())
+					if (ignoreBSPSurfaces.find(i) != ignoreBSPSurfaces.end())
 						continue;
 
 					bool isConvexSurface = convexSurfaces.find(i) != convexSurfaces.end() ? true : false;
@@ -285,9 +285,6 @@ public:
 				{
 					if (bspLoader.mDShaders[brush.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 					{
-						if (ignoreConvexSurfaces.find(i) != ignoreConvexSurfaces.end())
-							continue;
-
 						brush.shaderNum = -1;
 
 						for (int p = 0; p < brush.numSides; p++)
@@ -783,7 +780,7 @@ void BulletPhysics::AddTrigger(const Vector3<float> &dimension,
 // BulletPhysics::AddBSP
 //
 void BulletPhysics::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
-	const std::unordered_set<int>& ignoreSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
+	const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 	std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial)
 {
 	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
@@ -795,7 +792,7 @@ void BulletPhysics::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& 
 
 	BspToBulletConverter bspToBullet(this, pStrongActor, mass, physicMaterial);
 	float bspScaling = 1.0f;
-	bspToBullet.ConvertBsp(bspLoader, convexSurfaces, ignoreSurfaces, ignoreConvexSurfaces, bspScaling);
+	bspToBullet.ConvertBsp(bspLoader, convexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
 }
 
 /////////////////////////////////////////////////////////////////////////////
