@@ -439,9 +439,8 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 #endif
 
-						std::shared_ptr<Actor> pItemActor(
-							std::dynamic_pointer_cast<Actor>(
-								GameLogic::Get()->GetActor(pPlayerActor->GetAction().triggerPush).lock()));
+						std::shared_ptr<Actor> pItemActor(std::dynamic_pointer_cast<Actor>(
+							GameLogic::Get()->GetActor(pPlayerActor->GetAction().triggerPush).lock()));
 						std::shared_ptr<PushTrigger> pPushTrigger =
 							pItemActor->GetComponent<PushTrigger>(PushTrigger::Name).lock();
 

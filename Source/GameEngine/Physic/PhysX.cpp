@@ -1255,7 +1255,7 @@ ActorId PhysX::CastRay(const Vector3<float>& origin, const Vector3<float>& end,
 	rayDir.normalize();
 
 	PxRaycastBuffer hit;
-	PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative raycast (perfect here)
+	PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative raycast (perfect here)
 
 	PxQueryFilterData filter;
 	filter.flags = PxQueryFlag::eSTATIC;
@@ -1298,7 +1298,7 @@ void PhysX::CastRay(
 	rayDir.normalize();
 
 	PxRaycastBuffer hit;
-	PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative raycast (perfect here)
+	PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative raycast (perfect here)
 
 	PxQueryFilterData filter;
 	filter.flags = PxQueryFlag::eSTATIC;
@@ -1346,7 +1346,7 @@ ActorId PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform
 		sweepDir.normalize();
 
 		PxSweepBuffer hit;
-		PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative sweep (perfect here)
+		PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative sweep (perfect here)
 
 		PxQueryFilterData filter;
 		filter.flags = PxQueryFlag::eSTATIC;
@@ -1357,8 +1357,8 @@ ActorId PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform
 			hitFlags,					// IMPACT + NORMAL
 			filter);
 
-		if (hasHit && hit.hasAnyHits()) {
-
+		if (hasHit && hit.hasAnyHits()) 
+		{
 			for (unsigned int hitIdx = 0; hitIdx < hit.getNbAnyHits(); hitIdx++)
 			{
 				const PxSweepHit& sweepHit = hit.getAnyHit(hitIdx);
@@ -1401,7 +1401,7 @@ void PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& e
 		sweepDir.normalize();
 
 		PxSweepBuffer hit;
-		PxHitFlags hitFlags = PxHitFlag::eDEFAULT;  // fast conservative sweep (perfect here)
+		PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative sweep (perfect here)
 
 		PxQueryFilterData filter;
 		filter.flags = PxQueryFlag::eSTATIC;

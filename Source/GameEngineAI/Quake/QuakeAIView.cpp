@@ -1612,7 +1612,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						pPlayerActor->GetAction().actionType |= ACTION_RUN;
 						pPlayerActor->GetAction().actionType |= ACTION_MOVEFORWARD;
 					}
-
+					
 					// Calculate the new rotation matrix from the camera
 					// yaw and pitch (zrotate and xrotate).
 					Matrix4x4<float> yawRotation = Rotation<4, float>(
@@ -1639,10 +1639,10 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						mYawSmoothTime = 0.f;
 					}
 
+					mAbsoluteTransform = pPhysicComponent->GetTransform();
 					yawRotation = Rotation<4, float>(
 						AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYawSmooth * (float)GE_C_DEG_TO_RAD));
 					mAbsoluteTransform.SetRotation(yawRotation * pitchRotation);
-					mAbsoluteTransform.SetTranslation(pTransformComponent->GetPosition());
 
 					// This will give us the "look at" vector 
 					// in world space - we'll use that to move.
@@ -1851,7 +1851,8 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 				// This will give us the "look at" vector 
 				// in world space - we'll use that to move.
-				Vector4<float> atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+				Vector4<float> atWorld = pPlayerActor->GetAction().actionType == ACTION_STAND ?
+					Vector4<float>::Zero() : Vector4<float>::Unit(AXIS_X); // forward vector
 #if defined(GE_USE_MAT_VEC)
 				atWorld = rotation * atWorld;
 #else

@@ -2796,11 +2796,10 @@ void QuakeHumanView::PlayDuelCombatDelegate(BaseEventDataPtr pEventData)
 {
 	std::shared_ptr<EventDataPlayDuelCombat> pCastEventData =
 		std::static_pointer_cast<EventDataPlayDuelCombat>(pEventData);
-	/*
+
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
 	aiView->SetBehavior(BT_PATROL);
-	*/
 }
 
 void QuakeHumanView::RegisterAllDelegates(void)

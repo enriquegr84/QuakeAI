@@ -105,7 +105,8 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 		{
 			mCCTFallAccel[controller] += mCCTFall[controller] * deltaSeconds;
 			velocity += mCCTFallAccel[controller];
-			//printf("\n physx falling %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], deltaSeconds);
+			//if (actorController.first == 64)
+			//	printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], deltaSeconds);
 		}
 
 		PxControllerFilters filters;
@@ -138,7 +139,7 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 					PxRigidActor* triggerActor = FindPhysXCollisionObject(trigger->GetId());
 					triggerActor->getShapes(&triggerShape, 1);
 
-					bool dist = PxGeometryQuery::pointDistance(PxVec3((float)footPosition.x, (float)footPosition.y, (float)footPosition.z),
+					PxReal dist = PxGeometryQuery::pointDistance(PxVec3((float)footPosition.x, (float)footPosition.y, (float)footPosition.z),
 						triggerShape->getGeometry(), triggerShape->getActor()->getGlobalPose() * triggerShape->getLocalPose());
 					if (dist <= 0.0f)
 					{
@@ -167,6 +168,10 @@ void QuakePhysX::AddCharacterController(
 void QuakePhysX::GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& interpolations)
 {
 	LogError("TODO");
+	/*
+	for (auto const& interpolation : mInterpolations)
+		interpolations.push_back(interpolation);
+	*/
 }
 
 /////////////////////////////////////////////////////////////////////////////
