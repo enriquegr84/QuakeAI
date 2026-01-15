@@ -137,14 +137,13 @@ public:
 		std::vector<Vector3<float>>& collisionPoints,
 		std::vector<Vector3<float>>& collisionNormals) = 0;
 
-	virtual ActorId CastRay(
-		const Vector3<float>& origin, const Vector3<float>& end,
-		Vector3<float>& collisionPoint, Vector3<float>& collision) = 0;
+	virtual ActorId CastRay(const Vector3<float>& origin, const Vector3<float>& end,
+		Vector3<float>& collisionPoint, Vector3<float>& collision, ActorId actorId) = 0;
 	virtual void CastRay(
 		const Vector3<float>& origin, const Vector3<float>& end,
 		std::vector<ActorId>& collisionActors,
 		std::vector<Vector3<float>>& collisionPoints,
-		std::vector<Vector3<float>>& collisionNormals) = 0;
+		std::vector<Vector3<float>>& collisionNormals, ActorId actorId) = 0;
 
 	virtual void SetCollisionFlags(ActorId actorId, int collisionFlags) = 0;
 	virtual void SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) = 0;
@@ -231,16 +230,15 @@ public:
 		std::vector<Vector3<float>>& collisionPoints,
 		std::vector<Vector3<float>>& collisionNormals) { }
 
-	virtual ActorId CastRay(
-		const Vector3<float>& origin, const Vector3<float>& end,
-		Vector3<float>& collisionPoint, Vector3<float>& collisionNormal) {
+	virtual ActorId CastRay(const Vector3<float>& origin, const Vector3<float>& end,
+		Vector3<float>& collisionPoint, Vector3<float>& collisionNormal, ActorId actorId) {
 		return INVALID_ACTOR_ID;
 	}
 	virtual void CastRay(
 		const Vector3<float>& origin, const Vector3<float>& end,
 		std::vector<ActorId>& collisionActors,
 		std::vector<Vector3<float>>& collisionPoints,
-		std::vector<Vector3<float>>& collisionNormals) { }
+		std::vector<Vector3<float>>& collisionNormals, ActorId actorId) { }
 
 	virtual void SetCollisionFlags(ActorId actorId, int collisionFlags) { }
 	virtual void SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) { }

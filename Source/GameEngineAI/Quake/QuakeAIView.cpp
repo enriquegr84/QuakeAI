@@ -45,9 +45,9 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 10.f, 10.f, 22.f };
+	mMaxPushSpeed = Vector3<float>{ 4.f, 4.f, 20.f };
 	mMaxJumpSpeed = Vector3<float>{ 10.f, 10.f, 12.f };
-	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 40.f };
+	mMaxFallSpeed = Vector3<float>{ 15.f, 15.f, 40.f };
 	mMaxMoveSpeed = 300.f;
 
 #else
@@ -359,7 +359,7 @@ void QuakeAIView::Cliff()
 	Vector3<float> collision, collisionNormal;
 	collision = end.GetTranslation();
 	ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
-		start.GetTranslation(), end.GetTranslation(), collision, collisionNormal);
+		start.GetTranslation(), end.GetTranslation(), collision, collisionNormal, mPlayerId);
 
 	//Check whether we are close to a cliff
 	if (abs(collision[AXIS_Y] - position[AXIS_Y]) > 60.f)
@@ -388,7 +388,7 @@ void QuakeAIView::Cliff()
 
 			collision = end.GetTranslation();
 			ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
-				start.GetTranslation(), end.GetTranslation(), collision, collisionNormal);
+				start.GetTranslation(), end.GetTranslation(), collision, collisionNormal, mPlayerId);
 			if (abs(collision[AXIS_Y] - position[AXIS_Y]) <= 60.f)
 			{
 				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
@@ -419,7 +419,7 @@ void QuakeAIView::Cliff()
 
 			collision = end.GetTranslation();
 			ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
-				start.GetTranslation(), end.GetTranslation(), collision, collisionNormal);
+				start.GetTranslation(), end.GetTranslation(), collision, collisionNormal, mPlayerId);
 			if (abs(collision[AXIS_Y] - position[AXIS_Y]) <= 60.f)
 			{
 				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
@@ -1430,7 +1430,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					float push = mPushSpeed[AXIS_Y];
 #if defined(PHYSX) && defined(_WIN64)
 
-					push += direction[AXIS_Y] * 0.04f;
+					push += direction[AXIS_Y] * 0.06f;
 
 #else
 
@@ -1709,7 +1709,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 								std::vector<ActorId> collisionActors;
 								std::vector<Vector3<float>> collisions, collisionNormals;
 								GameLogic::Get()->GetGamePhysics()->CastRay(
-									playerPos, targetPos, collisionActors, collisions, collisionNormals);
+									playerPos, targetPos, collisionActors, collisions, collisionNormals, pPlayerActor->GetId());
 
 								ActorId closestCollisionId = INVALID_ACTOR_ID;
 								std::optional<Vector3<float>> closestCollision = std::nullopt;

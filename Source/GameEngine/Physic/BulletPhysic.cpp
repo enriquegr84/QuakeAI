@@ -1236,7 +1236,7 @@ bool BulletPhysics::FindIntersection(ActorId actorId, const Vector3<float>& poin
 /////////////////////////////////////////////////////////////////////////////
 // BulletPhysics::CastRay	
 ActorId BulletPhysics::CastRay(const Vector3<float>& origin, const Vector3<float>& end, 
-	Vector3<float>& collisionPoint, Vector3<float>& collisionNormal)
+	Vector3<float>& collisionPoint, Vector3<float>& collisionNormal, ActorId actorId)
 {
 	btVector3 from = Vector3TobtVector3(origin);
 	btVector3 to = Vector3TobtVector3(end);
@@ -1265,7 +1265,7 @@ void BulletPhysics::CastRay(
 	const Vector3<float>& origin, const Vector3<float>& end,
 	std::vector<ActorId>& collisionActors,
 	std::vector<Vector3<float>>& collisionPoints, 
-	std::vector<Vector3<float>>& collisionNormals)
+	std::vector<Vector3<float>>& collisionNormals, ActorId actorId)
 {
 	btVector3 from = Vector3TobtVector3(origin);
 	btVector3 to = Vector3TobtVector3(end);

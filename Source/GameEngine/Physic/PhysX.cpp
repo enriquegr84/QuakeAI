@@ -54,6 +54,100 @@
 
 #define PVD_HOST "127.0.0.1"	//Set this to the IP address of the system running the PhysX Visual Debugger that you want to connect to.
 
+enum CollisionGroup : PxU32
+{
+	GROUP_DYNAMIC_OBJECTS = 1 << 0,   // characters, boxes, vehicles...
+	GROUP_ENVIRONMENT = 1 << 1,   // ground, walls, static level geometry
+	GROUP_TRIGGERS = 1 << 2,   // zones, pickups, etc.
+	// ... you can have up to 32 groups
+};
+
+PxFilterFlags SimulationFilterShader(
+	PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+	PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+	PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize)
+{
+	// Ignore pairs that should never interact at all
+	if ((filterData0.word1 & filterData1.word0) == 0 &&
+		(filterData1.word1 & filterData0.word0) == 0)
+	{
+		return PxFilterFlag::eSUPPRESS;  // no collision, no report
+	}
+
+	// ?? Special handling for triggers ???????????????????????????????
+	if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1))
+	{
+		// Let triggers work (notify enter/exit) - most common choice
+		pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
+
+		// Optional extras you can add:
+		// pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;     // if you want CCD with triggers
+		// pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;  // rarely useful for triggers
+
+		return PxFilterFlag::eDEFAULT;
+	}
+
+	// Default: solve contacts + discrete detection
+	pairFlags = PxPairFlag::eSOLVE_CONTACT | PxPairFlag::eDETECT_DISCRETE_CONTACT;
+
+	// === Here is the key part for environmental contacts ===
+	// Enable contact reporting for dynamic ? environment
+	// You can be more selective if you want (e.g. only player vs ground)
+	bool isEnvironmentContact =
+		((filterData0.word0 & GROUP_ENVIRONMENT) && (filterData1.word0 & GROUP_DYNAMIC_OBJECTS)) ||
+		((filterData1.word0 & GROUP_ENVIRONMENT) && (filterData0.word0 & GROUP_DYNAMIC_OBJECTS));
+
+	if (isEnvironmentContact)
+	{
+		pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
+		pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;   // very useful for footsteps, sliding sounds
+		pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;        // optional
+
+		// Optional but very useful for ground friction, footsteps, etc.
+		pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
+	}
+
+	// You can also enable reporting between dynamic objects if needed
+	bool dynamicDynamic = (filterData0.word0 & GROUP_DYNAMIC_OBJECTS) && (filterData1.word0 & GROUP_DYNAMIC_OBJECTS);
+	if (dynamicDynamic)
+	{
+		// Enable contact reporting (this is the important part!)
+		pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST;
+
+		// Optional: report impulses / contact points
+		pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
+	}
+
+	return PxFilterFlag::eDEFAULT;
+}
+
+class IgnoreCharacterFilter : public PxQueryFilterCallback
+{
+public:
+	PxActor* mIgnoreActor;  // ? set this to your controller's actor
+
+	IgnoreCharacterFilter(PxActor* actor) : mIgnoreActor(actor) {}
+
+	virtual PxQueryHitType::Enum preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags)
+	{
+		// Ignore this hit ? continue query as if it didn't exist
+		return physx::PxQueryHitType::eNONE;
+	}
+
+	virtual PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit, const PxShape* shape, const PxRigidActor* actor)
+	{
+		// Directly use the provided actor param for efficiency
+		if (actor == mIgnoreActor)
+		{
+			// Ignore this hit ? continue query as if it didn't exist
+			return physx::PxQueryHitType::eNONE;
+		}
+
+		// Accept this hit (block/continue based on your needs; eBLOCK is common for closest-hit queries)
+		return physx::PxQueryHitType::eBLOCK;
+	}
+};
+
 /////////////////////////////////////////////////////////////////////////////
 // helpers for conversion to and from physx data types
 static PxVec3 Vector3ToPxVector3(Vector3<float> const& vector3)
@@ -379,6 +473,11 @@ public:
 			PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
 			PxShape* shape = mPhysics->mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 			PX_ASSERT(shape);
+			shape->setSimulationFilterData(PxFilterData(
+				GROUP_ENVIRONMENT,          // my category
+				GROUP_DYNAMIC_OBJECTS,      // categories I want to collide + report with
+				0, 0						// word2/word3 usually for queries or extra flags
+			));
 
 			rigidStatic->attachShape(*shape);
 			mPhysics->mScene->addActor(*rigidStatic);
@@ -415,12 +514,24 @@ public:
 			meshDesc.points.stride = sizeof(PxVec3);
 			meshDesc.points.data = vertices.begin();
 
-			meshDesc.triangles.count = (PxU32)indices.size() / 3;
-			meshDesc.triangles.stride = 3 * sizeof(PxU32);
-			meshDesc.triangles.data = indices.begin();
+			PxArray<PxU32> triangles;
+			triangles.reserve(indices.size() * 2);
 
-			// Important flags for good cooking results
-			meshDesc.flags = PxMeshFlag::eFLIPNORMALS; // only if your winding is CW
+			// Front faces
+			for (auto i : indices)
+				triangles.pushBack(i);
+
+			// Back faces (reverse winding)
+			for (unsigned int i = 0; i < indices.size(); i += 3)
+			{
+				triangles.pushBack(indices[i + 2]);
+				triangles.pushBack(indices[i + 1]);
+				triangles.pushBack(indices[i + 0]);
+			}
+
+			meshDesc.triangles.count = (PxU32)triangles.size() / 3;
+			meshDesc.triangles.stride = 3 * sizeof(PxU32);
+			meshDesc.triangles.data = triangles.begin();
 
 			// Optional but recommended: midphase structure (faster queries)
 			//meshDesc.flags |= PxMeshFlag::e16_BIT_INDICES; // use only if vertex count < 65536
@@ -455,6 +566,11 @@ public:
 			PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
 			PxShape* shape = mPhysics->mPhysicsSystem->createShape(triangleMeshGeom, *materialPtr, true, shapeFlags);
 			PX_ASSERT(shape);
+			shape->setSimulationFilterData(PxFilterData(
+				GROUP_ENVIRONMENT,          // my category
+				GROUP_DYNAMIC_OBJECTS,      // categories I want to collide + report with
+				0, 0						// word2/word3 usually for queries or extra flags
+			));
 
 			rigidStatic->attachShape(*shape);
 			mPhysics->mScene->addActor(*rigidStatic);
@@ -554,7 +670,8 @@ bool PhysX::Initialize()
 	PxSceneDesc sceneDesc(mPhysicsSystem->getTolerancesScale());
 	sceneDesc.gravity = Vector3ToPxVector3(Settings::Get()->GetVector3("default_gravity"));
 	sceneDesc.cpuDispatcher = mDispatcher;
-	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
+	sceneDesc.filterShader = SimulationFilterShader;
 	sceneDesc.simulationEventCallback = new ContactReportCallback(this);
 	mScene = mPhysicsSystem->createScene(sceneDesc);
 	mControllerManager = PxCreateControllerManager(*mScene);
@@ -659,10 +776,17 @@ void PhysX::AddShape(std::shared_ptr<Actor> pGameActor, PxGeometry& geometry,
 
 	// create the collision body, which specifies the shape of the object
 	PxShape* shape = mPhysicsSystem->createShape(geometry, *materialPtr, true);
+	PX_ASSERT(shape);
+	shape->setSimulationFilterData(PxFilterData(
+		GROUP_DYNAMIC_OBJECTS,
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
+		0, 0
+	));
 
 	// Attach the shape to your actor
 	PxRigidDynamic* rigidDynamic = mPhysicsSystem->createRigidDynamic(TransformToPxTransform(transform));
 	rigidDynamic->attachShape(*shape);
+	mScene->addActor(*rigidDynamic);
 
 	// Release the shape reference (actor now owns it)
 	shape->release();
@@ -743,6 +867,11 @@ void PhysX::AddTrigger(const Vector3<float> &dimension,
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(PxBoxGeometry(Vector3ToPxVector3(dimension)), *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->setSimulationFilterData(PxFilterData(
+		GROUP_TRIGGERS,				// my category
+		GROUP_DYNAMIC_OBJECTS,      // categories I want to collide + report with
+		0, 0                        // word2/word3 usually for queries or extra flags
+	));
 
 	rigidStatic->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 	rigidStatic->attachShape(*shape);
@@ -799,6 +928,14 @@ void PhysX::AddCharacterController(
 	desc.material = mPhysicsSystem->createMaterial(material.mFriction, material.mFriction, material.mRestitution);
 	PxController* controller = mControllerManager->createController(desc);
 	PX_ASSERT(controller);
+
+	PxShape* playerShape = nullptr;
+	controller->getActor()->getShapes(&playerShape, 1);
+	playerShape->setSimulationFilterData(PxFilterData(
+		GROUP_DYNAMIC_OBJECTS,
+		GROUP_TRIGGERS | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
+		0, 0
+	));
 	
 	// add it to the collection to be checked for changes in SyncVisibleScene
 	mCCTGround[controller] = false;
@@ -818,8 +955,6 @@ void PhysX::AddCharacterController(
 void PhysX::AddSphere(float const radius, std::weak_ptr<Actor> pGameActor, 
 	const std::string& densityStr, const std::string& physicMaterial)
 {
-	LogError("TODO");
-
 	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
     if (!pStrongActor)
         return;  // FUTURE WORK - Add a call to the error log here
@@ -840,8 +975,6 @@ void PhysX::AddSphere(float const radius, std::weak_ptr<Actor> pGameActor,
 void PhysX::AddBox(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 	const std::string& densityStr, const std::string& physicMaterial)
 {
-	LogError("TODO");
-
 	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
     if (!pStrongActor)
         return;  // FUTURE WORK: Add a call to the error log here
@@ -921,6 +1054,11 @@ void PhysX::AddConvexVertices(Plane3<float>* planes, int numPlanes, const Vector
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->setSimulationFilterData(PxFilterData(
+		GROUP_DYNAMIC_OBJECTS,
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
+		0, 0
+	));
 
 	rigidStatic->attachShape(*shape);
 	mScene->addActor(*rigidStatic);
@@ -987,6 +1125,11 @@ void PhysX::AddPointCloud(Vector3<float> *verts, int numPoints, std::weak_ptr<Ac
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->setSimulationFilterData(PxFilterData(
+		GROUP_DYNAMIC_OBJECTS,
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
+		0, 0
+	));
 
 	rigidDynamic->attachShape(*shape);
 	mScene->addActor(*rigidDynamic);
@@ -1066,6 +1209,11 @@ void PhysX::AddPointCloud(Plane3<float> *planes, int numPlanes, std::weak_ptr<Ac
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->setSimulationFilterData(PxFilterData(
+		GROUP_DYNAMIC_OBJECTS,
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
+		0, 0
+	));
 
 	rigidDynamic->attachShape(*shape);
 	mScene->addActor(*rigidDynamic);
@@ -1087,8 +1235,6 @@ void PhysX::AddPointCloud(Plane3<float> *planes, int numPlanes, std::weak_ptr<Ac
 //
 void PhysX::RemoveActor(ActorId id)
 {
-	LogError("TODO");
-
 	if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(id))
 	{
 		// destroy the body and all its components
@@ -1111,12 +1257,10 @@ void PhysX::RenderDiagnostics()
 //
 void PhysX::ApplyForce(ActorId aid, const Vector3<float>& velocity)
 {
-	LogError("TODO");
-
 	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(aid))
 	{
-		PxRigidDynamic* const rigidDynamic = dynamic_cast<PxRigidDynamic*>(rigidActor);
-		rigidDynamic->addForce(Vector3ToPxVector3(velocity));
+		PxRigidDynamic* rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
+		rigidDynamic->addForce(Vector3ToPxVector3(velocity), PxForceMode::eIMPULSE);
 	}
 }
 
@@ -1125,12 +1269,10 @@ void PhysX::ApplyForce(ActorId aid, const Vector3<float>& velocity)
 //
 void PhysX::ApplyTorque(ActorId aid, const Vector3<float>& velocity)
 {
-	LogError("TODO");
-
 	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(aid))
 	{
-		PxRigidDynamic* const rigidDynamic = dynamic_cast<PxRigidDynamic*>(rigidActor);
-		rigidDynamic->addTorque(Vector3ToPxVector3(velocity));
+		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
+		rigidDynamic->addTorque(Vector3ToPxVector3(velocity), PxForceMode::eIMPULSE);
 	}
 }
 
@@ -1141,8 +1283,6 @@ void PhysX::ApplyTorque(ActorId aid, const Vector3<float>& velocity)
 //
 void PhysX::GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& interpolations)
 {
-	LogError("TODO");
-
 	PxRigidActor* const rigidActor = FindPhysXCollisionObject(id);
 	LogAssert(rigidActor, "no collision object");
 
@@ -1198,8 +1338,6 @@ void PhysX::StopActor(ActorId actorId)
 //
 void PhysX::SetCollisionFlags(ActorId actorId, int collisionFlags)
 {
-	LogError("TODO");
-
 	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
 		rigidActor->setActorFlags(PxActorFlags(collisionFlags));
@@ -1211,14 +1349,12 @@ void PhysX::SetCollisionFlags(ActorId actorId, int collisionFlags)
 //
 void PhysX::SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) 
 {
-	LogError("TODO");
-
 	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
 		PxShape* shape = nullptr;
 		rigidActor->getShapes(&shape, 1);
 
-		PxFilterData filterData;
+		PxFilterData filterData = shape->getSimulationFilterData();
 		filterData.word3 = ignoreActorId;  // e.g., assign each actor a unique ID
 		shape->setSimulationFilterData(filterData);
 	}
@@ -1246,7 +1382,7 @@ bool PhysX::FindIntersection(ActorId actorId, const Vector3<float>& point)
 /////////////////////////////////////////////////////////////////////////////
 // PhysX::CastRay	
 ActorId PhysX::CastRay(const Vector3<float>& origin, const Vector3<float>& end, 
-	Vector3<float>& collisionPoint, Vector3<float>& collisionNormal)
+	Vector3<float>& collisionPoint, Vector3<float>& collisionNormal, ActorId actorId)
 {
 	// Single directional raycast
 	Vector3<float> dir = end - origin;
@@ -1258,13 +1394,15 @@ ActorId PhysX::CastRay(const Vector3<float>& origin, const Vector3<float>& end,
 	PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative raycast (perfect here)
 
 	PxQueryFilterData filter;
-	filter.flags = PxQueryFlag::eSTATIC;
+	filter.flags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePOSTFILTER;
+	PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId);
 	bool hasHit = mScene->raycast(
 		Vector3ToPxVector3(origin),			// start
 		rayDir, rayDist,					// ray dir + dist
 		hit,								// Output
 		hitFlags,							// IMPACT + NORMAL
-		filter);
+		filter,								// query filter
+		collisionObject ? &IgnoreCharacterFilter(collisionObject) : 0); // actor filter
 
 	if (hasHit && hit.hasAnyHits()) {
 
@@ -1289,7 +1427,7 @@ void PhysX::CastRay(
 	const Vector3<float>& origin, const Vector3<float>& end,
 	std::vector<ActorId>& collisionActors,
 	std::vector<Vector3<float>>& collisionPoints, 
-	std::vector<Vector3<float>>& collisionNormals)
+	std::vector<Vector3<float>>& collisionNormals, ActorId actorId)
 {
 	// Single directional raycast
 	Vector3<float> dir = end - origin;
@@ -1301,13 +1439,15 @@ void PhysX::CastRay(
 	PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative raycast (perfect here)
 
 	PxQueryFilterData filter;
-	filter.flags = PxQueryFlag::eSTATIC;
+	filter.flags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePOSTFILTER;
+	PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId);
 	bool hasHit = mScene->raycast(
 		Vector3ToPxVector3(origin),			// start
 		rayDir, rayDist,					// ray dir + dist
 		hit,								// Output
 		hitFlags,							// IMPACT + NORMAL
-		filter);
+		filter,								// query filter
+		collisionObject ? &IgnoreCharacterFilter(collisionObject) : 0); // actor filter
 
 	if (hasHit && hit.hasAnyHits()) {
 
@@ -1482,11 +1622,13 @@ float PhysX::GetJumpSpeed(ActorId actorId)
 /////////////////////////////////////////////////////////////////////////////
 void PhysX::SetGravity(ActorId actorId, const Vector3<float>& g)
 {
-	/*
-	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
+	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
-		mCCTFall[controller] = Vector3ToPxVector3(g);
-	*/
+		if (Length(g) == 0.f)
+			rigidActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
+		else
+			rigidActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, false);
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1497,10 +1639,11 @@ void PhysX::SetVelocity(ActorId actorId, const Vector3<float>& vel)
 		PxControllerFilters filters;
 		PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
 	}
-	else if (PxRigidDynamic* const body = dynamic_cast<PxRigidDynamic*>(FindPhysXCollisionObject(actorId)))
+	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
 		// set velocity
-		body->setLinearVelocity(Vector3ToPxVector3(vel));
+		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
+		rigidDynamic->setLinearVelocity(Vector3ToPxVector3(vel));
 	}
 }
 
@@ -1523,10 +1666,11 @@ void PhysX::SetAngularVelocity(ActorId actorId, const Vector3<float>& vel)
 		PxControllerFilters filters;
 		PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
 	}
-	else if (PxRigidDynamic* const body = dynamic_cast<PxRigidDynamic*>(FindPhysXCollisionObject(actorId)))
+	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
 		// set angular velocity
-		body->setAngularVelocity(Vector3ToPxVector3(vel));
+		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
+		rigidDynamic->setAngularVelocity(Vector3ToPxVector3(vel));
 	}
 }
 
@@ -1536,7 +1680,7 @@ void PhysX::Translate(ActorId actorId, const Vector3<float>& vec)
 	/*
 	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
-		PxRigidDynamic* const rigidDynamic = dynamic_cast<PxRigidDynamic*>(rigidActor);
+		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
 		rigidDynamic->translate(Vector3ToPxVector3(vec));
 	}
 	*/
@@ -1557,8 +1701,6 @@ bool PhysX::OnGround(ActorId aid)
 // PhysX::CheckPenetration
 bool PhysX::CheckPenetration(ActorId aid)
 {
-	LogError("TODO");
-
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(aid)))
 	{
 		// Get the controller's shape (capsule or box)
@@ -1663,8 +1805,10 @@ void ContactReportCallback::onTrigger(PxTriggerPair* pairs, PxU32 nPairs)
 		for (PxU32 i = 0; i < nPairs; i++)
 		{
 			//  get the two bodies used in the manifold.
-			PxRigidActor const* const body0 = static_cast<PxRigidActor const*>(pairs[i].triggerShape->getActor());
-			PxRigidActor const* const body1 = static_cast<PxRigidActor const*>(pairs[i].otherShape->getActor());
+			PxRigidActor const* const body0 = !(pairs[i].flags & PxTriggerPairFlag::eREMOVED_SHAPE_TRIGGER) ?
+				static_cast<PxRigidActor const*>(pairs[i].triggerShape->getActor()) : nullptr;
+			PxRigidActor const* const body1 = !(pairs[i].flags & PxTriggerPairFlag::eREMOVED_SHAPE_OTHER) ?
+				static_cast<PxRigidActor const*>(pairs[i].otherShape->getActor()) : nullptr;
 
 			// this is a new contact, which wasn't in our list before.  send an event to the game.
 			mPhysX->SendTriggerPairAddEvent(pairs[i]);
@@ -1675,8 +1819,10 @@ void ContactReportCallback::onTrigger(PxTriggerPair* pairs, PxU32 nPairs)
 		for (PxU32 i = 0; i < nPairs; i++)
 		{
 			//  get the two bodies used in the manifold.
-			PxRigidActor const* const body0 = static_cast<PxRigidActor const*>(pairs[i].triggerShape->getActor());
-			PxRigidActor const* const body1 = static_cast<PxRigidActor const*>(pairs[i].otherShape->getActor());
+			PxRigidActor const* const body0 = !(pairs[i].flags & PxTriggerPairFlag::eREMOVED_SHAPE_TRIGGER) ?
+				static_cast<PxRigidActor const*>(pairs[i].triggerShape->getActor()) : nullptr;
+			PxRigidActor const* const body1 = !(pairs[i].flags & PxTriggerPairFlag::eREMOVED_SHAPE_OTHER) ?
+				static_cast<PxRigidActor const*>(pairs[i].otherShape->getActor()) : nullptr;
 
 			// this is a new contact, which wasn't in our list before.  send an event to the game.
 			mPhysX->SendTriggerPairRemoveEvent(body0, body1);
@@ -1702,8 +1848,10 @@ void ContactReportCallback::onContact(const PxContactPairHeader& pairHeader, con
 				continue; //we consider a collision after we get contact
 
 			//  get the two bodies used in the manifold.
-			PxRigidActor const* const body0 = static_cast<PxRigidActor const*>(pairs[i].shapes[0]->getActor());
-			PxRigidActor const* const body1 = static_cast<PxRigidActor const*>(pairs[i].shapes[1]->getActor());
+			PxRigidActor const* const body0 = !(pairs[i].flags & PxContactPairFlag::eREMOVED_SHAPE_0) ? 
+				static_cast<PxRigidActor const*>(pairs[i].shapes[0]->getActor()) : nullptr;
+			PxRigidActor const* const body1 = !(pairs[i].flags & PxContactPairFlag::eREMOVED_SHAPE_1) ? 
+				static_cast<PxRigidActor const*>(pairs[i].shapes[1]->getActor()) : nullptr;
 
 			// this is a new contact, which wasn't in our list before. send an event to the game.
 			mPhysX->SendCollisionPairAddEvent(pairs[i]);
@@ -1711,8 +1859,10 @@ void ContactReportCallback::onContact(const PxContactPairHeader& pairHeader, con
 		else if (pairs[i].events & PxPairFlag::eNOTIFY_TOUCH_LOST)
 		{
 			//  get the two bodies used in the manifold.
-			PxRigidActor const* const body0 = static_cast<PxRigidActor const*>(pairs[i].shapes[0]->getActor());
-			PxRigidActor const* const body1 = static_cast<PxRigidActor const*>(pairs[i].shapes[1]->getActor());
+			PxRigidActor const* const body0 = !(pairs[i].flags & PxContactPairFlag::eREMOVED_SHAPE_0) ?
+				static_cast<PxRigidActor const*>(pairs[i].shapes[0]->getActor()) : nullptr;
+			PxRigidActor const* const body1 = !(pairs[i].flags & PxContactPairFlag::eREMOVED_SHAPE_1) ?
+				static_cast<PxRigidActor const*>(pairs[i].shapes[1]->getActor()) : nullptr;
 
 			// this is a new contact, which wasn't in our list before. send an event to the game.
 			mPhysX->SendCollisionPairRemoveEvent(body0, body1);

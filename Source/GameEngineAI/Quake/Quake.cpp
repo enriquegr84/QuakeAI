@@ -1822,10 +1822,12 @@ void QuakeLogic::MoveActorDelegate(BaseEventDataPtr pEventData)
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
 		if (pPhysicComponent)
 		{
-			pPhysicComponent->KinematicMove(pCastEventData->GetDirection());
+			const Vector3<float>& direction = pCastEventData->GetDirection();
 			pPhysicComponent->SetGravity(pCastEventData->GetFallDirection());
+			pPhysicComponent->KinematicMove(direction);
 
-			if (Length(pCastEventData->GetDirection()) > 0.f)
+			Vector2<float> move = {direction[AXIS_X], direction[AXIS_Z]};
+			if (Length(move) > 0.f)
 			{
 				if (pPhysicComponent->OnGround() && pPlayerActor->GetState().moveTime == 0)
 				{
@@ -4334,7 +4336,7 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 
 	std::vector<ActorId> collisionActors;
 	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals);
+	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	std::optional<Vector3<float>> closestCollision = std::nullopt;
@@ -4409,7 +4411,7 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 
 	std::vector<ActorId> collisionActors;
 	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals);
+	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	std::optional<Vector3<float>> closestCollision = std::nullopt;
@@ -4494,7 +4496,7 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 {
 	std::vector<ActorId> collisionActors;
 	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals);
+	mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	std::optional<Vector3<float>> closestCollision = std::nullopt;
@@ -4630,9 +4632,16 @@ void QuakeLogic::GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player,
 		{
 			pPhysicComponent->SetIgnoreCollision(player->GetId(), true);
 
+#if defined(PHYSX) && defined(_WIN64)
+			direction[0] *= 500.f;
+			direction[1] *= 500.f;
+			direction[2] *= 400.f;
+#else
 			direction[0] *= 1000000.f;
 			direction[1] *= 1000000.f;
 			direction[2] *= 800000.f;
+#endif
+
 			pPhysicComponent->ApplyForce(direction);
 		}
 
@@ -4698,9 +4707,16 @@ void QuakeLogic::RocketLauncherFire(const std::shared_ptr<PlayerActor>& player,
 			pPhysicComponent->SetGravity(Vector3<float>::Zero());
 			pPhysicComponent->SetIgnoreCollision(player->GetId(), true);
 
+#if defined(PHYSX) && defined(_WIN64)
+			direction[0] *= 1000.f;
+			direction[1] *= 1000.f;
+			direction[2] *= 1000.f;
+#else
 			direction[0] *= 200000.f;
 			direction[1] *= 200000.f;
 			direction[2] *= 200000.f;
+#endif
+
 			pPhysicComponent->ApplyForce(direction);
 		}
 
@@ -4767,9 +4783,16 @@ void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player,
 			pPhysicComponent->SetGravity(Vector3<float>::Zero());
 			pPhysicComponent->SetIgnoreCollision(player->GetId(), true);
 
+#if defined(PHYSX) && defined(_WIN64)
+			direction[0] *= 800.f;
+			direction[1] *= 800.f;
+			direction[2] *= 800.f;
+#else
 			direction[0] *= 4000.f;
 			direction[1] *= 4000.f;
 			direction[2] *= 4000.f;
+#endif
+
 			pPhysicComponent->ApplyForce(direction);
 		}
 
@@ -4810,7 +4833,7 @@ void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
 
 	std::vector<ActorId> collisionActors;
 	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals);
+	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	std::optional<Vector3<float>> closestCollision = std::nullopt;
@@ -4915,7 +4938,7 @@ void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
 
 	std::vector<ActorId> collisionActors;
 	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals);
+	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	Vector3<float> closestCollision = end;

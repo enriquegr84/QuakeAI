@@ -14623,7 +14623,7 @@ bool CheckPenetration(ActorId playerId, const Vector3<float>& translation)
 }
 
 // Cliff control
-bool Cliff(const Vector3<float>& translation)
+bool Cliff(ActorId playerId, const Vector3<float>& translation)
 {
 	for (int angle = 0; angle < 360; angle += 5)
 	{
@@ -14652,7 +14652,7 @@ bool Cliff(const Vector3<float>& translation)
 		Vector3<float> collision, collisionNormal;
 		collision = end.GetTranslation();
 		ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
-			start.GetTranslation(), end.GetTranslation(), collision, collisionNormal);
+			start.GetTranslation(), end.GetTranslation(), collision, collisionNormal, playerId);
 
 		//Check whether we are close to a cliff
 		//printf("weight cliff %f \n", abs(collision[AXIS_Y] - position[AXIS_Y]));
@@ -14771,7 +14771,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 						Vector3<float> diff = pClosestNode->GetPosition() - (*itMove).first.GetTranslation();
 						if (Length(diff) >= GROUND_DISTANCE)
 						{
-							if (!Cliff((*itMove).first.GetTranslation()) && 
+							if (!Cliff(mPlayerActor->GetId(), (*itMove).first.GetTranslation()) &&
 								!CheckPenetration(mPlayerActor->GetId(), (*itMove).first.GetTranslation()))
 							{
 								PathingNode* pNewNode = new PathingNode(
@@ -14830,7 +14830,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 							mPlayerActor->GetId(), start, end, collision, collisionNormal);
 						if (!collision.has_value() || actorId != INVALID_ACTOR_ID)
 						{
-							if (!Cliff((*itMove).first.GetTranslation()) &&
+							if (!Cliff(mPlayerActor->GetId(), (*itMove).first.GetTranslation()) &&
 								!CheckPenetration(mPlayerActor->GetId(), (*itMove).first.GetTranslation()))
 							{
 								PathingNode* pNewNode = new PathingNode(
@@ -15048,7 +15048,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 						Vector3<float> diff = pClosestNode->GetPosition() - (*itMove).first.GetTranslation();
 						if (Length(diff) >= GROUND_DISTANCE)
 						{
-							if (!Cliff((*itMove).first.GetTranslation()) &&
+							if (!Cliff(mPlayerActor->GetId(), (*itMove).first.GetTranslation()) &&
 								!CheckPenetration(mPlayerActor->GetId(), (*itMove).first.GetTranslation()))
 							{
 								PathingNode* pNewNode = new PathingNode(
@@ -15107,7 +15107,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 							mPlayerActor->GetId(), start, end, collision, collisionNormal);
 						if (!collision.has_value() || actorId != INVALID_ACTOR_ID)
 						{
-							if (!Cliff((*itMove).first.GetTranslation()) &&
+							if (!Cliff(mPlayerActor->GetId(), (*itMove).first.GetTranslation()) &&
 								!CheckPenetration(mPlayerActor->GetId(), (*itMove).first.GetTranslation()))
 							{
 								PathingNode* pNewNode = new PathingNode(
@@ -15857,7 +15857,7 @@ Vector3<float> QuakeAIManager::RayCollisionDetection(const Vector3<float>& start
 
 	std::vector<ActorId> collisionActors;
 	std::vector<Vector3<float>> collisions, collisionNormals;
-	gamePhysics->CastRay(start, end, collisionActors, collisions, collisionNormals);
+	gamePhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, mPlayerActor->GetId());
 
 	Vector3<float> collision = NULL;
 	for (unsigned int i = 0; i < collisionActors.size(); i++)
@@ -15890,7 +15890,7 @@ void QuakeAIManager::SimulateVisibility(std::shared_ptr<PathingGraph>& graph)
 
 			std::vector<ActorId> collisionActors;
 			std::vector<Vector3<float>> collisions, collisionNormals;
-			gamePhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals);
+			gamePhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, mPlayerActor->GetId());
 
 			Vector3<float> collision = NULL;
 			for (unsigned int i = 0; i < collisionActors.size(); i++)

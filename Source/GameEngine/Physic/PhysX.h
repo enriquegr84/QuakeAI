@@ -144,14 +144,13 @@ public:
 		std::vector<Vector3<float>>& collisionPoints,
 		std::vector<Vector3<float>>& collisionNormals);
 
-	virtual ActorId CastRay(
-		const Vector3<float>& origin, const Vector3<float>& end,
-		Vector3<float>& collisionPoint, Vector3<float>& collisionNormal);
+	virtual ActorId CastRay(const Vector3<float>& origin, const Vector3<float>& end,
+		Vector3<float>& collisionPoint, Vector3<float>& collisionNormal, ActorId actorId);
 	virtual void CastRay(
 		const Vector3<float>& origin, const Vector3<float>& end,
 		std::vector<ActorId>& collisionActors,
 		std::vector<Vector3<float>>& collisionPoints,
-		std::vector<Vector3<float>>& collisionNormals);
+		std::vector<Vector3<float>>& collisionNormals, ActorId actorId);
 
 	virtual void SetCollisionFlags(ActorId actorId, int collisionFlags);
 	virtual void SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision);

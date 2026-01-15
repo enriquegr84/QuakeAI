@@ -70,9 +70,9 @@ QuakePlayerController::QuakePlayerController(
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 10.f, 10.f, 22.f };
+	mMaxPushSpeed = Vector3<float>{ 4.f, 4.f, 20.f };
 	mMaxJumpSpeed = Vector3<float>{ 10.f, 10.f, 12.f };
-	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 40.f };
+	mMaxFallSpeed = Vector3<float>{ 15.f, 15.f, 40.f };
 	mMaxMoveSpeed = 300.f;
 
 #else
@@ -450,7 +450,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						float push = mPushSpeed[AXIS_Y];
 #if defined(PHYSX) && defined(_WIN64)
 
-						push += direction[AXIS_Y] * 0.04f;
+						push += direction[AXIS_Y] * 0.06f;
 
 #else
 
