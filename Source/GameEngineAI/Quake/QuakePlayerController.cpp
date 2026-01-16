@@ -105,15 +105,20 @@ QuakePlayerController::QuakePlayerController(
 	mWheelRollDown = false;
 	mWheelRollUp = false;
 
-	Transform initTransform;
+	Transform initTransform = mAbsoluteTransform;
 	mProjectileActor = GameLogic::Get()->CreateActor(
 		"actors/quake/effects/rocketghostlauncherfire.xml", nullptr, &initTransform);
+
 	const std::shared_ptr<ScreenElementScene>& pScene = GameApplication::Get()->GetHumanView()->mScene;
 	std::shared_ptr<Node> pProjectileNode = pScene->GetSceneNode(mProjectileActor->GetId());
 	if (pProjectileNode)
 		pProjectileNode->SetVisible(false);
 }
 
+ActorId QuakePlayerController::GetProjectileId() const 
+{ 
+	return mProjectileActor->GetId(); 
+}
 
 void QuakePlayerController::PlayerSpawn(const Transform& spawnTransform)
 {
@@ -291,94 +296,6 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 			if (mKey[KEY_KEY_A])
 				rightWorld *= -1.f;
-		}
-
-		std::shared_ptr<PhysicComponent> pActorPhysicComponent =
-			mProjectileActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
-		if (pActorPhysicComponent)
-		{
-			Matrix4x4<float> rotation;
-			EulerAngles<float> viewAngles;
-			std::shared_ptr<TransformComponent> pPlayerTransformComponent(
-				pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-			if (pPlayerTransformComponent)
-			{
-				viewAngles.mAxis[1] = 1;
-				viewAngles.mAxis[2] = 2;
-				pPlayerTransformComponent->GetTransform().GetRotation(viewAngles);
-				Matrix4x4<float> yawRotation = Rotation<4, float>(
-					AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), viewAngles.mAngle[2]));
-				Matrix4x4<float> pitchRotation = Rotation<4, float>(
-					AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), viewAngles.mAngle[1]));
-				rotation = yawRotation * pitchRotation;
-			}
-			Vector3<float> forward = HProject(rotation * Vector4<float>::Unit(AXIS_X));
-			Vector3<float> right = HProject(rotation * Vector4<float>::Unit(AXIS_Z));
-			Vector3<float> up = HProject(rotation * Vector4<float>::Unit(AXIS_Y));
-
-			//set muzzle location relative to pivoting eye
-			std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
-				pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-			Vector3<float> muzzle = pPlayerPhysicComponent->GetTransform().GetTranslation();
-			muzzle += up * (float)pPlayerActor->GetState().viewHeight;
-			muzzle += forward * 5.f;
-			muzzle -= right * 5.f;
-
-			Transform actorTransform;
-			actorTransform.SetRotation(rotation);
-			actorTransform.SetTranslation(muzzle);
-			pActorPhysicComponent->SetTransform(actorTransform);
-
-			Transform start;
-			start.SetTranslation(muzzle);
-			Transform end;
-			end.SetTranslation(muzzle + forward * 2000.f);
-
-			std::vector<ActorId> collisionActors;
-			std::vector<Vector3<float>> collisions, collisionNormals;
-			std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
-			gamePhysics->ConvexSweep(mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
-
-			ActorId closestCollisionId = INVALID_ACTOR_ID;
-			std::optional<Vector3<float>> closestCollision = std::nullopt;
-			for (unsigned int i = 0; i < collisionActors.size(); i++)
-			{
-				if (collisionActors[i] == INVALID_ACTOR_ID)
-				{
-					if (closestCollision.has_value())
-					{
-						if (Length(closestCollision.value() - start.GetTranslation()) > Length(collisions[i] - start.GetTranslation()))
-						{
-							closestCollisionId = collisionActors[i];
-							closestCollision = collisions[i];
-						}
-					}
-					else
-					{
-						closestCollisionId = collisionActors[i];
-						closestCollision = collisions[i];
-					}
-				}
-			}
-			if (closestCollision.has_value())
-			{
-				actorTransform.SetTranslation(closestCollision.value());
-				pActorPhysicComponent->SetTransform(actorTransform);
-			}
-			else
-			{
-				actorTransform.SetTranslation(end.GetTranslation());
-				pActorPhysicComponent->SetTransform(actorTransform);
-			}
-
-			// update projectile node rotation matrix
-			const std::shared_ptr<ScreenElementScene>& pScene = GameApplication::Get()->GetHumanView()->mScene;
-			std::shared_ptr<Node> pProjectileNode = pScene->GetSceneNode(mProjectileActor->GetId());
-			if (pProjectileNode)
-			{
-				pProjectileNode->GetRelativeTransform().SetRotation(mAbsoluteTransform);
-				pProjectileNode->UpdateAbsoluteTransform();
-			}
 		}
 
 		if (pPlayerActor->GetAction().triggerTeleporter != INVALID_ACTOR_ID)
@@ -561,6 +478,52 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 			pPlayerActor->UpdateMovement(Vector3<float>::Zero(), mGravity);
 
 #endif
+		}
+	}
+
+	if (mProjectileActor)
+	{
+		Matrix4x4<float> rotation;
+		EulerAngles<float> viewAngles;
+		std::shared_ptr<TransformComponent> pPlayerTransformComponent(
+			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		if (pPlayerTransformComponent)
+		{
+			viewAngles.mAxis[1] = 1;
+			viewAngles.mAxis[2] = 2;
+			pPlayerTransformComponent->GetTransform().GetRotation(viewAngles);
+			Matrix4x4<float> yawRotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), viewAngles.mAngle[2]));
+			Matrix4x4<float> pitchRotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), viewAngles.mAngle[1]));
+			rotation = yawRotation * pitchRotation;
+		}
+		Vector3<float> forward = HProject(rotation * Vector4<float>::Unit(AXIS_X));
+		Vector3<float> right = HProject(rotation * Vector4<float>::Unit(AXIS_Z));
+		Vector3<float> up = HProject(rotation * Vector4<float>::Unit(AXIS_Y));
+
+		//set muzzle location relative to pivoting eye
+		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		Vector3<float> muzzle = pPlayerPhysicComponent->GetTransform().GetTranslation();
+		muzzle += up * (float)pPlayerActor->GetState().viewHeight;
+		muzzle += forward * 5.f;
+		muzzle -= right * 5.f;
+
+		Transform actorTransform;
+		actorTransform.SetRotation(rotation);
+		actorTransform.SetTranslation(muzzle);
+		std::shared_ptr<PhysicComponent> pActorPhysicComponent =
+			mProjectileActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
+		pActorPhysicComponent->SetTransform(actorTransform);
+
+		// update projectile node rotation matrix
+		const std::shared_ptr<ScreenElementScene>& pScene = GameApplication::Get()->GetHumanView()->mScene;
+		std::shared_ptr<Node> pProjectileNode = pScene->GetSceneNode(mProjectileActor->GetId());
+		if (pProjectileNode)
+		{
+			pProjectileNode->GetRelativeTransform().SetRotation(mAbsoluteTransform);
+			pProjectileNode->UpdateAbsoluteTransform();
 		}
 	}
 

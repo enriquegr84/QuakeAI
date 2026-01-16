@@ -55,6 +55,8 @@ public:
 	QuakePlayerController(
 		const std::shared_ptr<Node>& target, float initialYaw, float initialPitch);
 
+	ActorId GetProjectileId() const;
+
 	void PlayerSpawn(const Transform& spawnTransform);
 
 	//! Sets whether or not the controller is currently enabled.

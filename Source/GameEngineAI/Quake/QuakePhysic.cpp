@@ -48,8 +48,6 @@
 #include "QuakeEvents.h"
 #include "QuakeNetwork.h"
 #include "QuakeLevelManager.h"
-#include "QuakePlayerController.h"
-#include "QuakeCameraController.h"
 
 #include "Game/Actor/Actor.h"
 #include "Game/Actor/TransformComponent.h"

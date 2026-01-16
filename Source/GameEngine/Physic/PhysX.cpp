@@ -931,6 +931,8 @@ void PhysX::AddCharacterController(
 
 	PxShape* playerShape = nullptr;
 	controller->getActor()->getShapes(&playerShape, 1);
+	PxQuat rot(PxHalfPi, PxVec3(0, 1, 0)); // rotate X ? Z
+	playerShape->setLocalPose(PxTransform(PxVec3(0), rot));
 	playerShape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
 		GROUP_TRIGGERS | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
@@ -1489,13 +1491,15 @@ ActorId PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform
 		PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative sweep (perfect here)
 
 		PxQueryFilterData filter;
-		filter.flags = PxQueryFlag::eSTATIC;
+		filter.flags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePOSTFILTER;
+		PxRigidActor* const collisionObject = FindPhysXCollisionObject(aId);
 		bool hasHit = mScene->sweep(
 			capsuleGeom, pose,			// Shape + start pose
 			sweepDir, sweepDist,		// Sweep dir + dist
 			hit,						// Output
 			hitFlags,					// IMPACT + NORMAL
-			filter);
+			filter,								// query filter
+			collisionObject ? &IgnoreCharacterFilter(collisionObject) : 0); // actor filter
 
 		if (hasHit && hit.hasAnyHits()) 
 		{
@@ -1544,13 +1548,15 @@ void PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& e
 		PxHitFlags hitFlags = PxHitFlag::eDEFAULT | PxHitFlag::eMTD;  // fast conservative sweep (perfect here)
 
 		PxQueryFilterData filter;
-		filter.flags = PxQueryFlag::eSTATIC;
+		filter.flags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePOSTFILTER;
+		PxRigidActor* const collisionObject = FindPhysXCollisionObject(aId);
 		bool hasHit = mScene->sweep(
 			capsuleGeom, pose,			// Shape + start pose
 			sweepDir, sweepDist,		// Sweep dir + dist
 			hit,						// Output
 			hitFlags,					// IMPACT + NORMAL
-			filter);
+			filter,								// query filter
+			collisionObject ? &IgnoreCharacterFilter(collisionObject) : 0); // actor filter
 
 		if (hasHit && hit.hasAnyHits()) {
 

@@ -13,7 +13,7 @@
 		keymap_slot9="KEY_KEY_9" keymap_slot10="KEY_KEY_0"/>
 	<Game disable_anticheat="false" default_game="" selected_game="" motd="" num_ais="1" expected_players="1" max_ais="1" max_players="15" 
 		item_entity_ttl="-1" creative_mode="false" enable_damage="true" free_move="false" pitch_move="false" fast_move="false" invert_mouse="false" 
-		mouse_sensitivity="0.2" repeat_place_time="0.25" safe_dig_and_place="false" random_input="false" aux1_descends="false" doubletap_jump="false" 
+		mouse_sensitivity="0.3" repeat_place_time="0.25" safe_dig_and_place="false" random_input="false" aux1_descends="false" doubletap_jump="false" 
 		always_fly_fast="true" autojump="false" continuous_forward="false" noclip="false" screenshot_path="screenshots" screenshot_format="png" 
 		screenshot_quality="0" client_unload_unused_data_timeout="600" client_mapblock_limit="7500" enable_build_where_you_stand="false" 
 		curl_timeout="20000" curl_parallel_limit="8" curl_file_download_timeout="300000" curl_verify_cert="true" enable_remote_media_server="true" 

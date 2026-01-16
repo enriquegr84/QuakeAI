@@ -4334,28 +4334,68 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 	sound.name = "fstrun"; //art/quake/audio/sound/weapons/melee/fstrun.ogg
 	PlaySound(sound, params, true);
 
-	std::vector<ActorId> collisionActors;
-	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
-
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
-	std::optional<Vector3<float>> closestCollision = std::nullopt;
-	for (unsigned int i = 0; i < collisionActors.size(); i++)
+	Vector3<float> closestCollision = end;
+	if (player)
 	{
-		if (collisionActors[i] != player->GetId())
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (closestCollision.has_value())
+			if (collisionActors[i] != player->GetId())
 			{
-				if (Length(closestCollision.value() - muzzle) > Length(collisions[i] - muzzle))
+				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
 				}
 			}
-			else
+		}
+	}
+
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+		{
+			ActorId projectile = INVALID_ACTOR_ID;
+			std::shared_ptr<BaseGameView> pView = *it;
+			if (pView->GetType() == GV_HUMAN)
 			{
-				closestCollisionId = collisionActors[i];
-				closestCollision = collisions[i];
+				std::shared_ptr<HumanView> pHumanView =
+					std::static_pointer_cast<HumanView, BaseGameView>(pView);
+				std::shared_ptr<QuakePlayerController> pPlayerController =
+					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
+				if (pPlayerController)
+					projectile = pPlayerController->GetProjectileId();
+			}
+			else if (pView->GetType() == GV_AI)
+			{
+				std::shared_ptr<QuakeAIView> pAiView =
+					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
+				projectile = pAiView->GetProjectileId();
+			}
+
+			Transform startPos;
+			startPos.SetTranslation(muzzle);
+			Transform endPos;
+			endPos.SetTranslation(end);
+			std::vector<ActorId> collisionActors;
+			std::vector<Vector3<float>> collisions, collisionNormals;
+			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
+
+			for (unsigned int i = 0; i < collisionActors.size(); i++)
+			{
+				if (collisionActors[i] != player->GetId())
+				{
+					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+					{
+						closestCollisionId = collisionActors[i];
+						closestCollision = collisions[i];
+					}
+				}
 			}
 		}
 	}
@@ -4369,7 +4409,7 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 			player->GetState().accuracyHits++;
 
 		Transform initTransform;
-		initTransform.SetTranslation(closestCollision.value());
+		initTransform.SetTranslation(closestCollision);
 		CreateActor("actors/quake/effects/bleed.xml", nullptr, &initTransform);
 
 		int damage = 50;
@@ -4380,7 +4420,7 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 		gameEvent.player = player->GetId();
 		gameEvent.weapon = WP_GAUNTLET;
 		gameEvent.target = target->GetId();
-		gameEvent.position = { closestCollision.value()[0], closestCollision.value()[1], closestCollision.value()[2] };
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 		aiManager->AddGameEvent(gameEvent);
 	}
@@ -4409,28 +4449,69 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 	std::shared_ptr<CameraNode> camera = GameApplication::Get()->GetHumanView()->mCamera;
 	Transform cameraTransform = camera->GetAbsoluteTransform();
 
-	std::vector<ActorId> collisionActors;
-	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
-
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
-	std::optional<Vector3<float>> closestCollision = std::nullopt;
-	for (unsigned int i = 0; i < collisionActors.size(); i++)
+	Vector3<float> closestCollision = end;
+	if (player)
 	{
-		if (collisionActors[i] != player->GetId())
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (closestCollision.has_value())
+			if (collisionActors[i] != player->GetId())
 			{
-				if (Length(closestCollision.value() - muzzle) > Length(collisions[i] - muzzle))
+				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
 				}
 			}
-			else
+		}
+	}
+
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+		{
+			ActorId projectile = INVALID_ACTOR_ID;
+			std::shared_ptr<BaseGameView> pView = *it;
+			if (pView->GetType() == GV_HUMAN)
 			{
-				closestCollisionId = collisionActors[i];
-				closestCollision = collisions[i];
+				std::shared_ptr<HumanView> pHumanView =
+					std::static_pointer_cast<HumanView, BaseGameView>(pView);
+				std::shared_ptr<QuakePlayerController> pPlayerController =
+					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
+				if (pPlayerController)
+					projectile = pPlayerController->GetProjectileId();
+			}
+			else if (pView->GetType() == GV_AI)
+			{
+				std::shared_ptr<QuakeAIView> pAiView =
+					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
+				projectile = pAiView->GetProjectileId();
+			}
+
+			Transform startPos;
+			startPos.SetTranslation(muzzle);
+			Transform endPos;
+			endPos.SetTranslation(end);
+			std::vector<ActorId> collisionActors;
+			std::vector<Vector3<float>> collisions, collisionNormals;
+			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
+
+			for (unsigned int i = 0; i < collisionActors.size(); i++)
+			{
+				if (collisionActors[i] != player->GetId())
+				{
+					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+					{
+						closestCollisionId = collisionActors[i];
+						closestCollision = collisions[i];
+						printf("\n does it work %f %f %f", closestCollision[0], closestCollision[1], closestCollision[2]);
+					}
+				}
 			}
 		}
 	}
@@ -4444,24 +4525,24 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 			player->GetState().accuracyHits++;
 
 		Transform initTransform;
-		initTransform.SetTranslation(closestCollision.value());
+		initTransform.SetTranslation(closestCollision);
 		CreateActor("actors/quake/effects/bleed.xml", nullptr, &initTransform);
 
-		Damage(damage, 0, MOD_MACHINEGUN, forward, closestCollision.value(), target, player, player);
+		Damage(damage, 0, MOD_MACHINEGUN, forward, closestCollision, target, player, player);
 
 		AIGame::Event gameEvent;
 		gameEvent.type = "attack";
 		gameEvent.player = player->GetId();
 		gameEvent.weapon = WP_MACHINEGUN;
 		gameEvent.target = target->GetId();
-		gameEvent.position = { closestCollision.value()[0], closestCollision.value()[1], closestCollision.value()[2] };
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 		aiManager->AddGameEvent(gameEvent);
 	}
 	else
 	{
 		Transform initTransform;
-		initTransform.SetTranslation(closestCollision.value());
+		initTransform.SetTranslation(closestCollision);
 		CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
 
 		AIGame::Event gameEvent;
@@ -4469,7 +4550,7 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 		gameEvent.player = player->GetId();
 		gameEvent.weapon = WP_MACHINEGUN;
 		gameEvent.target = INVALID_ACTOR_ID;
-		gameEvent.position = { closestCollision.value()[0], closestCollision.value()[1], closestCollision.value()[2] };
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 		aiManager->AddGameEvent(gameEvent);
 	}
@@ -4494,28 +4575,68 @@ SHOTGUN
 bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player, 
 	const Vector3<float>& forward, const Vector3<float>& start, const Vector3<float>& end)
 {
-	std::vector<ActorId> collisionActors;
-	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, player->GetId());
-
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
-	std::optional<Vector3<float>> closestCollision = std::nullopt;
-	for (unsigned int i = 0; i < collisionActors.size(); i++)
+	Vector3<float> closestCollision = end;
+	if (player)
 	{
-		if (collisionActors[i] != player->GetId())
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, player->GetId());
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (closestCollision.has_value())
+			if (collisionActors[i] != player->GetId())
 			{
-				if (Length(closestCollision.value() - start) > Length(collisions[i] - start))
+				if (Length(closestCollision - start) > Length(collisions[i] - start))
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
 				}
 			}
-			else
+		}
+	}
+
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+		{
+			ActorId projectile = INVALID_ACTOR_ID;
+			std::shared_ptr<BaseGameView> pView = *it;
+			if (pView->GetType() == GV_HUMAN)
 			{
-				closestCollisionId = collisionActors[i];
-				closestCollision = collisions[i];
+				std::shared_ptr<HumanView> pHumanView =
+					std::static_pointer_cast<HumanView, BaseGameView>(pView);
+				std::shared_ptr<QuakePlayerController> pPlayerController =
+					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
+				if (pPlayerController)
+					projectile = pPlayerController->GetProjectileId();
+			}
+			else if (pView->GetType() == GV_AI)
+			{
+				std::shared_ptr<QuakeAIView> pAiView =
+					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
+				projectile = pAiView->GetProjectileId();
+			}
+
+			Transform startPos;
+			startPos.SetTranslation(start);
+			Transform endPos;
+			endPos.SetTranslation(end);
+			std::vector<ActorId> collisionActors;
+			std::vector<Vector3<float>> collisions, collisionNormals;
+			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
+
+			for (unsigned int i = 0; i < collisionActors.size(); i++)
+			{
+				if (collisionActors[i] != player->GetId())
+				{
+					if (Length(closestCollision - start) > Length(collisions[i] - start))
+					{
+						closestCollisionId = collisionActors[i];
+						closestCollision = collisions[i];
+					}
+				}
 			}
 		}
 	}
@@ -4529,18 +4650,18 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 			player->GetState().accuracyHits++;
 
 		Transform initTransform;
-		initTransform.SetTranslation(closestCollision.value());
+		initTransform.SetTranslation(closestCollision);
 		CreateActor("actors/quake/effects/bleed.xml", nullptr, &initTransform);
 
 		int damage = DEFAULT_SHOTGUN_DAMAGE;
-		Damage(damage, 0, MOD_SHOTGUN, forward, closestCollision.value(), target, player, player);
+		Damage(damage, 0, MOD_SHOTGUN, forward, closestCollision, target, player, player);
 
 		AIGame::Event gameEvent;
 		gameEvent.type = "attack";
 		gameEvent.player = player->GetId();
 		gameEvent.weapon = WP_SHOTGUN;
 		gameEvent.target = target->GetId();
-		gameEvent.position = { closestCollision.value()[0], closestCollision.value()[1], closestCollision.value()[2] };
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 		aiManager->AddGameEvent(gameEvent);
 		return true;
@@ -4548,7 +4669,7 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 	else
 	{
 		Transform initTransform;
-		initTransform.SetTranslation(closestCollision.value());
+		initTransform.SetTranslation(closestCollision);
 		CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
 
 		AIGame::Event gameEvent;
@@ -4556,7 +4677,7 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 		gameEvent.player = player->GetId();
 		gameEvent.weapon = WP_SHOTGUN;
 		gameEvent.target = INVALID_ACTOR_ID;
-		gameEvent.position = { closestCollision.value()[0], closestCollision.value()[1], closestCollision.value()[2] };
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 		aiManager->AddGameEvent(gameEvent);
 	}
@@ -4784,9 +4905,9 @@ void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player,
 			pPhysicComponent->SetIgnoreCollision(player->GetId(), true);
 
 #if defined(PHYSX) && defined(_WIN64)
-			direction[0] *= 800.f;
-			direction[1] *= 800.f;
-			direction[2] *= 800.f;
+			direction[0] *= 1200.f;
+			direction[1] *= 1200.f;
+			direction[2] *= 1200.f;
 #else
 			direction[0] *= 4000.f;
 			direction[1] *= 4000.f;
@@ -4831,84 +4952,121 @@ void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
 {
 	Vector3<float> end = muzzle + forward * 8192.f * 16.f;
 
-	std::vector<ActorId> collisionActors;
-	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
-
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
-	std::optional<Vector3<float>> closestCollision = std::nullopt;
-	for (unsigned int i = 0; i < collisionActors.size(); i++)
+	Vector3<float> closestCollision = end;
+	if (player)
 	{
-		if (collisionActors[i] != player->GetId())
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (closestCollision.has_value())
+			if (collisionActors[i] != player->GetId())
 			{
-				if (Length(closestCollision.value() - muzzle) > Length(collisions[i] - muzzle))
+				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
 				}
 			}
-			else
+		}
+	}
+
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+		{
+			ActorId projectile = INVALID_ACTOR_ID;
+			std::shared_ptr<BaseGameView> pView = *it;
+			if (pView->GetType() == GV_HUMAN)
 			{
-				closestCollisionId = collisionActors[i];
-				closestCollision = collisions[i];
+				std::shared_ptr<HumanView> pHumanView =
+					std::static_pointer_cast<HumanView, BaseGameView>(pView);
+				std::shared_ptr<QuakePlayerController> pPlayerController =
+					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
+				if (pPlayerController)
+					projectile = pPlayerController->GetProjectileId();
+			}
+			else if (pView->GetType() == GV_AI)
+			{
+				std::shared_ptr<QuakeAIView> pAiView =
+					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
+				projectile = pAiView->GetProjectileId();
+			}
+
+			Transform startPos;
+			startPos.SetTranslation(muzzle);
+			Transform endPos;
+			endPos.SetTranslation(end);
+			std::vector<ActorId> collisionActors;
+			std::vector<Vector3<float>> collisions, collisionNormals;
+			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
+
+			for (unsigned int i = 0; i < collisionActors.size(); i++)
+			{
+				if (collisionActors[i] != player->GetId())
+				{
+					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+					{
+						closestCollisionId = collisionActors[i];
+						closestCollision = collisions[i];
+					}
+				}
 			}
 		}
 	}
 
-	if (closestCollision.has_value())
+	Vector3<float> direction = closestCollision - muzzle;
+	float scale = Length(direction);
+	Normalize(direction);
+
+	Matrix4x4<float> yawRotation = Rotation<4, float>(
+		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+	Matrix4x4<float> pitchRotation = Rotation<4, float>(
+		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
+
+	Transform initTransform;
+	initTransform.SetRotation(yawRotation * pitchRotation);
+	initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
+	initTransform.SetTranslation(muzzle + (closestCollision - muzzle) / 2.f);
+	CreateActor("actors/quake/effects/railgunfire.xml", nullptr, &initTransform);
+
+	if (closestCollisionId != INVALID_ACTOR_ID &&
+		std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]))
 	{
-		Vector3<float> direction = closestCollision.value() - muzzle;
-		float scale = Length(direction);
-		Normalize(direction);
+		std::shared_ptr<PlayerActor> target =
+			std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]);
+		if (LogAccuracyHit(target, player))
+			player->GetState().accuracyHits++;
 
-		Matrix4x4<float> yawRotation = Rotation<4, float>(
-			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
-		Matrix4x4<float> pitchRotation = Rotation<4, float>(
-			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
+		initTransform.MakeIdentity();
+		initTransform.SetTranslation(closestCollision);
+		CreateActor("actors/quake/effects/bleed.xml", nullptr, &initTransform);
 
-		Transform initTransform;
-		initTransform.SetRotation(yawRotation * pitchRotation);
-		initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
-		initTransform.SetTranslation(muzzle + (closestCollision.value() - muzzle) / 2.f);
-		CreateActor("actors/quake/effects/railgunfire.xml", nullptr, &initTransform);
+		int damage = 100;
+		Damage(damage, 0, MOD_RAILGUN, forward, closestCollision, target, player, player);
 
-		if (closestCollisionId != INVALID_ACTOR_ID &&
-			std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]))
-		{
-			std::shared_ptr<PlayerActor> target =
-				std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]);
-			if (LogAccuracyHit(target, player))
-				player->GetState().accuracyHits++;
-
-			initTransform.MakeIdentity();
-			initTransform.SetTranslation(closestCollision.value());
-			CreateActor("actors/quake/effects/bleed.xml", nullptr, &initTransform);
-
-			int damage = 100;
-			Damage(damage, 0, MOD_RAILGUN, forward, closestCollision.value(), target, player, player);
-
-			AIGame::Event gameEvent;
-			gameEvent.type = "attack";
-			gameEvent.player = player->GetId();
-			gameEvent.weapon = WP_RAILGUN;
-			gameEvent.target = target->GetId();
-			gameEvent.position = { closestCollision.value()[0], closestCollision.value()[1], closestCollision.value()[2] };
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->AddGameEvent(gameEvent);
-		}
-		else
-		{
-			AIGame::Event gameEvent;
-			gameEvent.type = "attack";
-			gameEvent.player = player->GetId();
-			gameEvent.weapon = WP_RAILGUN;
-			gameEvent.target = INVALID_ACTOR_ID;
-			gameEvent.position = { closestCollision.value()[0], closestCollision.value()[1], closestCollision.value()[2] };
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->AddGameEvent(gameEvent);
-		}
+		AIGame::Event gameEvent;
+		gameEvent.type = "attack";
+		gameEvent.player = player->GetId();
+		gameEvent.weapon = WP_RAILGUN;
+		gameEvent.target = target->GetId();
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		aiManager->AddGameEvent(gameEvent);
+	}
+	else
+	{
+		AIGame::Event gameEvent;
+		gameEvent.type = "attack";
+		gameEvent.player = player->GetId();
+		gameEvent.weapon = WP_RAILGUN;
+		gameEvent.target = INVALID_ACTOR_ID;
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		aiManager->AddGameEvent(gameEvent);
 	}
 
 	std::shared_ptr<CameraNode> camera = GameApplication::Get()->GetHumanView()->mCamera;
@@ -4936,76 +5094,121 @@ void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
 {
 	Vector3<float> end = muzzle + forward * (float)LIGHTNING_RANGE;
 
-	std::vector<ActorId> collisionActors;
-	std::vector<Vector3<float>> collisions, collisionNormals;
-	mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
-
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	Vector3<float> closestCollision = end;
-	for (unsigned int i = 0; i < collisionActors.size(); i++)
+	if (player)
 	{
-		if (collisionActors[i] != player->GetId())
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+			if (collisionActors[i] != player->GetId())
 			{
-				closestCollisionId = collisionActors[i];
-				closestCollision = collisions[i];
+				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+				{
+					closestCollisionId = collisionActors[i];
+					closestCollision = collisions[i];
+				}
 			}
 		}
 	}
 
-	if (closestCollision != NULL)
+	if (closestCollisionId == INVALID_ACTOR_ID)
 	{
-		Vector3<float> direction = closestCollision - muzzle;
-		float scale = Length(direction);
-		Normalize(direction);
-
-		Matrix4x4<float> yawRotation = Rotation<4, float>(
-			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
-		Matrix4x4<float> pitchRotation = Rotation<4, float>(
-			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
-
-		Transform initTransform;
-		initTransform.SetRotation(yawRotation * pitchRotation);
-		initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
-		initTransform.SetTranslation(muzzle + (closestCollision - muzzle) / 2.f);
-		CreateActor("actors/quake/effects/lightningfire.xml", nullptr, &initTransform);
-
-		if (closestCollisionId != INVALID_ACTOR_ID &&
-			std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]))
+		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
 		{
-			std::shared_ptr<PlayerActor> target =
-				std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]);
-			if (LogAccuracyHit(target, player))
-				player->GetState().accuracyHits++;
+			ActorId projectile = INVALID_ACTOR_ID;
+			std::shared_ptr<BaseGameView> pView = *it;
+			if (pView->GetType() == GV_HUMAN)
+			{
+				std::shared_ptr<HumanView> pHumanView =
+					std::static_pointer_cast<HumanView, BaseGameView>(pView);
+				std::shared_ptr<QuakePlayerController> pPlayerController =
+					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
+				if (pPlayerController)
+					projectile = pPlayerController->GetProjectileId();
+			}
+			else if (pView->GetType() == GV_AI)
+			{
+				std::shared_ptr<QuakeAIView> pAiView =
+					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
+				projectile = pAiView->GetProjectileId();
+			}
 
-			initTransform.MakeIdentity();
-			initTransform.SetTranslation(closestCollision);
-			CreateActor("actors/quake/effects/bleed.xml", nullptr, &initTransform);
+			Transform startPos;
+			startPos.SetTranslation(muzzle);
+			Transform endPos;
+			endPos.SetTranslation(end);
+			std::vector<ActorId> collisionActors;
+			std::vector<Vector3<float>> collisions, collisionNormals;
+			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
 
-			int damage = 6;
-			Damage(damage, 0, MOD_LIGHTNING, forward, closestCollision, target, player, player);
-
-			AIGame::Event gameEvent;
-			gameEvent.type = "attack";
-			gameEvent.player = player->GetId();
-			gameEvent.weapon = WP_LIGHTNING;
-			gameEvent.target = target->GetId();
-			gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->AddGameEvent(gameEvent);
+			for (unsigned int i = 0; i < collisionActors.size(); i++)
+			{
+				if (collisionActors[i] != player->GetId())
+				{
+					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+					{
+						closestCollisionId = collisionActors[i];
+						closestCollision = collisions[i];
+					}
+				}
+			}
 		}
-		else
-		{
-			AIGame::Event gameEvent;
-			gameEvent.type = "attack";
-			gameEvent.player = player->GetId();
-			gameEvent.weapon = WP_LIGHTNING;
-			gameEvent.target = INVALID_ACTOR_ID;
-			gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->AddGameEvent(gameEvent);
-		}
+	}
+
+	Vector3<float> direction = closestCollision - muzzle;
+	float scale = Length(direction);
+	Normalize(direction);
+
+	Matrix4x4<float> yawRotation = Rotation<4, float>(
+		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+	Matrix4x4<float> pitchRotation = Rotation<4, float>(
+		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
+
+	Transform initTransform;
+	initTransform.SetRotation(yawRotation * pitchRotation);
+	initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
+	initTransform.SetTranslation(muzzle + (closestCollision - muzzle) / 2.f);
+	CreateActor("actors/quake/effects/lightningfire.xml", nullptr, &initTransform);
+
+	if (closestCollisionId != INVALID_ACTOR_ID &&
+		std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]))
+	{
+		std::shared_ptr<PlayerActor> target =
+			std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]);
+		if (LogAccuracyHit(target, player))
+			player->GetState().accuracyHits++;
+
+		initTransform.MakeIdentity();
+		initTransform.SetTranslation(closestCollision);
+		CreateActor("actors/quake/effects/bleed.xml", nullptr, &initTransform);
+
+		int damage = 6;
+		Damage(damage, 0, MOD_LIGHTNING, forward, closestCollision, target, player, player);
+
+		AIGame::Event gameEvent;
+		gameEvent.type = "attack";
+		gameEvent.player = player->GetId();
+		gameEvent.weapon = WP_LIGHTNING;
+		gameEvent.target = target->GetId();
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		aiManager->AddGameEvent(gameEvent);
+	}
+	else
+	{
+		AIGame::Event gameEvent;
+		gameEvent.type = "attack";
+		gameEvent.player = player->GetId();
+		gameEvent.weapon = WP_LIGHTNING;
+		gameEvent.target = INVALID_ACTOR_ID;
+		gameEvent.position = { closestCollision[0], closestCollision[1], closestCollision[2] };
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		aiManager->AddGameEvent(gameEvent);
 	}
 
 	std::shared_ptr<CameraNode> camera = GameApplication::Get()->GetHumanView()->mCamera;
