@@ -76,10 +76,10 @@ protected:
 	bool IsAvailableWeapon(std::shared_ptr<PlayerActor> pPlayerActor, WeaponType weapon);
 	bool IsOptimalWeapon(std::shared_ptr<PlayerActor> pPlayerActor, WeaponType weapon, float shootingDistance);
 
+	void Smooth(unsigned long deltaMs, std::optional<int>& direction);
+	void Cliff(std::optional<int>& direction);
 	void Stationary(unsigned long deltaMs);
 	void Avoidance(unsigned long deltaMs);
-	void Smooth(unsigned long deltaMs);
-	void Cliff();
 
 	bool mEnabled;
 

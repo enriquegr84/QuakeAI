@@ -779,9 +779,8 @@ void PhysX::AddShape(std::shared_ptr<Actor> pGameActor, PxGeometry& geometry,
 	PX_ASSERT(shape);
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
-		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
-		0, 0
-	));
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,
+		0, 0));
 
 	// Attach the shape to your actor
 	PxRigidDynamic* rigidDynamic = mPhysicsSystem->createRigidDynamic(TransformToPxTransform(transform));
@@ -935,9 +934,8 @@ void PhysX::AddCharacterController(
 	playerShape->setLocalPose(PxTransform(PxVec3(0), rot));
 	playerShape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
-		GROUP_TRIGGERS | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
-		0, 0
-	));
+		GROUP_TRIGGERS | GROUP_DYNAMIC_OBJECTS,
+		0, 0));
 	
 	// add it to the collection to be checked for changes in SyncVisibleScene
 	mCCTGround[controller] = false;
@@ -1058,9 +1056,8 @@ void PhysX::AddConvexVertices(Plane3<float>* planes, int numPlanes, const Vector
 	PX_ASSERT(shape);
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
-		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
-		0, 0
-	));
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,
+		0, 0));
 
 	rigidStatic->attachShape(*shape);
 	mScene->addActor(*rigidStatic);
@@ -1129,9 +1126,8 @@ void PhysX::AddPointCloud(Vector3<float> *verts, int numPoints, std::weak_ptr<Ac
 	PX_ASSERT(shape);
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
-		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
-		0, 0
-	));
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,
+		0, 0));
 
 	rigidDynamic->attachShape(*shape);
 	mScene->addActor(*rigidDynamic);
@@ -1213,9 +1209,8 @@ void PhysX::AddPointCloud(Plane3<float> *planes, int numPlanes, std::weak_ptr<Ac
 	PX_ASSERT(shape);
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
-		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,  // collide with world + other dynamics
-		0, 0
-	));
+		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,
+		0, 0));
 
 	rigidDynamic->attachShape(*shape);
 	mScene->addActor(*rigidDynamic);
@@ -1342,7 +1337,19 @@ void PhysX::SetCollisionFlags(ActorId actorId, int collisionFlags)
 {
 	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
-		rigidActor->setActorFlags(PxActorFlags(collisionFlags));
+		PxShape* shape = nullptr;
+		rigidActor->getShapes(&shape, 1);
+
+		if (shape->getFlags() & PxShapeFlag::eTRIGGER_SHAPE)
+		{
+			// triggers always ignore collisions
+			shape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, collisionFlags);
+		}
+		else if (shape->getFlags() & PxShapeFlag::eSIMULATION_SHAPE)
+		{
+			// triggers always ignore collisions
+			shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collisionFlags);
+		}
 	}
 }
 

@@ -3540,6 +3540,12 @@ void QuakeLogic::LoadActors(BspLoader& bspLoader)
 									std::shared_ptr<BaseGamePhysic> gamePhysics = GetGamePhysics();
 									gamePhysics->AddConvexVertices(planes.data(), (int)planes.size(), scale, pActor,
 										pPhysicComponent->GetDensity(), pPhysicComponent->GetMaterial());
+
+#if defined(PHYSX) && defined(_WIN64)
+									//trigger push in physx is unreliable we detect it manually
+									if (className == "trigger_push")
+										gamePhysics->SetCollisionFlags(pActor->GetId(), false);
+#endif
 								}
 							}
 						}
@@ -4355,51 +4361,6 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 		}
 	}
 
-	if (closestCollisionId == INVALID_ACTOR_ID)
-	{
-		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
-		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-		{
-			ActorId projectile = INVALID_ACTOR_ID;
-			std::shared_ptr<BaseGameView> pView = *it;
-			if (pView->GetType() == GV_HUMAN)
-			{
-				std::shared_ptr<HumanView> pHumanView =
-					std::static_pointer_cast<HumanView, BaseGameView>(pView);
-				std::shared_ptr<QuakePlayerController> pPlayerController =
-					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
-				if (pPlayerController)
-					projectile = pPlayerController->GetProjectileId();
-			}
-			else if (pView->GetType() == GV_AI)
-			{
-				std::shared_ptr<QuakeAIView> pAiView =
-					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
-				projectile = pAiView->GetProjectileId();
-			}
-
-			Transform startPos;
-			startPos.SetTranslation(muzzle);
-			Transform endPos;
-			endPos.SetTranslation(end);
-			std::vector<ActorId> collisionActors;
-			std::vector<Vector3<float>> collisions, collisionNormals;
-			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
-
-			for (unsigned int i = 0; i < collisionActors.size(); i++)
-			{
-				if (collisionActors[i] != player->GetId())
-				{
-					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-					{
-						closestCollisionId = collisionActors[i];
-						closestCollision = collisions[i];
-					}
-				}
-			}
-		}
-	}
-
 	if (closestCollisionId != INVALID_ACTOR_ID &&
 		std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]))
 	{
@@ -4465,52 +4426,6 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
-				}
-			}
-		}
-	}
-
-	if (closestCollisionId == INVALID_ACTOR_ID)
-	{
-		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
-		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-		{
-			ActorId projectile = INVALID_ACTOR_ID;
-			std::shared_ptr<BaseGameView> pView = *it;
-			if (pView->GetType() == GV_HUMAN)
-			{
-				std::shared_ptr<HumanView> pHumanView =
-					std::static_pointer_cast<HumanView, BaseGameView>(pView);
-				std::shared_ptr<QuakePlayerController> pPlayerController =
-					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
-				if (pPlayerController)
-					projectile = pPlayerController->GetProjectileId();
-			}
-			else if (pView->GetType() == GV_AI)
-			{
-				std::shared_ptr<QuakeAIView> pAiView =
-					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
-				projectile = pAiView->GetProjectileId();
-			}
-
-			Transform startPos;
-			startPos.SetTranslation(muzzle);
-			Transform endPos;
-			endPos.SetTranslation(end);
-			std::vector<ActorId> collisionActors;
-			std::vector<Vector3<float>> collisions, collisionNormals;
-			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
-
-			for (unsigned int i = 0; i < collisionActors.size(); i++)
-			{
-				if (collisionActors[i] != player->GetId())
-				{
-					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-					{
-						closestCollisionId = collisionActors[i];
-						closestCollision = collisions[i];
-						printf("\n does it work %f %f %f", closestCollision[0], closestCollision[1], closestCollision[2]);
-					}
 				}
 			}
 		}
@@ -4591,51 +4506,6 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
-				}
-			}
-		}
-	}
-
-	if (closestCollisionId == INVALID_ACTOR_ID)
-	{
-		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
-		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-		{
-			ActorId projectile = INVALID_ACTOR_ID;
-			std::shared_ptr<BaseGameView> pView = *it;
-			if (pView->GetType() == GV_HUMAN)
-			{
-				std::shared_ptr<HumanView> pHumanView =
-					std::static_pointer_cast<HumanView, BaseGameView>(pView);
-				std::shared_ptr<QuakePlayerController> pPlayerController =
-					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
-				if (pPlayerController)
-					projectile = pPlayerController->GetProjectileId();
-			}
-			else if (pView->GetType() == GV_AI)
-			{
-				std::shared_ptr<QuakeAIView> pAiView =
-					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
-				projectile = pAiView->GetProjectileId();
-			}
-
-			Transform startPos;
-			startPos.SetTranslation(start);
-			Transform endPos;
-			endPos.SetTranslation(end);
-			std::vector<ActorId> collisionActors;
-			std::vector<Vector3<float>> collisions, collisionNormals;
-			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
-
-			for (unsigned int i = 0; i < collisionActors.size(); i++)
-			{
-				if (collisionActors[i] != player->GetId())
-				{
-					if (Length(closestCollision - start) > Length(collisions[i] - start))
-					{
-						closestCollisionId = collisionActors[i];
-						closestCollision = collisions[i];
-					}
 				}
 			}
 		}
@@ -4905,9 +4775,9 @@ void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player,
 			pPhysicComponent->SetIgnoreCollision(player->GetId(), true);
 
 #if defined(PHYSX) && defined(_WIN64)
-			direction[0] *= 1200.f;
-			direction[1] *= 1200.f;
-			direction[2] *= 1200.f;
+			direction[0] *= 1600.f;
+			direction[1] *= 1600.f;
+			direction[2] *= 1600.f;
 #else
 			direction[0] *= 4000.f;
 			direction[1] *= 4000.f;
@@ -4968,51 +4838,6 @@ void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
-				}
-			}
-		}
-	}
-
-	if (closestCollisionId == INVALID_ACTOR_ID)
-	{
-		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
-		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-		{
-			ActorId projectile = INVALID_ACTOR_ID;
-			std::shared_ptr<BaseGameView> pView = *it;
-			if (pView->GetType() == GV_HUMAN)
-			{
-				std::shared_ptr<HumanView> pHumanView =
-					std::static_pointer_cast<HumanView, BaseGameView>(pView);
-				std::shared_ptr<QuakePlayerController> pPlayerController =
-					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
-				if (pPlayerController)
-					projectile = pPlayerController->GetProjectileId();
-			}
-			else if (pView->GetType() == GV_AI)
-			{
-				std::shared_ptr<QuakeAIView> pAiView =
-					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
-				projectile = pAiView->GetProjectileId();
-			}
-
-			Transform startPos;
-			startPos.SetTranslation(muzzle);
-			Transform endPos;
-			endPos.SetTranslation(end);
-			std::vector<ActorId> collisionActors;
-			std::vector<Vector3<float>> collisions, collisionNormals;
-			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
-
-			for (unsigned int i = 0; i < collisionActors.size(); i++)
-			{
-				if (collisionActors[i] != player->GetId())
-				{
-					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-					{
-						closestCollisionId = collisionActors[i];
-						closestCollision = collisions[i];
-					}
 				}
 			}
 		}
@@ -5110,51 +4935,6 @@ void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
-				}
-			}
-		}
-	}
-
-	if (closestCollisionId == INVALID_ACTOR_ID)
-	{
-		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
-		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-		{
-			ActorId projectile = INVALID_ACTOR_ID;
-			std::shared_ptr<BaseGameView> pView = *it;
-			if (pView->GetType() == GV_HUMAN)
-			{
-				std::shared_ptr<HumanView> pHumanView =
-					std::static_pointer_cast<HumanView, BaseGameView>(pView);
-				std::shared_ptr<QuakePlayerController> pPlayerController =
-					std::dynamic_pointer_cast<QuakePlayerController>(pHumanView->mKeyboardHandler);
-				if (pPlayerController)
-					projectile = pPlayerController->GetProjectileId();
-			}
-			else if (pView->GetType() == GV_AI)
-			{
-				std::shared_ptr<QuakeAIView> pAiView =
-					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
-				projectile = pAiView->GetProjectileId();
-			}
-
-			Transform startPos;
-			startPos.SetTranslation(muzzle);
-			Transform endPos;
-			endPos.SetTranslation(end);
-			std::vector<ActorId> collisionActors;
-			std::vector<Vector3<float>> collisions, collisionNormals;
-			mPhysics->ConvexSweep(projectile, startPos, endPos, collisionActors, collisions, collisionNormals);
-
-			for (unsigned int i = 0; i < collisionActors.size(); i++)
-			{
-				if (collisionActors[i] != player->GetId())
-				{
-					if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-					{
-						closestCollisionId = collisionActors[i];
-						closestCollision = collisions[i];
-					}
 				}
 			}
 		}

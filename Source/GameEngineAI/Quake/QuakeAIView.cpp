@@ -330,7 +330,7 @@ void QuakeAIView::Stationary(unsigned long deltaMs)
 }
 
 // Cliff control
-void QuakeAIView::Cliff()
+void QuakeAIView::Cliff(std::optional<int>& direction)
 {
 	Matrix4x4<float> rotation = Rotation<4, float>(
 		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
@@ -364,8 +364,8 @@ void QuakeAIView::Cliff()
 	//Check whether we are close to a cliff
 	if (abs(collision[AXIS_Y] - position[AXIS_Y]) > 60.f)
 	{
-		//Choose randomly which way too look for getting out the cliff
-		int sign = Randomizer::Rand() % 2 ? 1 : -1;
+		//Choose randomly which way too look for getting out the cliff if there is no input direction
+		int sign = !direction.has_value() ? Randomizer::Rand() % 2 ? 1 : -1 : direction.value();
 
 		// Smoothly turn 110º and check raycasting until we meet a minimum distance
 		for (int angle = 1; angle <= 110; angle++)
@@ -393,38 +393,43 @@ void QuakeAIView::Cliff()
 			{
 				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
 				mYaw += angle * sign;
+				direction = sign;
 				return;
 			}
 		}
 
-		//If we haven't find a way out we proceed exactly the same but in the opposite direction
-		sign *= -1;
-		for (int angle = 1; angle <= 110; angle++)
+		//If we haven't find a way out and there is no input direction we proceed exactly the same but in the opposite direction
+		if (!direction.has_value())
 		{
-			rotation = Rotation<4, float>(
-				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y),
-				(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
+			sign *= -1;
+			for (int angle = 1; angle <= 110; angle++)
+			{
+				rotation = Rotation<4, float>(
+					AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y),
+						(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
 
-			atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+				atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
 #if defined(GE_USE_MAT_VEC)
-			atWorld = rotation * atWorld;
+				atWorld = rotation * atWorld;
 #else
-			atWorld = atWorld * rotation;
+				atWorld = atWorld * rotation;
 #endif
 
-			start.SetRotation(rotation);
-			end.SetRotation(rotation);
-			end.SetTranslation(mAbsoluteTransform.GetTranslationW1() +
-				atWorld * 100.f - Vector4<float>::Unit(AXIS_Y) * 300.f);
+				start.SetRotation(rotation);
+				end.SetRotation(rotation);
+				end.SetTranslation(mAbsoluteTransform.GetTranslationW1() +
+					atWorld * 100.f - Vector4<float>::Unit(AXIS_Y) * 300.f);
 
-			collision = end.GetTranslation();
-			ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
-				start.GetTranslation(), end.GetTranslation(), collision, collisionNormal, mPlayerId);
-			if (abs(collision[AXIS_Y] - position[AXIS_Y]) <= 60.f)
-			{
-				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
-				mYaw += angle * sign;
-				return;
+				collision = end.GetTranslation();
+				ActorId actorId = GameLogic::Get()->GetGamePhysics()->CastRay(
+					start.GetTranslation(), end.GetTranslation(), collision, collisionNormal, mPlayerId);
+				if (abs(collision[AXIS_Y] - position[AXIS_Y]) <= 60.f)
+				{
+					mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+					mYaw += angle * sign;
+					direction = sign;
+					return;
+				}
 			}
 		}
 
@@ -532,7 +537,7 @@ void QuakeAIView::Avoidance(unsigned long deltaMs)
 }
 
 //Smooth movement
-void QuakeAIView::Smooth(unsigned long deltaMs)
+void QuakeAIView::Smooth(unsigned long deltaMs, std::optional<int>& direction)
 {
 	Vector3<float> position = mAbsoluteTransform.GetTranslation();
 	Matrix4x4<float> rotation = Rotation<4, float>(
@@ -594,6 +599,7 @@ void QuakeAIView::Smooth(unsigned long deltaMs)
 			{
 				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
 				mYaw += angle * sign;
+				direction = sign;
 				return;
 			}
 		}
@@ -604,7 +610,7 @@ void QuakeAIView::Smooth(unsigned long deltaMs)
 		{
 			rotation = Rotation<4, float>(
 				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y),
-				(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
+					(mYaw + angle * sign) * (float)GE_C_DEG_TO_RAD));
 
 			atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
 #if defined(GE_USE_MAT_VEC)
@@ -615,7 +621,7 @@ void QuakeAIView::Smooth(unsigned long deltaMs)
 
 			start.SetRotation(rotation);
 			end.SetRotation(rotation);
-			end.SetTranslation(mAbsoluteTransform.GetTranslationW1() + 
+			end.SetTranslation(mAbsoluteTransform.GetTranslationW1() +
 				atWorld * 500.f + scale[2] * Vector4<float>::Unit(AXIS_Y));
 
 			actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
@@ -624,6 +630,7 @@ void QuakeAIView::Smooth(unsigned long deltaMs)
 			{
 				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
 				mYaw += angle * sign;
+				direction = sign;
 				return;
 			}
 		}
@@ -1522,9 +1529,11 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 								}
 								else
 								{
+									std::optional<int> direction = std::nullopt;
+
 									Stationary(deltaMs);
-									Smooth(deltaMs);
-									Cliff();
+									Smooth(deltaMs, direction);
+									Cliff(direction);
 								}
 
 								pPlayerActor->GetAction().actionType |= ACTION_RUN;
@@ -1605,9 +1614,11 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					}
 					else if (mBehavior == BT_PATROL)
 					{
+						std::optional<int> direction = std::nullopt;
+
 						Stationary(deltaMs);
-						Smooth(deltaMs);
-						Cliff();
+						Smooth(deltaMs, direction);
+						Cliff(direction);
 
 						pPlayerActor->GetAction().actionType |= ACTION_RUN;
 						pPlayerActor->GetAction().actionType |= ACTION_MOVEFORWARD;
