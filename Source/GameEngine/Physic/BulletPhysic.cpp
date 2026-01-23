@@ -49,6 +49,142 @@
 
 #include "LinearMath/btGeometryUtil.h"
 
+// For closest hit (most common)
+class FilteredClosestRayResultCallback : public btCollisionWorld::ClosestRayResultCallback
+{
+public:
+	FilteredClosestRayResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld,
+		btCollisionObject* ignoreObject = nullptr)
+		: btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld),
+		m_ignoreObject(ignoreObject)
+	{
+	}
+
+	virtual bool needsCollision(btBroadphaseProxy* proxy0) const override
+	{
+		// Respect built-in filter groups/masks (recommended)
+		if (!btCollisionWorld::ClosestRayResultCallback::needsCollision(proxy0))
+			return false;
+
+		// Custom filter: Ignore specific object by pointer
+		if (m_ignoreObject && static_cast<btCollisionObject*>(proxy0->m_clientObject) == m_ignoreObject)
+			return false;
+
+		return true;
+	}
+
+	btCollisionObject* m_ignoreObject;
+};
+
+class FilteredClosestConvexResultCallback : public btCollisionWorld::ClosestConvexResultCallback
+{
+public:
+	FilteredClosestConvexResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld,
+		btCollisionObject* ignoreObject = nullptr)
+		: btCollisionWorld::ClosestConvexResultCallback(rayFromWorld, rayToWorld),
+		m_ignoreObject(ignoreObject)
+	{
+	}
+
+	virtual bool needsCollision(btBroadphaseProxy* proxy0) const override
+	{
+		// Respect built-in filter groups/masks (recommended)
+		if (!btCollisionWorld::ClosestConvexResultCallback::needsCollision(proxy0))
+			return false;
+
+		// Custom filter: Ignore specific object by pointer
+		if (m_ignoreObject && static_cast<btCollisionObject*>(proxy0->m_clientObject) == m_ignoreObject)
+			return false;
+
+		return true;
+	}
+
+	btCollisionObject* m_ignoreObject;
+};
+
+// For all hits result
+class FilteredAllHitsRayResultCallback : public btCollisionWorld::AllHitsRayResultCallback
+{
+public:
+	FilteredAllHitsRayResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld,
+		btCollisionObject* ignoreObject = nullptr)
+		: btCollisionWorld::AllHitsRayResultCallback(rayFromWorld, rayToWorld),
+		m_ignoreObject(ignoreObject)
+	{
+	}
+
+	virtual bool needsCollision(btBroadphaseProxy* proxy0) const override
+	{
+		// Respect built-in filter groups/masks (recommended)
+		if (!btCollisionWorld::AllHitsRayResultCallback::needsCollision(proxy0))
+			return false;
+
+		// Custom filter: Ignore specific object by pointer
+		if (m_ignoreObject && static_cast<btCollisionObject*>(proxy0->m_clientObject) == m_ignoreObject)
+			return false;
+
+		return true;
+	}
+
+	btCollisionObject* m_ignoreObject;
+};
+
+struct FilteredAllHitsConvexResultCallback : public btCollisionWorld::ConvexResultCallback
+{
+	FilteredAllHitsConvexResultCallback(const btVector3& convexFromWorld, const btVector3& convexToWorld,
+		btCollisionObject* ignoreObject = nullptr)
+		: m_convexFromWorld(convexFromWorld), m_convexToWorld(convexToWorld),
+		m_ignoreObject(ignoreObject)
+	{
+	}
+
+	btAlignedObjectArray<const btCollisionObject*> m_collisionObjects;
+
+	btVector3 m_convexFromWorld;  //used to calculate hitPointWorld from hitFraction
+	btVector3 m_convexToWorld;
+
+	btAlignedObjectArray<btVector3> m_hitNormalWorld;
+	btAlignedObjectArray<btVector3> m_hitPointWorld;
+	btAlignedObjectArray<btScalar> m_hitFractions;
+
+	virtual btScalar addSingleResult(btCollisionWorld::LocalConvexResult& convexResult, bool normalInWorldSpace)
+	{
+		m_collisionObjects.push_back(convexResult.m_hitCollisionObject);
+		btVector3 hitNormalWorld;
+		if (normalInWorldSpace)
+		{
+			hitNormalWorld = convexResult.m_hitNormalLocal;
+		}
+		else
+		{
+			///need to transform normal into worldspace
+			hitNormalWorld = convexResult.m_hitCollisionObject->getWorldTransform().getBasis() * convexResult.m_hitNormalLocal;
+		}
+		m_hitNormalWorld.push_back(hitNormalWorld);
+		btVector3 hitPointWorld;
+		hitPointWorld.setInterpolate3(m_convexFromWorld, m_convexToWorld, convexResult.m_hitFraction);
+		m_hitPointWorld.push_back(hitPointWorld);
+		m_hitFractions.push_back(convexResult.m_hitFraction);
+		m_closestHitFraction = convexResult.m_hitFraction;
+		return m_closestHitFraction;
+	}
+
+
+	virtual bool needsCollision(btBroadphaseProxy* proxy0) const override
+	{
+		// Respect built-in filter groups/masks (recommended)
+		if (!btCollisionWorld::ConvexResultCallback::needsCollision(proxy0))
+			return false;
+
+		// Custom filter: Ignore specific object by pointer
+		if (m_ignoreObject && static_cast<btCollisionObject*>(proxy0->m_clientObject) == m_ignoreObject)
+			return false;
+
+		return true;
+	}
+
+	btCollisionObject* m_ignoreObject;
+};
 
 /////////////////////////////////////////////////////////////////////////////
 // helpers for conversion to and from Bullet's data types
@@ -356,9 +492,8 @@ public:
 			// set up the materal properties
 			rbInfo.m_restitution = material.mRestitution;
 			rbInfo.m_friction = material.mFriction;
-
 			btRigidBody* const body = new btRigidBody(rbInfo);
-			mPhysics->mDynamicsWorld->addRigidBody(body);
+			mPhysics->mDynamicsWorld->addRigidBody(body, btBroadphaseProxy::StaticFilter, btBroadphaseProxy::AllFilter);
 		}
 	}
 
@@ -401,9 +536,8 @@ public:
 			// set up the materal properties
 			rbInfo.m_restitution = material.mRestitution;
 			rbInfo.m_friction = material.mFriction;
-
 			btRigidBody* const body = new btRigidBody(rbInfo);
-			mPhysics->mDynamicsWorld->addRigidBody(body);
+			mPhysics->mDynamicsWorld->addRigidBody(body, btBroadphaseProxy::StaticFilter, btBroadphaseProxy::AllFilter);
 		}
 	}
 
@@ -627,10 +761,9 @@ void BulletPhysics::AddShape(std::shared_ptr<Actor> pGameActor, btCollisionShape
 	// set up the materal properties
 	rbInfo.m_restitution = material.mRestitution;
 	rbInfo.m_friction    = material.mFriction;
-	
 	btRigidBody* const body = new btRigidBody(rbInfo);
-
-	mDynamicsWorld->addRigidBody( body );
+	mDynamicsWorld->addRigidBody( body, btBroadphaseProxy::KinematicFilter, 
+		btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::StaticFilter);
 	
 	// add it to the collection to be checked for changes in SyncVisibleScene
 	mActorIdToCollisionObject[actorID] = body;
@@ -763,8 +896,8 @@ void BulletPhysics::AddTrigger(const Vector3<float> &dimension,
 	// set up the materal properties
 	rbInfo.m_restitution = material.mRestitution;
 	rbInfo.m_friction = material.mFriction;
-
-	mDynamicsWorld->addRigidBody(body);
+	mDynamicsWorld->addRigidBody(body, btBroadphaseProxy::SensorTrigger, 
+		btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter);
 
 	// a trigger is just a box that doesn't collide with anything.  That's what "CF_NO_CONTACT_RESPONSE" indicates.
 	body->setCollisionFlags(body->getCollisionFlags() | btRigidBody::CF_NO_CONTACT_RESPONSE);
@@ -972,9 +1105,9 @@ void BulletPhysics::AddConvexVertices(Plane3<float>* planes, int numPlanes, cons
 	// set up the materal properties
 	rbInfo.m_restitution = material.mRestitution;
 	rbInfo.m_friction = material.mFriction;
-
 	btRigidBody* const body = new btRigidBody(rbInfo);
-	mDynamicsWorld->addRigidBody(body);
+	mDynamicsWorld->addRigidBody(body, btBroadphaseProxy::SensorTrigger, 
+		btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter);
 
 	// a trigger is just a box that doesn't collide with anything.  That's what "CF_NO_CONTACT_RESPONSE" indicates.
 	body->setCollisionFlags(body->getCollisionFlags() | btRigidBody::CF_NO_CONTACT_RESPONSE);
@@ -1240,8 +1373,12 @@ ActorId BulletPhysics::CastRay(const Vector3<float>& origin, const Vector3<float
 {
 	btVector3 from = Vector3TobtVector3(origin);
 	btVector3 to = Vector3TobtVector3(end);
-	btCollisionWorld::ClosestRayResultCallback closestResults(from, to);
+	btCollisionObject* const collisionObject = FindBulletCollisionObject(actorId);
+	FilteredClosestRayResultCallback closestResults(from, to, collisionObject);
 	closestResults.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+	closestResults.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+	closestResults.m_collisionFilterMask = 
+		btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter;
 
 	mDynamicsWorld->rayTest(from, to, closestResults);
 
@@ -1269,8 +1406,12 @@ void BulletPhysics::CastRay(
 {
 	btVector3 from = Vector3TobtVector3(origin);
 	btVector3 to = Vector3TobtVector3(end);
-	btCollisionWorld::AllHitsRayResultCallback allHitsResults(from, to);
+	btCollisionObject* const collisionObject = FindBulletCollisionObject(actorId);
+	FilteredAllHitsRayResultCallback allHitsResults(from, to, collisionObject);
 	allHitsResults.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+	allHitsResults.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+	allHitsResults.m_collisionFilterMask = 
+		btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter;
 
 	mDynamicsWorld->rayTest(from, to, allHitsResults);
 
@@ -1300,9 +1441,12 @@ ActorId BulletPhysics::ConvexSweep(ActorId aId, const Transform& origin, const T
 			{
 				btVector3 from = Vector3TobtVector3(origin.GetTranslation());
 				btVector3 to = Vector3TobtVector3(end.GetTranslation());
-				btCollisionWorld::ClosestConvexResultCallback closestResults(from, to);
-				btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
+				FilteredClosestConvexResultCallback closestResults(from, to, collisionObject);
+				closestResults.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+				closestResults.m_collisionFilterMask = 
+					btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter;
 
+				btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
 				controller->getGhostObject()->convexSweepTest(
 					collisionShape, TransformTobtTransform(origin), TransformTobtTransform(end), closestResults);
 				if (closestResults.hasHit())
@@ -1317,9 +1461,12 @@ ActorId BulletPhysics::ConvexSweep(ActorId aId, const Transform& origin, const T
 		{
 			btVector3 from = Vector3TobtVector3(origin.GetTranslation());
 			btVector3 to = Vector3TobtVector3(end.GetTranslation());
-			btCollisionWorld::ClosestConvexResultCallback closestResults(from, to);
-			btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
+			FilteredClosestConvexResultCallback closestResults(from, to, collisionObject);
+			closestResults.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+			closestResults.m_collisionFilterMask = 
+				btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter;
 
+			btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
 			mDynamicsWorld->convexSweepTest(
 				collisionShape, TransformTobtTransform(origin), TransformTobtTransform(end), closestResults);
 			if (closestResults.hasHit())
@@ -1352,9 +1499,12 @@ void BulletPhysics::ConvexSweep(ActorId aId, const Transform& origin, const Tran
 			{
 				btVector3 from = Vector3TobtVector3(origin.GetTranslation());
 				btVector3 to = Vector3TobtVector3(end.GetTranslation());
-				BulletPhysics::AllHitsConvexResultCallback allHitsResults(from, to);
-				btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
+				FilteredAllHitsConvexResultCallback allHitsResults(from, to, collisionObject);
+				allHitsResults.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+				allHitsResults.m_collisionFilterMask = 
+					btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter;
 
+				btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
 				controller->getGhostObject()->convexSweepTest(
 					collisionShape, TransformTobtTransform(origin), TransformTobtTransform(end), allHitsResults);
 				if (allHitsResults.hasHit())
@@ -1373,9 +1523,12 @@ void BulletPhysics::ConvexSweep(ActorId aId, const Transform& origin, const Tran
 		{
 			btVector3 from = Vector3TobtVector3(origin.GetTranslation());
 			btVector3 to = Vector3TobtVector3(end.GetTranslation());
-			BulletPhysics::AllHitsConvexResultCallback allHitsResults(from, to);
-			btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
+			FilteredAllHitsConvexResultCallback allHitsResults(from, to, collisionObject);
+			allHitsResults.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+			allHitsResults.m_collisionFilterMask = 
+				btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::CharacterFilter;
 
+			btConvexShape* collisionShape = dynamic_cast<btConvexShape*>(collisionObject->getCollisionShape());
 			mDynamicsWorld->convexSweepTest(
 				collisionShape, TransformTobtTransform(origin), TransformTobtTransform(end), allHitsResults);
 			if (allHitsResults.hasHit())

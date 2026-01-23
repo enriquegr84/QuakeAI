@@ -426,11 +426,11 @@ void PlayerActor::UpdateWeapon(unsigned long deltaMs)
 		mState.weaponTime += 0.5f;
 		return;
 	}
-
+	/*
 	// take ammo away if not infinite
 	if (mState.ammo[mState.weapon] != -1)
 		mState.ammo[mState.weapon]--;
-
+	*/
 	// fire weapon
 	EventManager::Get()->TriggerEvent(
 		std::make_shared<EventDataFireWeapon>(GetId()));

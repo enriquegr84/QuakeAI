@@ -275,13 +275,24 @@ QuakeAIManager::QuakeAIManager() : AIManager()
 	mMaxRotateSpeed = 180.f;
 	mGravity = Settings::Get()->GetVector3("default_gravity");
 
+#if defined(PHYSX) && defined(_WIN64)
+
+	mMaxPushSpeed = Vector3<float>{ 4.f, 4.f, 20.f };
+	mMaxJumpSpeed = Vector3<float>{ 10.f, 10.f, 12.f };
+	mMaxFallSpeed = Vector3<float>{ 15.f, 15.f, 40.f };
+	mMaxMoveSpeed = 300.f;
+
+#else
+
 	mMaxPushSpeed = Vector3<float>{
 		PUSHTRIGGER_JUMP_SPEED_XZ, PUSHTRIGGER_JUMP_SPEED_XZ, PUSHTRIGGER_JUMP_SPEED_Y };
-	mMaxJumpSpeed = Vector3<float>{ 
+	mMaxJumpSpeed = Vector3<float>{
 		DEFAULT_JUMP_SPEED_XZ, DEFAULT_JUMP_SPEED_XZ, DEFAULT_JUMP_SPEED_Y };
-	mMaxFallSpeed = Vector3<float>{ 
+	mMaxFallSpeed = Vector3<float>{
 		DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_Y };
 	mMaxMoveSpeed = DEFAULT_MOVE_SPEED;
+
+#endif
 
 	mPushSpeed = mMaxPushSpeed;
 	mJumpSpeed = mMaxJumpSpeed;

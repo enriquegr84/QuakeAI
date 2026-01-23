@@ -4105,7 +4105,7 @@ void QuakeLogic::Damage(int damage, int dflags, int mod,
 	// do the damage
 	if (take)
 	{
-		target->GetState().stats[STAT_HEALTH] -= take;
+		//target->GetState().stats[STAT_HEALTH] -= take;
 
 		if (target->GetState().stats[STAT_HEALTH] <= 0)
 		{
@@ -4350,13 +4350,10 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (collisionActors[i] != player->GetId())
+			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
 			{
-				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-				{
-					closestCollisionId = collisionActors[i];
-					closestCollision = collisions[i];
-				}
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
 			}
 		}
 	}
@@ -4420,13 +4417,10 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (collisionActors[i] != player->GetId())
+			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
 			{
-				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-				{
-					closestCollisionId = collisionActors[i];
-					closestCollision = collisions[i];
-				}
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
 			}
 		}
 	}
@@ -4500,13 +4494,10 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (collisionActors[i] != player->GetId())
+			if (Length(closestCollision - start) > Length(collisions[i] - start))
 			{
-				if (Length(closestCollision - start) > Length(collisions[i] - start))
-				{
-					closestCollisionId = collisionActors[i];
-					closestCollision = collisions[i];
-				}
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
 			}
 		}
 	}
@@ -4832,13 +4823,10 @@ void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (collisionActors[i] != player->GetId())
+			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
 			{
-				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-				{
-					closestCollisionId = collisionActors[i];
-					closestCollision = collisions[i];
-				}
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
 			}
 		}
 	}
@@ -4929,13 +4917,10 @@ void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (collisionActors[i] != player->GetId())
+			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
 			{
-				if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
-				{
-					closestCollisionId = collisionActors[i];
-					closestCollision = collisions[i];
-				}
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
 			}
 		}
 	}

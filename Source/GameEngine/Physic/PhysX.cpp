@@ -74,7 +74,7 @@ PxFilterFlags SimulationFilterShader(
 		return PxFilterFlag::eSUPPRESS;  // no collision, no report
 	}
 
-	// ?? Special handling for triggers ???????????????????????????????
+	// Special handling for triggers
 	if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1))
 	{
 		// Let triggers work (notify enter/exit) - most common choice
@@ -90,7 +90,6 @@ PxFilterFlags SimulationFilterShader(
 	// Default: solve contacts + discrete detection
 	pairFlags = PxPairFlag::eSOLVE_CONTACT | PxPairFlag::eDETECT_DISCRETE_CONTACT;
 
-	// === Here is the key part for environmental contacts ===
 	// Enable contact reporting for dynamic ? environment
 	// You can be more selective if you want (e.g. only player vs ground)
 	bool isEnvironmentContact =
@@ -1055,8 +1054,8 @@ void PhysX::AddConvexVertices(Plane3<float>* planes, int numPlanes, const Vector
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
 	shape->setSimulationFilterData(PxFilterData(
+		GROUP_TRIGGERS,
 		GROUP_DYNAMIC_OBJECTS,
-		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,
 		0, 0));
 
 	rigidStatic->attachShape(*shape);

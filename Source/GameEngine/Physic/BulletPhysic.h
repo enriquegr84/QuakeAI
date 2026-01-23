@@ -72,45 +72,6 @@ class BulletPhysics : public BaseGamePhysic
 
 public:
 
-	struct AllHitsConvexResultCallback : public btCollisionWorld::ConvexResultCallback
-	{
-		AllHitsConvexResultCallback(const btVector3& convexFromWorld, const btVector3& convexToWorld)
-			: m_convexFromWorld(convexFromWorld), m_convexToWorld(convexToWorld)
-		{
-		}
-
-		btAlignedObjectArray<const btCollisionObject*> m_collisionObjects;
-
-		btVector3 m_convexFromWorld;  //used to calculate hitPointWorld from hitFraction
-		btVector3 m_convexToWorld;
-
-		btAlignedObjectArray<btVector3> m_hitNormalWorld;
-		btAlignedObjectArray<btVector3> m_hitPointWorld;
-		btAlignedObjectArray<btScalar> m_hitFractions;
-
-		virtual btScalar addSingleResult(btCollisionWorld::LocalConvexResult& convexResult, bool normalInWorldSpace)
-		{
-			m_collisionObjects.push_back(convexResult.m_hitCollisionObject);
-			btVector3 hitNormalWorld;
-			if (normalInWorldSpace)
-			{
-				hitNormalWorld = convexResult.m_hitNormalLocal;
-			}
-			else
-			{
-				///need to transform normal into worldspace
-				hitNormalWorld = convexResult.m_hitCollisionObject->getWorldTransform().getBasis() * convexResult.m_hitNormalLocal;
-			}
-			m_hitNormalWorld.push_back(hitNormalWorld);
-			btVector3 hitPointWorld;
-			hitPointWorld.setInterpolate3(m_convexFromWorld, m_convexToWorld, convexResult.m_hitFraction);
-			m_hitPointWorld.push_back(hitPointWorld);
-			m_hitFractions.push_back(convexResult.m_hitFraction);
-			m_closestHitFraction = convexResult.m_hitFraction;
-			return m_closestHitFraction;
-		}
-	};
-
 	BulletPhysics();				// [mrmike] This was changed post-press to add event registration!
 	virtual ~BulletPhysics();
 

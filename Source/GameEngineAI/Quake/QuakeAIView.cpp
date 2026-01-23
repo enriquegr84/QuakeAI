@@ -503,6 +503,11 @@ void QuakeAIView::Avoidance(unsigned long deltaMs)
 				mYaw += angle * sign;
 				return;
 			}
+			else if (!collision.has_value())
+			{
+				mYaw += angle * sign;
+				return;
+			}
 		}
 
 		//If we haven't find a way out we proceed exactly the same but in the opposite direction
@@ -528,6 +533,11 @@ void QuakeAIView::Avoidance(unsigned long deltaMs)
 			actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
 				mPlayerId, start, end, collision, collisionNormal);
 			if (collision.has_value() && Length(collision.value() - position) > 50.f)
+			{
+				mYaw += angle * sign;
+				return;
+			}
+			else if (!collision.has_value())
 			{
 				mYaw += angle * sign;
 				return;
@@ -569,7 +579,7 @@ void QuakeAIView::Smooth(unsigned long deltaMs, std::optional<int>& direction)
 	collision = end.GetTranslation();
 	ActorId actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
 		mPlayerId, start, end, collision, collisionNormal);
-	if (collision.has_value() && Length(collision.value() - position) < 80.f)
+	if (collision.has_value() && Length(collision.value() - position) < 70.f)
 	{
 		//Choose randomly which way too look for obstacles
 		int sign = Randomizer::Rand() % 2 ? 1 : -1;
@@ -595,7 +605,14 @@ void QuakeAIView::Smooth(unsigned long deltaMs, std::optional<int>& direction)
 
 			actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
 				mPlayerId, start, end, collision, collisionNormal);
-			if (collision.has_value() && Length(collision.value() - position) > 80.f)
+			if (collision.has_value() && Length(collision.value() - position) > 70.f)
+			{
+				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+				mYaw += angle * sign;
+				direction = sign;
+				return;
+			}
+			else if (!collision.has_value())
 			{
 				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
 				mYaw += angle * sign;
@@ -626,7 +643,14 @@ void QuakeAIView::Smooth(unsigned long deltaMs, std::optional<int>& direction)
 
 			actorId = GameLogic::Get()->GetGamePhysics()->ConvexSweep(
 				mPlayerId, start, end, collision, collisionNormal);
-			if (collision.has_value() && Length(collision.value() - position) > 80.f)
+			if (collision.has_value() && Length(collision.value() - position) > 70.f)
+			{
+				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
+				mYaw += angle * sign;
+				direction = sign;
+				return;
+			}
+			else if (!collision.has_value())
 			{
 				mOrientation = Randomizer::Rand() % 2 ? 1 : -1;
 				mYaw += angle * sign;
@@ -1726,21 +1750,18 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 								std::optional<Vector3<float>> closestCollision = std::nullopt;
 								for (unsigned int i = 0; i < collisionActors.size(); i++)
 								{
-									if (collisionActors[i] != pPlayerActor->GetId())
+									if (closestCollision.has_value())
 									{
-										if (closestCollision.has_value())
-										{
-											if (Length(closestCollision.value() - playerPos) > Length(collisions[i] - playerPos))
-											{
-												closestCollisionId = collisionActors[i];
-												closestCollision = collisions[i];
-											}
-										}
-										else
+										if (Length(closestCollision.value() - playerPos) > Length(collisions[i] - playerPos))
 										{
 											closestCollisionId = collisionActors[i];
 											closestCollision = collisions[i];
 										}
+									}
+									else
+									{
+										closestCollisionId = collisionActors[i];
+										closestCollision = collisions[i];
 									}
 								}
 

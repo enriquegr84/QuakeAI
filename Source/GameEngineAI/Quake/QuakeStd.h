@@ -24,7 +24,7 @@
 #define DEFAULT_FALL_SPEED_XZ 200.f
 #define DEFAULT_JUMP_SPEED_Y 1.6f
 #define DEFAULT_JUMP_SPEED_XZ 2.f
-#define DEFAULT_MOVE_SPEED 1.5f
+#define DEFAULT_MOVE_SPEED 1.2f
 
 
 class ModError : public BaseException
