@@ -525,6 +525,43 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 			pProjectileNode->GetRelativeTransform().SetRotation(mAbsoluteTransform);
 			pProjectileNode->UpdateAbsoluteTransform();
 		}
+		/*
+		Vector3<float> scale =
+			GameLogic::Get()->GetGamePhysics()->GetScale(pPlayerActor->GetId()) / 2.f;
+		Transform start = pPlayerPhysicComponent->GetTransform();
+		start.SetTranslation(start.GetTranslation() + scale[2] * Vector3<float>::Unit(AXIS_Y));
+		Transform end = pPlayerPhysicComponent->GetTransform();
+		end.SetTranslation(end.GetTranslation() + forward * 2000.f + scale[2] * Vector3<float>::Unit(AXIS_Y));
+
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
+		gamePhysics->ConvexSweep(pPlayerActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
+
+		ActorId closestCollisionId = INVALID_ACTOR_ID;
+		std::optional<Vector3<float>> closestCollision = std::nullopt;
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
+		{
+			if (collisionActors[i] == INVALID_ACTOR_ID)
+			{
+				if (closestCollision.has_value())
+				{
+					if (Length(closestCollision.value() - start.GetTranslation()) > Length(collisions[i] - start.GetTranslation()))
+					{
+						closestCollisionId = collisionActors[i];
+						closestCollision = collisions[i];
+					}
+				}
+				else
+				{
+					closestCollisionId = collisionActors[i];
+					closestCollision = collisions[i];
+				}
+			}
+		}
+		if (closestCollision.has_value())
+			printf("\nclosest collision %f", Length(closestCollision.value() - start.GetTranslation()));
+		*/
 	}
 
 	mWheelRollDown = false;

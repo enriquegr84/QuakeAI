@@ -41,7 +41,7 @@ Subgame FindSubgame(const std::string& gamePath)
 	std::string gameId = conf.Get("id");
     std::string gameName = conf.Get("name");
 	std::string gameRelativePath = 
-		"Art/Quake/games/" + conf.Get("map") + "/" + gameId;
+		"art/quake/games/" + conf.Get("map") + "/" + gameId;
 
     std::string gameAuthor;
 	if (conf.Exists("author"))

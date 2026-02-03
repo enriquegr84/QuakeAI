@@ -3258,7 +3258,7 @@ void QuakeLogic::FillMediaCache()
 			if (mMedia.find(fileName) != mMedia.end()) // Do not override
 				continue;
 
-			AddMediaFile(fileName, path, L"Art/Quake" + filePath + L"/" + fileName);
+			AddMediaFile(fileName, path, L"art/quake" + filePath + L"/" + fileName);
 		}
 	}
 

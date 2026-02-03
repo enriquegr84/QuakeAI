@@ -326,7 +326,8 @@ void QuakeAIView::Stationary(unsigned long deltaMs)
 			mYaw += 130.f * sign;
 		}
 	}
-	else mStationaryTime = 0;
+	else if (collision.has_value())
+		mStationaryTime = 0;
 }
 
 // Cliff control

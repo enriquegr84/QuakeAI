@@ -104,7 +104,7 @@ namespace AIAnalyzer
 		// draw progress bar
 		if ((percent >= 0) && (percent <= 100))
 		{
-			std::string texturePath = "Art/Quake/textures/";
+			std::string texturePath = "art/quake/textures/";
 
 			std::shared_ptr<Texture2> progressImg;
 			if (FileSystem::Get()->ExistFile(ToWideString(texturePath + "progress_bar.png")))
@@ -262,7 +262,7 @@ void  AIAnalyzerSoundFetcher::FetchSounds(const std::string& name, std::set<std:
 
 	mFetched.insert(name);
 
-	std::string soundBase = "Art/Quake/audio";
+	std::string soundBase = "art/quake/audio";
 	PathsInsert(dstPaths, soundBase, name);
 }
 
@@ -654,7 +654,7 @@ void QuakeAIAnalyzerUI::ShowOverlayMessage(const std::wstring& text,
 	// draw progress bar
 	if ((percent >= 0) && (percent <= 100))
 	{
-		std::string texturePath = "Art/Quake/textures/";
+		std::string texturePath = "art/quake/textures/";
 
 		std::shared_ptr<Texture2> progressImg;
 		if (FileSystem::Get()->ExistFile(ToWideString(texturePath + "progress_bar.png")))

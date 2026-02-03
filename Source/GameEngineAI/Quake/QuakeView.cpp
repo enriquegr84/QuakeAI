@@ -89,7 +89,7 @@ void MenuSoundFetcher::FetchSounds(const std::string& name, std::set<std::string
 		return;
 	mFetched.insert(name);
 
-	std::string soundBase = "Art/Quake/audio";
+	std::string soundBase = "art/quake/audio";
 	dstPaths.insert(soundBase + "/" + name + ".ogg");
 	for (int i = 0; i < 10; i++)
 		dstPaths.insert(soundBase + "/" + name + "." + std::to_string(i) + ".ogg");
@@ -129,7 +129,7 @@ void GameSoundFetcher::FetchSounds(const std::string& name, std::set<std::string
 
 	mFetched.insert(name);
 
-	std::string soundBase = "Art/Quake/audio";
+	std::string soundBase = "art/quake/audio";
 	PathsInsert(dstPaths, soundBase, name);
 }
 
@@ -188,7 +188,7 @@ void QuakeMainMenuUI::ClearMenuUI(std::wstring id)
 bool QuakeMainMenuUI::SetGenericMenuUI(std::wstring id)
 {
 	//default texture dir
-	std::wstring path = L"Art/Quake/textures/menu_" + id + L".png";
+	std::wstring path = L"art/quake/textures/menu_" + id + L".png";
 	if (SetTexture(id, path, false, 16))
 		return true;
 
@@ -843,7 +843,7 @@ void QuakeUI::ShowOverlayMessage(const std::wstring& text,
 	// draw progress bar
 	if ((percent >= 0) && (percent <= 100))
 	{
-		std::string texturePath = "Art/Quake/textures/";
+		std::string texturePath = "art/quake/textures/";
 
 		std::shared_ptr<Texture2> progressImg;
 		if (FileSystem::Get()->ExistFile(ToWideString(texturePath + "progress_bar.png")))
@@ -1117,7 +1117,7 @@ void DrawLoadScreen(const std::wstring& text, std::shared_ptr<BaseUI> ui,
 	// draw progress bar
 	if ((percent >= 0) && (percent <= 100))
 	{
-		std::string texturePath = "Art/Quake/textures/";
+		std::string texturePath = "art/quake/textures/";
 
 		std::shared_ptr<Texture2> progressImg;
 		if (FileSystem::Get()->ExistFile(ToWideString(texturePath + "progress_bar.png")))
