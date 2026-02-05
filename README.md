@@ -11,7 +11,7 @@ Quake A.I. is an on-going research project with the goal of creating challenging
 
 We have managed to run the project with a latest Computer generation, though we don't have a minimum specs requirement. We have written documentation in the wiki section https://github.com/enriquegr84/QuakeAI/wiki that is meant for readers with a technical background in computer science, especially in the artificial intelligence field. Despite all the work we have done so far, this project still has a long road ahead and it is worth-noting that the difficulty increases each step on the way as well as the amount of work. Still we have reached a point in which we could show some potential towards accomplishing our goals. Lets see our current roadmap:
 - Find people who are insterested and want to participate in this project.
-- Integrate PhysX into the game engine. The current Bullet Physics library is not human-playable and it has important issues that makes it unreliable and PhysX has proven to perform better overall.
+- Integrate PhysX into the game engine. The current Bullet Physics library is not human-playable and it has important issues that makes it unreliable. PhysX has proven to perform better overall.
 - Add functionality in the AI Analyzing tool for visualizing the cluster areas covered by each player and predictions.
 - Add functionality in the AI Editor tool to allow clusters modifications.
 - Create better prediction system.
