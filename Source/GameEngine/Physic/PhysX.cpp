@@ -920,7 +920,7 @@ void PhysX::AddCharacterController(
 	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
 	desc.upDirection = PxVec3(0.f, 0.f, 1.f);
 	desc.stepOffset = 16.f;
-
+	
 	// lookup the material
 	MaterialData material(LookupMaterialData(physicMaterial));
 	desc.material = mPhysicsSystem->createMaterial(material.mFriction, material.mFriction, material.mRestitution);
@@ -935,14 +935,14 @@ void PhysX::AddCharacterController(
 		GROUP_DYNAMIC_OBJECTS,
 		GROUP_TRIGGERS | GROUP_DYNAMIC_OBJECTS,
 		0, 0));
-	
+
 	// add it to the collection to be checked for changes in SyncVisibleScene
 	mCCTGround[controller] = false;
 	mCCTJump[controller] = PxVec3(PxZero);
-	mCCTFall[controller] = PxVec3(PxZero);
+	mCCTFall[controller] = mScene->getGravity();
 	mCCTJumpAccel[controller] = PxVec3(PxZero);
 	mCCTFallAccel[controller] = PxVec3(PxZero);
-	mCCTMove[controller] = mScene->getGravity();
+	mCCTMove[controller] = PxVec3(PxZero);
 	mActorIdToController[actorID] = controller;
 	mActorIdToCollisionObject[actorID] = controller->getActor();
 	mCollisionObjectToActorId[controller->getActor()] = actorID;

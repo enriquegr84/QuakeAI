@@ -1767,11 +1767,18 @@ void QuakeLogic::SpawnActorDelegate(BaseEventDataPtr pEventData)
 				std::shared_ptr<BaseGameView> pView = *it;
 				if (pView->GetActorId() == pCastEventData->GetId())
 				{
+					AxisAngle<4, float> localRotation;
+					spawnTransform.GetRotation(localRotation);
+					float yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
+					EventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataRotateActor>(pPlayerActor->GetId(), yaw, 0.f));
+
 					if (std::dynamic_pointer_cast<QuakeAIView>(pView))
 					{
 						std::shared_ptr<QuakeAIView> pAIView =
 							std::dynamic_pointer_cast<QuakeAIView>(pView);
 						pAIView->PlayerSpawn(spawnTransform);
+
 						if (mGameAICombat)
 							pAIView->SetEnabled(false);
 					}

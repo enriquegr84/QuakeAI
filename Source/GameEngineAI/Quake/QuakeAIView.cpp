@@ -1927,6 +1927,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 			}
 
 			mRespawnTimeMs = 0;
+
 			EventManager::Get()->TriggerEvent(
 				std::make_shared<EventDataRotateActor>(mPlayerId, mYawSmooth, mPitch));
 

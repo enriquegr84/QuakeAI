@@ -54,9 +54,38 @@
 
 #if defined(PHYSX) && defined(_WIN64)
 
+static Vector3<float> PxVector3ToVector3(PxVec3 const& pxVec)
+{
+	return Vector3<float>{ pxVec.x, pxVec.y, pxVec.z };
+}
+
+static Transform PxTransformToTransform(PxTransform const& trans)
+{
+	// convert from PxMat44 (Physx) to matrix4 (GameEngine)
+	PxMat44 pxMatrix = PxMat44(trans);
+
+	// copy rotation matrix
+	const PxVec4& col0 = pxMatrix.column0;
+	const PxVec4& col1 = pxMatrix.column1;
+	const PxVec4& col2 = pxMatrix.column2;
+	Matrix4x4<float> rotationMatrix;
+	rotationMatrix.SetCol(0, Vector4<float>{col0[0], col0[1], col0[2], col0[3]});
+	rotationMatrix.SetCol(1, Vector4<float>{col1[0], col1[1], col1[2], col1[3]});
+	rotationMatrix.SetCol(2, Vector4<float>{col2[0], col2[1], col2[2], col2[3]});
+
+	// copy position
+	const PxVec4& col3 = pxMatrix.column3;
+	Vector4<float> translationVector = Vector4<float>{ col3[0], col3[1], col3[2], col3[3] };
+
+	Transform returnTransform;
+	returnTransform.SetRotation(rotationMatrix);
+	returnTransform.SetTranslation(translationVector);
+	return returnTransform;
+}
+
 QuakePhysX::QuakePhysX() : PhysX()
 {
-
+	mGravity = Settings::Get()->GetVector3("default_gravity");
 }
 
 
@@ -68,14 +97,156 @@ QuakePhysX::~QuakePhysX()
 
 }
 
+void QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller)
+{
+	PxControllerState controllerState;
+	controller->getState(controllerState);
+
+	//check if CCT is onground
+	mCCTGround[controller] = (controllerState.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
+
+	PxExtendedVec3 position = controller->getPosition();
+	Transform transform = PxTransformToTransform(controller->getActor()->getGlobalPose());
+	transform.SetTranslation((float)position.x, (float)position.y, (float)position.z);
+	mInterpolations[playerId].push_back({transform, mCCTGround[controller]});
+
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	aiManager->SetPlayerGround(playerId, mCCTGround[controller]);
+	if (!mCCTGround[controller])
+		return;
+	
+	mCCTJump[controller] = PxVec3(PxZero);
+	mCCTFall[controller] = PxVec3(PxZero);
+	mCCTJumpAccel[controller] = PxVec3(PxZero);
+	mCCTFallAccel[controller] = PxVec3(PxZero);
+
+	PxExtendedVec3 footPosition = controller->getFootPosition();
+
+	QuakeLogic* quake = dynamic_cast<QuakeLogic*>(GameLogic::Get());
+	std::vector<std::shared_ptr<Actor>> triggers;
+	quake->GetTriggerActors(triggers);
+	for (auto& trigger : triggers)
+	{
+		std::shared_ptr<PushTrigger> pTriggerPushComponent(
+			trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock());
+		if (pTriggerPushComponent)
+		{
+			PxShape* triggerShape;
+			PxRigidActor* triggerActor = FindPhysXCollisionObject(trigger->GetId());
+			triggerActor->getShapes(&triggerShape, 1);
+
+			PxReal dist = PxGeometryQuery::pointDistance(PxVec3((float)footPosition.x, (float)footPosition.y, (float)footPosition.z),
+				triggerShape->getGeometry(), triggerShape->getActor()->getGlobalPose() * triggerShape->getLocalPose());
+			if (dist <= 0.0f)
+			{
+				std::shared_ptr<EventDataPhysTriggerEnter> pEvent(
+					new EventDataPhysTriggerEnter(trigger->GetId(), playerId));
+				BaseEventManager::Get()->TriggerEvent(pEvent);
+				return;
+			}
+		}
+	}
+
+	std::shared_ptr<QuakeAIView> aiView;
+	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+	for (std::shared_ptr<BaseGameView> gameView : gameViews)
+		if (gameView->GetType() == GV_AI && gameView->GetActorId() == playerId)
+			aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
+
+	if (aiView && aiView->GetPathingGraph())
+	{
+		bool updatedActionPlan = aiView->UpdateActionPlan(false);
+
+		Vector3<float> currentPosition = transform.GetTranslation();
+		if (!aiView->UpdateActionPlan(currentPosition, 0.5f))
+		{
+			if (updatedActionPlan)
+				aiManager->UpdatePlayerView(playerId, aiView->GetActionPlayer(), false);
+
+			return;
+		}
+
+		if (updatedActionPlan)
+			aiManager->UpdatePlayerView(playerId, aiView->GetActionPlayer(), false);
+		else
+			aiManager->UpdatePlayerView(playerId, aiView->GetActionPlayer());
+
+		Vector3<float> fall = Vector3<float>::Zero();
+		Vector3<float> velocity = Vector3<float>::Zero();
+		if (aiView->GetActionPlanArc())
+			velocity = aiView->GetActionPlanArc()->GetNode()->GetPosition() - currentPosition;
+		else
+			velocity = aiView->GetActionPlanNode()->GetPosition() - currentPosition;
+
+		Normalize(velocity);
+		float yaw = atan2(velocity[1], velocity[0]) * (float)GE_C_RAD_TO_DEG;
+		aiView->SetYaw(yaw, false);
+
+		// Calculate the new rotation matrix from the camera
+		// yaw and pitch (zrotate and xrotate).
+		Matrix4x4<float> rotation = Rotation<4, float>(
+			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), yaw * (float)GE_C_DEG_TO_RAD));
+
+		// This will give us the "look at" vector 
+		// in world space - we'll use that to move.
+		Vector4<float> atWorld = Vector4<float>::Unit(AXIS_X); // forward vector
+#if defined(GE_USE_MAT_VEC)
+		atWorld = rotation * atWorld;
+#else
+		atWorld = atWorld * rotation;
+#endif
+
+		if (aiView->GetActionPlanType() == AT_JUMP)
+		{
+			aiView->SetActionPlanType(AT_MOVE);
+
+			Vector4<float> direction = atWorld;
+			direction[AXIS_Y] = 0;
+			Normalize(direction);
+
+			velocity[AXIS_X] = direction[AXIS_X] * mJumpSpeed[playerId][AXIS_X];
+			velocity[AXIS_Z] = direction[AXIS_Z] * mJumpSpeed[playerId][AXIS_Z];
+			velocity[AXIS_Y] = mJumpSpeed[playerId][AXIS_Y];
+
+			fall[AXIS_X] = direction[AXIS_X] * mFallSpeed[playerId][AXIS_X];
+			fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[playerId][AXIS_Z];
+			fall[AXIS_Y] = -mFallSpeed[playerId][AXIS_Y];
+
+			EventManager::Get()->TriggerEvent(
+				std::make_shared<EventDataJumpActor>(playerId, velocity, fall));
+		}
+		else if (aiView->GetActionPlanType() == AT_MOVE)
+		{
+			Vector4<float> direction = atWorld;
+			direction[AXIS_Y] = 0;
+			Normalize(direction);
+
+			velocity = HProject(direction);
+			velocity *= mMoveSpeed[playerId];
+
+			//specific to physx
+			velocity[AXIS_Y] = mGravity[AXIS_Y];
+
+			fall = mGravity;
+
+			EventManager::Get()->TriggerEvent(
+				std::make_shared<EventDataMoveActor>(playerId, velocity, fall));
+		}
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // QuakePhysX::OnUpdate
 //
 void QuakePhysX::OnUpdate(float const deltaSeconds)
 {
+	ResetInterpolations();
+
 	for (auto& actorController : mActorIdToController)
 	{
+		ActorId playerId = actorController.first;
 		PxController* const controller = actorController.second;
+
 		PxVec3 velocity = mCCTMove[controller] * deltaSeconds;
 
 		if (mCCTJump[controller].z > 0.f)  //jump condition
@@ -103,50 +274,19 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 		{
 			mCCTFallAccel[controller] += mCCTFall[controller] * deltaSeconds;
 			velocity += mCCTFallAccel[controller];
-			//if (actorController.first == 64)
-			//	printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], deltaSeconds);
+			//printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], deltaSeconds);
 		}
 
+		// update physics player
+		int substeps = ceil(Length(PxVector3ToVector3(velocity)));
+		float subDT = deltaSeconds / substeps;
+		PxVec3 displacement = velocity / (float)substeps;
+
 		PxControllerFilters filters;
-		PxU32 flags = controller->move(velocity, 0.001f, deltaSeconds, filters);
-
-		PxControllerState controllerState;
-		controller->getState(controllerState);
-
-		//check if CCT is onground
-		mCCTGround[controller] = (controllerState.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
-		if (mCCTGround[controller])
+		for (int i = 0; i < substeps; i++)
 		{
-			mCCTJump[controller] = PxVec3(PxZero);
-			mCCTFall[controller] = PxVec3(PxZero);
-			mCCTJumpAccel[controller] = PxVec3(PxZero);
-			mCCTFallAccel[controller] = PxVec3(PxZero);
-
-			PxExtendedVec3 footPosition = controller->getFootPosition();
-
-			QuakeLogic* quake = dynamic_cast<QuakeLogic*>(GameLogic::Get());
-			std::vector<std::shared_ptr<Actor>> triggers;
-			quake->GetTriggerActors(triggers);
-			for (auto& trigger : triggers)
-			{
-				std::shared_ptr<PushTrigger> pTriggerPushComponent(
-					trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock());
-				if (pTriggerPushComponent)
-				{
-					PxShape* triggerShape;
-					PxRigidActor* triggerActor = FindPhysXCollisionObject(trigger->GetId());
-					triggerActor->getShapes(&triggerShape, 1);
-
-					PxReal dist = PxGeometryQuery::pointDistance(PxVec3((float)footPosition.x, (float)footPosition.y, (float)footPosition.z),
-						triggerShape->getGeometry(), triggerShape->getActor()->getGlobalPose() * triggerShape->getLocalPose());
-					if (dist <= 0.0f)
-					{
-						std::shared_ptr<EventDataPhysTriggerEnter> pEvent(
-							new EventDataPhysTriggerEnter(trigger->GetId(), actorController.first));
-						BaseEventManager::Get()->TriggerEvent(pEvent);
-					}
-				}
-			}
+			controller->move(displacement, 0.001f, subDT, filters);
+			UpdatePlayerState(playerId, controller);
 		}
 	}
 
@@ -160,16 +300,36 @@ void QuakePhysX::AddCharacterController(
 	const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 	const std::string& densityStr, const std::string& physicMaterial)
 {
+	std::shared_ptr<Actor> pStrongActor(pGameActor.lock());
+	if (!pStrongActor)
+		return;  // FUTURE WORK - Add a call to the error log here
+
+	ActorId playerId = pStrongActor->GetId();
+	mMaxPushSpeed[playerId] = Vector3<float>{4.f, 4.f, 20.f};
+	mMaxJumpSpeed[playerId] = Vector3<float>{ 10.f, 10.f, 12.f };
+	mMaxFallSpeed[playerId] = Vector3<float>{ 15.f, 15.f, 40.f };
+	mMaxMoveSpeed[playerId] = 300.f;
+
+	mPushSpeed[playerId] = mMaxPushSpeed[playerId];
+	mJumpSpeed[playerId] = mMaxJumpSpeed[playerId];
+	mFallSpeed[playerId] = mMaxFallSpeed[playerId];
+	mMoveSpeed[playerId] = mMaxMoveSpeed[playerId];
+
 	PhysX::AddCharacterController(dimensions, pGameActor, densityStr, physicMaterial);
 }
 
 void QuakePhysX::GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& interpolations)
 {
-	LogError("TODO");
-	/*
-	for (auto const& interpolation : mInterpolations)
-		interpolations.push_back(interpolation);
-	*/
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(id)))
+	{
+		for (auto const& interpolation : mInterpolations[id])
+			interpolations.push_back(interpolation);
+	}
+	else if (PxRigidActor* const pCollisionObject = FindPhysXCollisionObject(id))
+	{
+		const PxTransform& actorTransform = pCollisionObject->getGlobalPose();
+		interpolations.push_back({ PxTransformToTransform(actorTransform), true });
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -358,21 +518,16 @@ void BulletCharacterController::updateState()
 ///BulletCharacterController
 void BulletCharacterController::updateAction(btCollisionWorld* collisionWorld, btScalar deltaTime)
 {
-	preStep(collisionWorld);
-	playerStep(collisionWorld, deltaTime / 4.f);
-	updateState();
+	// update physics player
+	int substeps = 4;
+	btScalar subDT = deltaTime / substeps;
 
-	preStep(collisionWorld);
-	playerStep(collisionWorld, deltaTime / 4.f);
-	updateState();
-
-	preStep(collisionWorld);
-	playerStep(collisionWorld, deltaTime / 4.f);
-	updateState();
-
-	preStep(collisionWorld);
-	playerStep(collisionWorld, deltaTime / 4.f);
-	updateState();
+	for (int i = 0; i < substeps; i++)
+	{
+		preStep(collisionWorld);
+		playerStep(collisionWorld, subDT);
+		updateState();
+	}
 }
 
 void BulletCharacterController::getInterpolations(std::vector<std::pair<Transform, bool>>& interpolations)

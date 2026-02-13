@@ -69,6 +69,30 @@ public:
 		const std::string& densityStr, const std::string& physicMaterial) override;
 
 	virtual void GetInterpolations(const ActorId id, std::vector<std::pair<Transform, bool>>& transforms);
+
+protected:
+
+	void UpdatePlayerState(ActorId playerId, PxController* controller);
+
+	void ResetInterpolations() { mInterpolations.clear(); }
+
+private:
+
+	Vector3<float> mGravity;
+
+	// Speed Controls
+	std::map<ActorId, Vector3<float>> mMaxPushSpeed;
+	std::map<ActorId, Vector3<float>> mMaxJumpSpeed;
+	std::map<ActorId, Vector3<float>> mMaxFallSpeed;
+	std::map<ActorId, float> mMaxMoveSpeed;
+
+	std::map<ActorId, Vector3<float>> mPushSpeed;
+	std::map<ActorId, Vector3<float>> mJumpSpeed;
+	std::map<ActorId, Vector3<float>> mFallSpeed;
+	std::map<ActorId, float> mMoveSpeed;
+
+	std::map<ActorId, std::vector<std::pair<Transform, bool>>> mInterpolations;
+
 };
 
 #else

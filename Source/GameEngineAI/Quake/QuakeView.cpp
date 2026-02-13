@@ -2229,7 +2229,6 @@ void QuakeHumanView::SetControlledActor(ActorId actorId)
 	mMouseHandler = mGamePlayerController;
 }
 
-
 void QuakeHumanView::ShowFormDelegate(BaseEventDataPtr pEventData)
 {
 	std::shared_ptr<EventDataShowForm> pCastEventData =

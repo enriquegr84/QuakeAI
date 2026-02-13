@@ -1918,7 +1918,6 @@ void QuakeAIAnalyzerView::SetControlledActor(ActorId actorId)
 	mMouseHandler = mPlayerController;
 }
 
-
 void QuakeAIAnalyzerView::ShowFormDelegate(BaseEventDataPtr pEventData)
 {
 	std::shared_ptr<EventDataShowForm> pCastEventData =
