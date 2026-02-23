@@ -2947,12 +2947,13 @@ void QuakeAIEditorView::SimulatePathingDelegate(BaseEventDataPtr pEventData)
 		mHighlightNode->SetVisible(false);
 
 	NodePlan playerPlan;
+	mPathingSimulation = std::make_shared<PathingGraph>();
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	aiManager->CreatePathing(pCastEventData->GetActorId(), playerPlan);
+	aiManager->CreatePathing(pCastEventData->GetActorId(), playerPlan, mPathingSimulation);
 
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
-	aiView->SetPathingGraph(aiManager->GetPathingGraph());
+	aiView->SetPathingGraph(mPathingSimulation);
 
 	if (playerPlan.node)
 	{

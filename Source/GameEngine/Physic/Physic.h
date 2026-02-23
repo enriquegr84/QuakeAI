@@ -42,6 +42,7 @@
 #include "GameEngineStd.h"
 
 #include "Graphic/Scene/Hierarchy/PVWUpdater.h"
+#include "Graphic/Scene/Hierarchy/BoundingBox.h"
 
 #include "Mathematic/Algebra/AxisAngle.h"
 #include "Mathematic/Algebra/Transform.h"
@@ -94,7 +95,8 @@ public:
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimensions, 
 		std::weak_ptr<Actor> pGameActor, const std::string& physicMaterial) = 0;
-	virtual void AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+	virtual void AddBSP(BspLoader& bspLoader,
+		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 		std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial) = 0;
 	virtual void AddCharacterController(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
@@ -149,6 +151,7 @@ public:
 	virtual void SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) = 0;
 
 	virtual void StopActor(ActorId actorId) = 0;
+	virtual BoundingBox<float> GetBoundingBox(ActorId actorId) = 0;
 	virtual Vector3<float> GetCenter(ActorId actorId) = 0;
 	virtual Vector3<float> GetScale(ActorId actorId) = 0;
 	virtual Vector3<float> GetVelocity(ActorId actorId) = 0;
@@ -185,7 +188,8 @@ public:
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimensions,
 		std::weak_ptr<Actor> pGameActor, const std::string& physicMaterial) { }
-	virtual void AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+	virtual void AddBSP(BspLoader& bspLoader,
+		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 		std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial) { }
 	virtual void AddCharacterController(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
@@ -244,6 +248,7 @@ public:
 	virtual void SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) { }
 
 	virtual void StopActor(ActorId actorId) { }
+	virtual BoundingBox<float> GetBoundingBox(ActorId actorId) { return BoundingBox<float>(); }
 	virtual Vector3<float> GetCenter(ActorId actorId) { return Vector3<float>::Zero(); }
 	virtual Vector3<float> GetScale(ActorId actorId) { return Vector3<float>::Zero(); }
 	virtual Vector3<float> GetVelocity(ActorId actorId) { return Vector3<float>::Zero(); }

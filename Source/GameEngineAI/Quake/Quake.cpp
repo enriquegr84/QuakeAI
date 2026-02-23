@@ -1753,11 +1753,26 @@ void QuakeLogic::SpawnActorDelegate(BaseEventDataPtr pEventData)
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		if (pPhysicComponent)
 		{
-			if (spawnTransform.IsIdentity())
-				SelectSpawnPoint(pPhysicComponent->GetTransform().GetTranslation(), spawnTransform);
-			pPhysicComponent->SetTransform(spawnTransform);
-			
+			//fix for PhysX
+			AxisAngle<4, float> localRotation;
+			spawnTransform.GetRotation(localRotation);
+			float yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
+			EventManager::Get()->TriggerEvent(
+				std::make_shared<EventDataRotateActor>(pPlayerActor->GetId(), yaw, 0.f));
+
 			std::shared_ptr<BaseGamePhysic> gamePhysics = GetGamePhysics();
+			gamePhysics->OnUpdate(0.01f);
+
+			if (spawnTransform.IsIdentity())
+			{
+				SelectSpawnPoint(pPhysicComponent->GetTransform().GetTranslation(), spawnTransform);
+
+				spawnTransform.GetRotation(localRotation);
+				yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
+				EventManager::Get()->TriggerEvent(
+					std::make_shared<EventDataRotateActor>(pPlayerActor->GetId(), yaw, 0.f));
+			}
+			pPhysicComponent->SetTransform(spawnTransform);
 			gamePhysics->OnUpdate(0.01f);
 
 			GameApplication* gameApp = (GameApplication*)Application::App;
@@ -1767,12 +1782,6 @@ void QuakeLogic::SpawnActorDelegate(BaseEventDataPtr pEventData)
 				std::shared_ptr<BaseGameView> pView = *it;
 				if (pView->GetActorId() == pCastEventData->GetId())
 				{
-					AxisAngle<4, float> localRotation;
-					spawnTransform.GetRotation(localRotation);
-					float yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
-					EventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataRotateActor>(pPlayerActor->GetId(), yaw, 0.f));
-
 					if (std::dynamic_pointer_cast<QuakeAIView>(pView))
 					{
 						std::shared_ptr<QuakeAIView> pAIView =
@@ -3553,6 +3562,7 @@ void QuakeLogic::LoadActors(BspLoader& bspLoader)
 									if (className == "trigger_push")
 										gamePhysics->SetCollisionFlags(pActor->GetId(), false);
 #endif
+
 								}
 							}
 						}

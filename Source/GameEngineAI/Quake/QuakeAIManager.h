@@ -1024,7 +1024,7 @@ public:
 	virtual void LoadGraph(const std::wstring& path);
 	virtual void LoadGraph(const std::wstring& path, std::shared_ptr<PathingGraph>& graph);
 
-	void CreatePathing(ActorId playerId, NodePlan& pathPlan);
+	void CreatePathing(ActorId playerId, NodePlan& pathPlan, std::shared_ptr<PathingGraph>& graph);
 	PathingNode* CreatePathingNode(ActorId playerId, std::shared_ptr<PathingGraph>& graph);
 	PathingNode* CreatePathingNode(ActorId playerId, const Vector3<float>& position, std::shared_ptr<PathingGraph>& graph);
 	void CreatePathingMap(ActorId playerId, const PathingNodeVec& pathingNodes,

@@ -372,8 +372,9 @@ public:
 		}
 	}
 
-	virtual void ConvertBsp(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
-		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces, float scaling)
+	virtual void ConvertBsp(BspLoader& bspLoader,
+		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
+		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces, float scaling) 
 	{
 		bspLoader.ParseEntities();
 
@@ -421,6 +422,9 @@ public:
 				{
 					if (bspLoader.mDShaders[brush.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 					{
+						if (ignoreConvexSurfaces.find(i) != ignoreConvexSurfaces.end())
+							continue;
+
 						brush.shaderNum = -1;
 
 						for (int p = 0; p < brush.numSides; p++)
@@ -912,7 +916,8 @@ void BulletPhysics::AddTrigger(const Vector3<float> &dimension,
 /////////////////////////////////////////////////////////////////////////////
 // BulletPhysics::AddBSP
 //
-void BulletPhysics::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+void BulletPhysics::AddBSP(BspLoader& bspLoader,
+	const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 	const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 	std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial)
 {
@@ -925,7 +930,7 @@ void BulletPhysics::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& 
 
 	BspToBulletConverter bspToBullet(this, pStrongActor, mass, physicMaterial);
 	float bspScaling = 1.0f;
-	bspToBullet.ConvertBsp(bspLoader, convexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
+	bspToBullet.ConvertBsp(bspLoader, convexSurfaces, ignoreConvexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1545,7 +1550,36 @@ void BulletPhysics::ConvexSweep(ActorId aId, const Transform& origin, const Tran
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// BulletPhysics::GetBoundingBox					
+//
+BoundingBox<float> BulletPhysics::GetBoundingBox(ActorId actorId)
+{
+	if (btCollisionObject* const collisionObject = FindBulletCollisionObject(actorId))
+	{
+		if (collisionObject->getCollisionFlags() & btCollisionObject::CF_CHARACTER_OBJECT)
+		{
+			if (btKinematicCharacterController* const controller =
+				dynamic_cast<btKinematicCharacterController*>(FindBulletAction(actorId)))
+			{
+				btCollisionShape* collisionShape = controller->getGhostObject()->getCollisionShape();
 
+				btVector3 aabbMin, aabbMax;
+				collisionShape->getAabb(controller->getGhostObject()->getWorldTransform(), aabbMin, aabbMax);
+				return BoundingBox<float>(btVector3ToVector3(aabbMin), btVector3ToVector3(aabbMax));
+			}
+		}
+		else
+		{
+			btRigidBody* const rigidBody = dynamic_cast<btRigidBody*>(collisionObject);
+
+			btVector3 aabbMin, aabbMax;
+			rigidBody->getAabb(aabbMin, aabbMax);
+			return BoundingBox<float>(btVector3ToVector3(aabbMin), btVector3ToVector3(aabbMax));
+		}
+	}
+	return BoundingBox<float>();
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // BulletPhysics::GetCenter					

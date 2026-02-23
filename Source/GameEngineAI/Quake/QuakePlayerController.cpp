@@ -70,10 +70,10 @@ QuakePlayerController::QuakePlayerController(
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 4.f, 4.f, 20.f };
-	mMaxJumpSpeed = Vector3<float>{ 10.f, 10.f, 12.f };
-	mMaxFallSpeed = Vector3<float>{ 15.f, 15.f, 40.f };
-	mMaxMoveSpeed = 300.f;
+	mMaxPushSpeed = Vector3<float>{ 0.6f, 0.6f, 1.5f };
+	mMaxJumpSpeed = Vector3<float>{ 1.f, 1.f, 1.3f };
+	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 80.f };
+	mMaxMoveSpeed = 350.f;
 
 #else
 
@@ -108,6 +108,10 @@ QuakePlayerController::QuakePlayerController(
 	Transform initTransform = mAbsoluteTransform;
 	mProjectileActor = GameLogic::Get()->CreateActor(
 		"actors/quake/effects/rocketghostlauncherfire.xml", nullptr, &initTransform);
+	std::shared_ptr<PhysicComponent> pPhysicComponent =
+		mProjectileActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
+	if (pPhysicComponent)
+		pPhysicComponent->SetIgnoreCollision(mTarget->GetId(), true);
 
 	const std::shared_ptr<ScreenElementScene>& pScene = GameApplication::Get()->GetHumanView()->mScene;
 	std::shared_ptr<Node> pProjectileNode = pScene->GetSceneNode(mProjectileActor->GetId());
@@ -367,7 +371,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						float push = mPushSpeed[AXIS_Y];
 #if defined(PHYSX) && defined(_WIN64)
 
-						push += direction[AXIS_Y] * 0.06f;
+						push += direction[AXIS_Y] * 0.006f;
 
 #else
 

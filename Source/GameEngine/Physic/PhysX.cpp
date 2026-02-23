@@ -342,7 +342,8 @@ public:
 		AddTriangleMeshCollider(bezierVertices, bezierIndices);
 	}
 
-	virtual void ConvertBsp(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+	virtual void ConvertBsp(BspLoader& bspLoader,
+		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces, float scaling)
 	{
 		bspLoader.ParseEntities();
@@ -391,6 +392,9 @@ public:
 				{
 					if (bspLoader.mDShaders[brush.shaderNum].contentFlags & BSPCONTENTS_SOLID)
 					{
+						if (ignoreConvexSurfaces.find(i) != ignoreConvexSurfaces.end())
+							continue;
+
 						brush.shaderNum = -1;
 
 						for (int p = 0; p < brush.numSides; p++)
@@ -882,7 +886,8 @@ void PhysX::AddTrigger(const Vector3<float> &dimension,
 /////////////////////////////////////////////////////////////////////////////
 // PhysX::AddBSP
 //
-void PhysX::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSurfaces,
+void PhysX::AddBSP(BspLoader& bspLoader,
+	const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 	const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 	std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial)
 {
@@ -895,7 +900,7 @@ void PhysX::AddBSP(BspLoader& bspLoader, const std::unordered_set<int>& convexSu
 
 	BspToPhysXConverter bspToPhysX(this, pStrongActor, mass, physicMaterial);
 	float bspScaling = 1.0f;
-	bspToPhysX.ConvertBsp(bspLoader, convexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
+	bspToPhysX.ConvertBsp(bspLoader, convexSurfaces, ignoreConvexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -916,7 +921,7 @@ void PhysX::AddCharacterController(
 	// create the collision body, which specifies the shape of the object
 	PxCapsuleControllerDesc desc;
 	desc.radius = std::max(dimensions[0], dimensions[1]) / 2.f;
-	desc.height = dimensions[2] > 2 * desc.radius ? dimensions[2] - 2 * desc.radius : 0;
+	desc.height = dimensions[2] >  desc.radius ? dimensions[2] - desc.radius : 0;
 	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
 	desc.upDirection = PxVec3(0.f, 0.f, 1.f);
 	desc.stepOffset = 16.f;
@@ -939,7 +944,7 @@ void PhysX::AddCharacterController(
 	// add it to the collection to be checked for changes in SyncVisibleScene
 	mCCTGround[controller] = false;
 	mCCTJump[controller] = PxVec3(PxZero);
-	mCCTFall[controller] = mScene->getGravity();
+	mCCTFall[controller] = PxVec3(PxZero);
 	mCCTJumpAccel[controller] = PxVec3(PxZero);
 	mCCTFallAccel[controller] = PxVec3(PxZero);
 	mCCTMove[controller] = PxVec3(PxZero);
@@ -1296,7 +1301,12 @@ Transform PhysX::GetTransform(const ActorId id)
 	PxRigidActor* pCollisionObject = FindPhysXCollisionObject(id);
 	LogAssert(pCollisionObject, "no collision object");
 
-	const PxTransform& actorTransform = pCollisionObject->getGlobalPose();
+	PxTransform actorTransform = pCollisionObject->getGlobalPose();
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(id)))
+	{
+		PxExtendedVec3 position = controller->getPosition();
+		actorTransform.p = PxVec3((float)position.x, (float)position.y, (float)position.z);
+	}
 	return PxTransformToTransform(actorTransform);
 }
 
@@ -1579,13 +1589,42 @@ void PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& e
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// PhysX::GetBoundingBox					
+//
+BoundingBox<float> PhysX::GetBoundingBox(ActorId actorId)
+{
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
+	{
+		PxBounds3 aabb = controller->getActor()->getWorldBounds();
+		// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
+		std::swap(aabb.minimum.x, aabb.minimum.z);
+		std::swap(aabb.maximum.x, aabb.maximum.z);
+		return BoundingBox<float>(PxVector3ToVector3(aabb.minimum), PxVector3ToVector3(aabb.maximum));
+	}
+	else if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId))
+	{
+		PxBounds3 aabb = collisionObject->getWorldBounds();
+		return BoundingBox<float>(PxVector3ToVector3(aabb.minimum), PxVector3ToVector3(aabb.maximum));
+	}
+	return BoundingBox<float>();
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // PhysX::GetCenter					
 //
 Vector3<float> PhysX::GetCenter(ActorId actorId)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
-		PxBounds3 aabb = controller->getActor()->getWorldBounds();  // done
+		PxBounds3 aabb = controller->getActor()->getWorldBounds();
+		PxVec3 aabbCenter = aabb.minimum + (aabb.maximum - aabb.minimum) / 2.f;
+		// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
+		std::swap(aabbCenter.x, aabbCenter.z);
+		return PxVector3ToVector3(aabbCenter);
+	}
+	else if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId))
+	{
+		PxBounds3 aabb = collisionObject->getWorldBounds();
 		PxVec3 const aabbCenter = aabb.minimum + (aabb.maximum - aabb.minimum) / 2.f;
 		return PxVector3ToVector3(aabbCenter);
 	}
@@ -1599,7 +1638,15 @@ Vector3<float> PhysX::GetScale(ActorId actorId)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
-		PxBounds3 aabb = controller->getActor()->getWorldBounds();  // done
+		PxBounds3 aabb = controller->getActor()->getWorldBounds();
+		PxVec3 aabbExtents = aabb.getDimensions();
+		// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
+		std::swap(aabbExtents.x, aabbExtents.z);
+		return PxVector3ToVector3(aabbExtents);
+	}
+	else if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId))
+	{
+		PxBounds3 aabb = collisionObject->getWorldBounds();
 		PxVec3 const aabbExtents = aabb.getDimensions();
 		return PxVector3ToVector3(aabbExtents);
 	}
@@ -1614,6 +1661,12 @@ Vector3<float> PhysX::GetVelocity(ActorId actorId)
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
 		PxVec3 velocity = controller->getActor()->getLinearVelocity();
+		return PxVector3ToVector3(velocity);
+	}
+	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
+	{
+		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
+		PxVec3 velocity = rigidDynamic->getLinearVelocity();
 		return PxVector3ToVector3(velocity);
 	}
 	return Vector3<float>::Zero();
@@ -1653,7 +1706,6 @@ void PhysX::SetVelocity(ActorId actorId, const Vector3<float>& vel)
 	}
 	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
-		// set velocity
 		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
 		rigidDynamic->setLinearVelocity(Vector3ToPxVector3(vel));
 	}
@@ -1665,6 +1717,12 @@ Vector3<float> PhysX::GetAngularVelocity(ActorId actorId)
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
 		PxVec3 velocity = controller->getActor()->getAngularVelocity();
+		return PxVector3ToVector3(velocity);
+	}
+	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
+	{
+		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
+		PxVec3 velocity = rigidDynamic->getAngularVelocity();
 		return PxVector3ToVector3(velocity);
 	}
 	return Vector3<float>::Zero();
@@ -1680,7 +1738,6 @@ void PhysX::SetAngularVelocity(ActorId actorId, const Vector3<float>& vel)
 	}
 	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
-		// set angular velocity
 		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
 		rigidDynamic->setAngularVelocity(Vector3ToPxVector3(vel));
 	}
@@ -1725,10 +1782,11 @@ bool PhysX::CheckPenetration(ActorId aid)
 
 		// Perform an overlap query (any geometry type)
 		PxOverlapBuffer hit;
-		PxQueryFilterData filterData;  // Customize filtering if needed (e.g., ignore dynamics)
-		filterData.flags |= PxQueryFlag::eSTATIC;  // Or filter as appropriate
-
-		bool isPenetrating = mScene->overlap(shape->getGeometry(), globalPose, hit, filterData);
+		PxQueryFilterData filter;  // Customize filtering if needed (e.g., ignore dynamics)
+		filter.flags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::eANY_HIT | PxQueryFlag::ePOSTFILTER;
+		PxRigidActor* const collisionObject = FindPhysXCollisionObject(aid);
+		bool isPenetrating = mScene->overlap(
+			shape->getGeometry(), globalPose, hit, filter, collisionObject ? &IgnoreCharacterFilter(collisionObject) : 0);
 
 		if (isPenetrating && hit.hasBlock)
 		{

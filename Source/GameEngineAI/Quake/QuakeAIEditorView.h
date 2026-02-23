@@ -1092,6 +1092,7 @@ private:
 
 	std::shared_ptr<PathNode> mPathNode;
 	std::shared_ptr<GraphNode> mGraphNode;
+	std::shared_ptr<PathingGraph> mPathingSimulation;
 	std::shared_ptr<PathingGraph> mPathingMap;
 	std::shared_ptr<PathingGraph> mMap;
 

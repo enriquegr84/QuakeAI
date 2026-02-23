@@ -45,10 +45,10 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 4.f, 4.f, 20.f };
-	mMaxJumpSpeed = Vector3<float>{ 10.f, 10.f, 12.f };
-	mMaxFallSpeed = Vector3<float>{ 15.f, 15.f, 40.f };
-	mMaxMoveSpeed = 300.f;
+	mMaxPushSpeed = Vector3<float>{ 0.6f, 0.6f, 1.5f };
+	mMaxJumpSpeed = Vector3<float>{ 1.f, 1.f, 1.3f };
+	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 80.f };
+	mMaxMoveSpeed = 350.f;
 
 #else
 
@@ -102,7 +102,6 @@ void QuakeAIView::PlayerSpawn(const Transform& spawnTransform)
 	spawnTransform.GetRotation(localRotation);
 	mYaw = mYawSmooth = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
 	//mPitchTarget = -yawPitchRoll.mAngle[AXIS_Z] * (float)GE_C_RAD_TO_DEG;
-	mStationaryPosition = spawnTransform.GetTranslation();
 
 	mAbsoluteTransform.SetRotation(spawnTransform.GetRotation());
 	mAbsoluteTransform.SetTranslation(spawnTransform.GetTranslation());
@@ -112,6 +111,10 @@ void QuakeAIView::PlayerSpawn(const Transform& spawnTransform)
 		Transform initTransform = mAbsoluteTransform;
 		mProjectileActor = GameLogic::Get()->CreateActor(
 			"actors/quake/effects/rocketghostlauncherfire.xml", nullptr, &initTransform);
+		std::shared_ptr<PhysicComponent> pPhysicComponent =
+			mProjectileActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
+		if (pPhysicComponent)
+			pPhysicComponent->SetIgnoreCollision(mPlayerId, true);
 
 		const std::shared_ptr<ScreenElementScene>& pScene = GameApplication::Get()->GetHumanView()->mScene;
 		std::shared_ptr<Node> pProjectileNode = pScene->GetSceneNode(mProjectileActor->GetId());
@@ -1462,7 +1465,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					float push = mPushSpeed[AXIS_Y];
 #if defined(PHYSX) && defined(_WIN64)
 
-					push += direction[AXIS_Y] * 0.06f;
+					push += direction[AXIS_Y] * 0.006f;
 
 #else
 
@@ -1894,6 +1897,8 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 				Vector4<float> direction = atWorld;
 				direction[AXIS_Y] = 0;
 				Normalize(direction);
+
+				//printf("\n time %u direction %f %f %f", deltaMs, direction[0], direction[1], direction[2]);
 
 				direction[AXIS_X] *= mFallSpeed[AXIS_X];
 				direction[AXIS_Z] *= mFallSpeed[AXIS_Z];
