@@ -97,7 +97,7 @@ QuakePhysX::~QuakePhysX()
 
 }
 
-bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller)
+bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, bool enableUpdateState)
 {
 	PxControllerState controllerState;
 	controller->getState(controllerState);
@@ -114,7 +114,7 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller)
 	aiManager->SetPlayerGround(playerId, mCCTGround[controller]);
 	if (!mCCTGround[controller])
 		return false;
-	
+
 	mCCTJump[controller] = PxVec3(PxZero);
 	mCCTFall[controller] = PxVec3(PxZero);
 	mCCTJumpAccel[controller] = PxVec3(PxZero);
@@ -131,13 +131,8 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller)
 			trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock());
 		if (pTriggerPushComponent)
 		{
-			PxShape* triggerShape;
-			PxRigidActor* triggerActor = FindPhysXCollisionObject(trigger->GetId());
-			triggerActor->getShapes(&triggerShape, 1);
-
-			PxReal dist = PxGeometryQuery::pointDistance(PxVec3((float)footPosition.x, (float)footPosition.y, (float)footPosition.z),
-				triggerShape->getGeometry(), triggerShape->getActor()->getGlobalPose() * triggerShape->getLocalPose());
-			if (dist <= 0.0f)
+			BoundingBox<float> triggerBB = GameLogic::Get()->GetGamePhysics()->GetBoundingBox(trigger->GetId());
+			if (triggerBB.IsPointInside(Vector3<float>{(float)footPosition.x, (float)footPosition.y, (float)footPosition.z}))
 			{
 				std::shared_ptr<EventDataPhysTriggerEnter> pEvent(new EventDataPhysTriggerEnter(trigger->GetId(), playerId));
 				BaseEventManager::Get()->TriggerEvent(pEvent);
@@ -145,6 +140,9 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller)
 			}
 		}
 	}
+
+	if (!enableUpdateState)
+		return false;
 
 	std::shared_ptr<QuakeAIView> aiView;
 	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
@@ -224,9 +222,6 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller)
 			velocity = HProject(direction);
 			velocity *= mMoveSpeed[playerId];
 
-			//specific to physx
-			velocity[AXIS_Y] = mGravity[AXIS_Y];
-
 			fall = mGravity;
 
 			EventManager::Get()->TriggerEvent(
@@ -257,7 +252,7 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 		// update physics player at fixed delta time steps for more consistent behavior
 		PxVec3 velocity = PxVec3(PxZero);
 		bool updatePlayerState = true;
-		for (int i = 0; i < substeps; i++)
+		for (int substep = 1; substep <= substeps; substep++)
 		{
 			if (updatePlayerState)
 			{
@@ -284,19 +279,16 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 					}
 				}
 
-				if (!mCCTGround[controller]) //fall acceleration
-				{
-					mCCTFallAccel[controller] += mCCTFall[controller] * subDeltaTime;
-					velocity += mCCTFallAccel[controller];
-					//printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], subDeltaTime);
-				}
+				mCCTFallAccel[controller] += mCCTFall[controller] * subDeltaTime;
+				velocity += mCCTFallAccel[controller];
+				//printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], subDeltaTime);
 			}
 
 			//printf("\n physx player %u move %f elpased %f", actorController.first, velocity.magnitude(), subDeltaTime);
 
 			PxControllerFilters filters;
 			controller->move(velocity, 0.001f, subDeltaTime, filters);
-			updatePlayerState = UpdatePlayerState(playerId, controller);
+			updatePlayerState = UpdatePlayerState(playerId, controller, substep != substeps);
 		}
 	}
 
@@ -315,10 +307,10 @@ void QuakePhysX::AddCharacterController(
 		return;  // FUTURE WORK - Add a call to the error log here
 
 	ActorId playerId = pStrongActor->GetId();
-	mMaxPushSpeed[playerId] = Vector3<float>{ 0.15f, 0.15f, 1.5f };
-	mMaxJumpSpeed[playerId] = Vector3<float>{ 1.f, 1.f, 1.4f };
-	mMaxFallSpeed[playerId] = Vector3<float>{ 20.f, 20.f, 80.f };
-	mMaxMoveSpeed[playerId] = 350.f;
+	mMaxPushSpeed[playerId] = Vector3<float>{ 0.4f, 0.4f, 1.8f };
+	mMaxJumpSpeed[playerId] = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxFallSpeed[playerId] = Vector3<float>{ 8.f, 8.f, 60.f };
+	mMaxMoveSpeed[playerId] = 300.f;
 
 	mPushSpeed[playerId] = mMaxPushSpeed[playerId];
 	mJumpSpeed[playerId] = mMaxJumpSpeed[playerId];

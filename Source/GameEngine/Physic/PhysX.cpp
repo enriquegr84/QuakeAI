@@ -921,7 +921,7 @@ void PhysX::AddCharacterController(
 	// create the collision body, which specifies the shape of the object
 	PxCapsuleControllerDesc desc;
 	desc.radius = std::max(dimensions[0], dimensions[1]) / 2.f;
-	desc.height = dimensions[2] >  desc.radius ? dimensions[2] - desc.radius : 0;
+	desc.height = dimensions[2] >  2 * desc.radius ? dimensions[2] - 2 * desc.radius : 0;
 	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
 	desc.upDirection = PxVec3(0.f, 0.f, 1.f);
 	desc.stepOffset = 16.f;

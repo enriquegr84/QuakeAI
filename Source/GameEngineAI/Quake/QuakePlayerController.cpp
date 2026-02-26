@@ -65,15 +65,15 @@ QuakePlayerController::QuakePlayerController(
 	mMaxRotateSpeed = 0.5f;
 	mMouseSensitivity = Settings::Get()->GetFloat("mouse_sensitivity");
 	mGravity = Settings::Get()->GetVector3("default_gravity");
-	mRespawnTimeMs = 0;
 
+	mRespawnTimeMs = 0;
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 0.6f, 0.6f, 1.5f };
-	mMaxJumpSpeed = Vector3<float>{ 1.f, 1.f, 1.3f };
-	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 80.f };
-	mMaxMoveSpeed = 350.f;
+	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.8f };
+	mMaxJumpSpeed = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxFallSpeed = Vector3<float>{ 8.f, 8.f, 60.f };
+	mMaxMoveSpeed = 300.f;
 
 #else
 
@@ -371,7 +371,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						float push = mPushSpeed[AXIS_Y];
 #if defined(PHYSX) && defined(_WIN64)
 
-						push += direction[AXIS_Y] * 0.006f;
+						push += direction[AXIS_Y] * 0.004f;
 
 #else
 
@@ -418,11 +418,6 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 							velocity = HProject(direction);
 							velocity *= mMoveSpeed;
-#if defined(PHYSX) && defined(_WIN64)
-
-							velocity[AXIS_Y] = mGravity[AXIS_Y];
-
-#endif
 
 							fall = mGravity;
 						}
@@ -472,16 +467,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 			pPlayerActor->UpdateTimers(deltaMs);
 			pPlayerActor->UpdateWeapon(deltaMs);
-
-#if defined(PHYSX) && defined(_WIN64)
-
-			pPlayerActor->UpdateMovement(mGravity, mGravity);
-
-#else
-
 			pPlayerActor->UpdateMovement(Vector3<float>::Zero(), mGravity);
-
-#endif
 		}
 	}
 

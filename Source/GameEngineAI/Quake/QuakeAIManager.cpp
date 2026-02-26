@@ -273,14 +273,17 @@ QuakeAIManager::QuakeAIManager() : AIManager()
 	mLastPlanId = 0;
 
 	mMaxRotateSpeed = 180.f;
+
 	mGravity = Settings::Get()->GetVector3("default_gravity");
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 0.6f, 0.6f, 1.5f };
-	mMaxJumpSpeed = Vector3<float>{ 1.f, 1.f, 1.3f };
-	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 80.f };
-	mMaxMoveSpeed = 350.f;
+	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.8f };
+	mMaxJumpSpeed = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxFallSpeed = Vector3<float>{ 8.f, 8.f, 60.f };
+	mMaxMoveSpeed = 300.f;
+
+	mSimulationStep = 1.f / 35.f;
 
 #else
 
@@ -292,6 +295,8 @@ QuakeAIManager::QuakeAIManager() : AIManager()
 		DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_Y };
 	mMaxMoveSpeed = DEFAULT_MOVE_SPEED;
 
+	mSimulationStep = 1.f / 60.f;
+
 #endif
 
 	mPushSpeed = mMaxPushSpeed;
@@ -299,7 +304,7 @@ QuakeAIManager::QuakeAIManager() : AIManager()
 	mFallSpeed = mMaxFallSpeed;
 	mMoveSpeed = mMaxMoveSpeed;
 
-	mSimulationStep = 1.f / 60.f;
+
 	mUpdateCounter = 0;
 	mUpdateTimeMs = 0;
 
@@ -13538,8 +13543,8 @@ void QuakeAIManager::CreatePathing(ActorId playerId, NodePlan& pathPlan, std::sh
 
 	//return to original position
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	game->RegisterAllDelegates();
@@ -13567,8 +13572,8 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, std::shared_ptr
 
 	//return to original position
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	// process the item actors which we have met
@@ -13613,8 +13618,8 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, const Vector3<f
 
 	//set player position
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	SimulateStanding(INVALID_ACTOR_ID, transform.GetTranslation(), graph);
@@ -13664,8 +13669,8 @@ void QuakeAIManager::CreatePathingMap(ActorId playerId, const PathingNodeVec& pa
 
 	//return to original position
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	game->RegisterAllDelegates();
@@ -14414,8 +14419,8 @@ void QuakeAIManager::SimulateStanding(ActorId actorId, const Vector3<float>& pos
 	Transform transform;
 	transform.SetTranslation(position);
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	do
 	{
 		gamePhysics->OnUpdate(mSimulationStep);
@@ -14463,7 +14468,7 @@ void QuakeAIManager::SimulateTriggerTeleport(
 	Transform transform;
 	transform.SetTranslation(target.GetTranslation());
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
 	gamePhysics->Fall(mPlayerActor->GetId(), direction);
 	gamePhysics->OnUpdate(mSimulationStep);
 
@@ -14538,8 +14543,8 @@ void QuakeAIManager::SimulateTriggerPush(
 	Transform transform;
 	transform.SetTranslation(pNode->GetPosition());
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	do
 	{
 		gamePhysics->OnUpdate(mSimulationStep);
@@ -14551,15 +14556,13 @@ void QuakeAIManager::SimulateTriggerPush(
 	Vector3<float> fallSpeed = mMaxFallSpeed;
 
 	direction = target.GetTranslation() - transform.GetTranslation();
-	float push = mPushSpeed[AXIS_Y];
-	push += direction[AXIS_Y] * 0.006f;
+	float push = mPushSpeed[AXIS_Y] + direction[AXIS_Y] * 0.004f;
 
 	direction[AXIS_Y] = 0;
 	Normalize(direction);
 
-	move = mGravity;
+	move = direction;
 	move *= mMoveSpeed;
-	move[AXIS_Y] = mGravity[AXIS_Y];
 
 	jump[AXIS_X] = direction[AXIS_X] * mPushSpeed[AXIS_X];
 	jump[AXIS_Z] = direction[AXIS_Z] * mPushSpeed[AXIS_Z];
@@ -14707,8 +14710,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 
 	transform.SetTranslation(pNode->GetPosition());
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	do
 	{
 		gamePhysics->OnUpdate(mSimulationStep);
@@ -14744,6 +14747,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 				fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[AXIS_Z];
 				fall[AXIS_Y] = -mFallSpeed[AXIS_Y];
 
+				gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
 				gamePhysics->Fall(mPlayerActor->GetId(), fall);
 				gamePhysics->OnUpdate(mSimulationStep);
 
@@ -14787,9 +14791,9 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 
 			move = direction;
 			move *= mMoveSpeed;
-			move[AXIS_Y] = mGravity[AXIS_Y];
 
 			gamePhysics->Move(mPlayerActor->GetId(), move);
+			gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 			gamePhysics->OnUpdate(mSimulationStep);
 
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
@@ -14797,7 +14801,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 
 		if (!movements.empty())
 		{
-			float deltaTime = 0.f, totalTime = 0.f;
+			float deltaTime = 0.f, totalTime = 0.f, onAirTime = 0.f;
 			std::vector<std::pair<Transform, bool>>::iterator itMove = movements.begin();
 			std::vector<Vector3<float>> positions{ (*itMove).first.GetTranslation() };
 			std::vector<float> weights{ 0 };
@@ -14807,6 +14811,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 			{
 				if ((*itMove).second)	// check if we are on ground
 				{
+					onAirTime = 0.f;
 					if (!pCurrentNode)
 					{
 						PathingNode* pClosestNode = graph->FindClosestNode((*itMove).first.GetTranslation(), false);
@@ -14842,8 +14847,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 						continue;
 					}
 
-					totalTime += mSimulationStep / 4.f;
-					deltaTime += mSimulationStep / 4.f;
+					totalTime += mSimulationStep / 12.f;
+					deltaTime += mSimulationStep / 12.f;
 
 					if (Length((*itMove).first.GetTranslation() - positions.back()) >= GROUND_DISTANCE)
 					{
@@ -14865,7 +14870,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 						end.SetTranslation((*itMove).first.GetTranslation() + scale[AXIS_Y] * Vector3<float>::Unit(AXIS_Y));
 
 						gamePhysics->SetTransform(mPlayerActor->GetId(), start);
-						gamePhysics->Move(mPlayerActor->GetId(), mGravity);
+						gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+						gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 						gamePhysics->OnUpdate(mSimulationStep);
 
 						std::optional<Vector3<float>> collision, collisionNormal;
@@ -14932,7 +14938,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 								end.SetTranslation(pClosestNode->GetPosition() + scale[AXIS_Y] * Vector3<float>::Unit(AXIS_Y));
 
 								gamePhysics->SetTransform(mPlayerActor->GetId(), start);
-								gamePhysics->Move(mPlayerActor->GetId(), mGravity);
+								gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+								gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 								gamePhysics->OnUpdate(mSimulationStep);
 
 								std::optional<Vector3<float>> collision, collisionNormal;
@@ -14974,7 +14981,13 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 						}
 					}
 				}
-				else pCurrentNode = NULL;
+				else
+				{
+					//we consider on air state if it hasn't detected ground after a simulation step
+					onAirTime += mSimulationStep / 12.f;
+					if (onAirTime > mSimulationStep)
+						pCurrentNode = NULL;
+				}
 			}
 		}
 	}
@@ -14994,8 +15007,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 		transform.SetRotation(rotation);
 		transform.SetTranslation(pNode->GetPosition());
 		gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-		gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-		gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+		gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 		do
 		{
 			gamePhysics->OnUpdate(mSimulationStep);
@@ -15026,6 +15039,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 				fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[AXIS_Z];
 				fall[AXIS_Y] = -mFallSpeed[AXIS_Y];
 
+				gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
 				gamePhysics->Fall(mPlayerActor->GetId(), fall);
 				gamePhysics->OnUpdate(mSimulationStep);
 
@@ -15069,9 +15083,9 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 
 			move = direction;
 			move *= mMoveSpeed;
-			move[AXIS_Y] = mGravity[AXIS_Y];
 
 			gamePhysics->Move(mPlayerActor->GetId(), move);
+			gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 			gamePhysics->OnUpdate(mSimulationStep);
 
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
@@ -15079,7 +15093,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 
 		if (!movements.empty())
 		{
-			float deltaTime = 0.f, totalTime = 0.f;
+			float deltaTime = 0.f, totalTime = 0.f, onAirTime = 0.f;
 			std::vector<std::pair<Transform, bool>>::iterator itMove = movements.begin();
 			std::vector<Vector3<float>> positions{ (*itMove).first.GetTranslation() };
 			std::vector<float> weights{ 0 };
@@ -15089,6 +15103,7 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 			{
 				if ((*itMove).second)	// check if we are on ground
 				{
+					onAirTime = 0.f;
 					if (!pCurrentNode)
 					{
 						PathingNode* pClosestNode = graph->FindClosestNode((*itMove).first.GetTranslation(), false);
@@ -15124,8 +15139,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 						continue;
 					}
 
-					totalTime += mSimulationStep / 4.f;
-					deltaTime += mSimulationStep / 4.f;
+					totalTime += mSimulationStep / 12.f;
+					deltaTime += mSimulationStep / 12.f;
 
 					if (Length((*itMove).first.GetTranslation() - positions.back()) >= GROUND_DISTANCE)
 					{
@@ -15147,7 +15162,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 						end.SetTranslation((*itMove).first.GetTranslation() + scale[AXIS_Y] * Vector3<float>::Unit(AXIS_Y));
 
 						gamePhysics->SetTransform(mPlayerActor->GetId(), start);
-						gamePhysics->Move(mPlayerActor->GetId(), mGravity);
+						gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+						gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 						gamePhysics->OnUpdate(mSimulationStep);
 
 						std::optional<Vector3<float>> collision, collisionNormal;
@@ -15214,7 +15230,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 								end.SetTranslation(pClosestNode->GetPosition() + scale[AXIS_Y] * Vector3<float>::Unit(AXIS_Y));
 
 								gamePhysics->SetTransform(mPlayerActor->GetId(), start);
-								gamePhysics->Move(mPlayerActor->GetId(), mGravity);
+								gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+								gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 								gamePhysics->OnUpdate(mSimulationStep);
 
 								std::optional<Vector3<float>>  collision, collisionNormal;
@@ -15258,7 +15275,13 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 						}
 					}
 				}
-				else pCurrentNode = NULL;
+				else
+				{
+					//we consider on air state if it hasn't detected ground after a simulation step
+					onAirTime += mSimulationStep / 12.f;
+					if (onAirTime > mSimulationStep)
+						pCurrentNode = NULL;
+				}
 			}
 		}
 	}
@@ -15270,8 +15293,8 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transform, std::
 
 	transform.SetTranslation(pNode->GetPosition());
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	do
 	{
 		gamePhysics->OnUpdate(mSimulationStep);
@@ -15293,7 +15316,6 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transform, std::
 
 	move = direction;
 	move *= mMoveSpeed;
-	move[AXIS_Y] = mGravity[AXIS_Y];
 
 	jump[AXIS_X] = direction[AXIS_X] * mJumpSpeed[AXIS_X];
 	jump[AXIS_Z] = direction[AXIS_Z] * mJumpSpeed[AXIS_Z];
@@ -15328,8 +15350,8 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transform, std::
 		transform.SetRotation(rotation);
 		transform.SetTranslation(pNode->GetPosition());
 		gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-		gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-		gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+		gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 		do
 		{
 			gamePhysics->OnUpdate(mSimulationStep);
@@ -15341,7 +15363,6 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transform, std::
 
 		move = direction;
 		move *= mMoveSpeed;
-		move[AXIS_Y] = mGravity[AXIS_Y];
 
 		jump[AXIS_X] = direction[AXIS_X] * mJumpSpeed[AXIS_X];
 		jump[AXIS_Z] = direction[AXIS_Z] * mJumpSpeed[AXIS_Z];
@@ -15431,8 +15452,8 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 		transform.SetRotation(rotation);
 		transform.SetTranslation(pNode->GetPosition());
 		gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-		gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-		gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+		gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 		do
 		{
 			gamePhysics->OnUpdate(mSimulationStep);
@@ -15449,7 +15470,6 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 
 		move = direction;
 		move *= mMoveSpeed;
-		move[AXIS_Y] = mGravity[AXIS_Y];
 
 		jump[AXIS_X] = direction[AXIS_X] * mJumpSpeed[AXIS_X];
 		jump[AXIS_Z] = direction[AXIS_Z] * mJumpSpeed[AXIS_Z];
@@ -15485,8 +15505,8 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 			transform.SetRotation(rotation);
 			transform.SetTranslation(pNode->GetPosition());
 			gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-			gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-			gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+			gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+			gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 			do
 			{
 				gamePhysics->OnUpdate(mSimulationStep);
@@ -15498,7 +15518,6 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 
 			move = direction;
 			move *= mMoveSpeed;
-			move[AXIS_Y] = mGravity[AXIS_Y];
 
 			jump[AXIS_X] = direction[AXIS_X] * mJumpSpeed[AXIS_X];
 			jump[AXIS_Z] = direction[AXIS_Z] * mJumpSpeed[AXIS_Z];
@@ -15589,8 +15608,8 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 		transform.SetRotation(rotation);
 		transform.SetTranslation(pNode->GetPosition());
 		gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-		gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-		gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+		gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 		do
 		{
 			gamePhysics->OnUpdate(mSimulationStep);
@@ -15609,9 +15628,9 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 
 		move = direction;
 		move *= mMoveSpeed;
-		move[AXIS_Y] = mGravity[AXIS_Y];
 
 		gamePhysics->Move(mPlayerActor->GetId(), move);
+		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 		gamePhysics->OnUpdate(mSimulationStep);
 
 		float moveTime = mSimulationStep;
@@ -15630,6 +15649,7 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 		fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[AXIS_Z];
 		fall[AXIS_Y] = -mFallSpeed[AXIS_Y];
 
+		gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
 		gamePhysics->Fall(mPlayerActor->GetId(), fall);
 		gamePhysics->OnUpdate(mSimulationStep);
 
@@ -15654,8 +15674,8 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 			transform.SetRotation(rotation);
 			transform.SetTranslation(pNode->GetPosition());
 			gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-			gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-			gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+			gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+			gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 			do
 			{
 				gamePhysics->OnUpdate(mSimulationStep);
@@ -15667,10 +15687,11 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 
 			move = direction;
 			move *= mMoveSpeed;
-			move[AXIS_Y] = mGravity[AXIS_Y];
+
+			gamePhysics->Move(mPlayerActor->GetId(), move);
+			gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 
 			moveTime = 0.f;
-			gamePhysics->Move(mPlayerActor->GetId(), move);
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 			std::vector<Vector3<float>> nodePositions{ transform.GetTranslation() };
 			while (gamePhysics->OnGround(mPlayerActor->GetId()) && moveTime <= 0.1f)
@@ -15691,6 +15712,7 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 			fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[AXIS_Z];
 			fall[AXIS_Y] = -mFallSpeed[AXIS_Y];
 
+			gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
 			gamePhysics->Fall(mPlayerActor->GetId(), fall);
 			gamePhysics->OnUpdate(mSimulationStep);
 
@@ -15759,8 +15781,8 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transform, std::
 
 	transform.SetTranslation(pNode->GetPosition());
 	gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-	gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-	gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	do
 	{
 		gamePhysics->OnUpdate(mSimulationStep);
@@ -15782,9 +15804,9 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transform, std::
 
 	move = direction;
 	move *= mMoveSpeed;
-	move[AXIS_Y] = mGravity[AXIS_Y];
 
 	gamePhysics->Move(mPlayerActor->GetId(), move);
+	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	float moveTime = mSimulationStep;
@@ -15803,6 +15825,7 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transform, std::
 	fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[AXIS_Z];
 	fall[AXIS_Y] = -mFallSpeed[AXIS_Y];
 
+	gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
 	gamePhysics->Fall(mPlayerActor->GetId(), fall);
 	gamePhysics->OnUpdate(mSimulationStep);
 
@@ -15825,8 +15848,8 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transform, std::
 		transform.SetRotation(rotation);
 		transform.SetTranslation(pNode->GetPosition());
 		gamePhysics->SetTransform(mPlayerActor->GetId(), transform);
-		gamePhysics->Move(mPlayerActor->GetId(), mGravity);
-		gamePhysics->Fall(mPlayerActor->GetId(), -Vector3<float>::Unit(AXIS_Y) * mFallSpeed[AXIS_Y]);
+		gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
+		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 		do
 		{
 			gamePhysics->OnUpdate(mSimulationStep);
@@ -15838,8 +15861,9 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transform, std::
 
 		move = direction;
 		move *= mMoveSpeed;
-		move[AXIS_Y] = mGravity[AXIS_Y];
+
 		gamePhysics->Move(mPlayerActor->GetId(), move);
+		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 
 		moveTime = 0.f;
 		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
@@ -15861,6 +15885,7 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transform, std::
 		fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[AXIS_Z];
 		fall[AXIS_Y] = -mFallSpeed[AXIS_Y];
 
+		gamePhysics->Move(mPlayerActor->GetId(), Vector3<float>::Zero());
 		gamePhysics->Fall(mPlayerActor->GetId(), fall);
 		gamePhysics->OnUpdate(mSimulationStep);
 

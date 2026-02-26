@@ -51,6 +51,8 @@ PlayerActor::PlayerActor(ActorId id) : Actor(id)
 {
 	memset(&mState, 0, sizeof(mState));
 	memset(&mAction, 0, sizeof(mAction));
+
+	mAction.actionType = ACTION_RESPAWN;
 	
 	mState.hudFlags = 
 		HUD_FLAG_AMMO_VISIBLE | HUD_FLAG_HEALTH_VISIBLE | 

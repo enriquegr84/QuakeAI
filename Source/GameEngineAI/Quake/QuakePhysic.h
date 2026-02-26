@@ -72,7 +72,7 @@ public:
 
 protected:
 
-	bool UpdatePlayerState(ActorId playerId, PxController* controller);
+	bool UpdatePlayerState(ActorId playerId, PxController* controller, bool enableUpdateState);
 
 	void ResetInterpolations() { mInterpolations.clear(); }
 

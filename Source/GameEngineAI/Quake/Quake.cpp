@@ -497,6 +497,7 @@ QuakeLogic::QuakeLogic() : GameLogic()
 {
 	Settings::Get()->Set("default_gravity", "(0,0,-300)");
 
+
 	mStatBars = std::make_shared<StatBars>();
 
 	mThread = new QuakeLogicThread(this);
@@ -1838,8 +1839,19 @@ void QuakeLogic::MoveActorDelegate(BaseEventDataPtr pEventData)
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
 		if (pPhysicComponent)
 		{
-			const Vector3<float>& direction = pCastEventData->GetDirection();
+#if defined(PHYSX) && defined(_WIN64)
+
+			const Vector3<float>& fallDirection = pCastEventData->GetFallDirection();
+			pPhysicComponent->KinematicFall(fallDirection);
+
+#else
+
+			const Vector3<float>& fallDirection = pCastEventData->GetFallDirection();
 			pPhysicComponent->SetGravity(pCastEventData->GetFallDirection());
+
+#endif
+
+			const Vector3<float>& direction = pCastEventData->GetDirection();
 			pPhysicComponent->KinematicMove(direction);
 
 			Vector2<float> move = {direction[AXIS_X], direction[AXIS_Z]};

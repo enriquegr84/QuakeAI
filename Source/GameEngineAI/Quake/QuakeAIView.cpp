@@ -40,15 +40,16 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 	mStationaryTime = 0;
 	mStationaryPosition = Vector3<float>::Zero();
 
-	mGravity = Settings::Get()->GetVector3("default_gravity");
 	mRespawnTimeMs = 0;
+
+	mGravity = Settings::Get()->GetVector3("default_gravity");
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 0.6f, 0.6f, 1.5f };
-	mMaxJumpSpeed = Vector3<float>{ 1.f, 1.f, 1.3f };
-	mMaxFallSpeed = Vector3<float>{ 20.f, 20.f, 80.f };
-	mMaxMoveSpeed = 350.f;
+	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.8f };
+	mMaxJumpSpeed = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxFallSpeed = Vector3<float>{ 8.f, 8.f, 60.f };
+	mMaxMoveSpeed = 300.f;
 
 #else
 
@@ -105,6 +106,10 @@ void QuakeAIView::PlayerSpawn(const Transform& spawnTransform)
 
 	mAbsoluteTransform.SetRotation(spawnTransform.GetRotation());
 	mAbsoluteTransform.SetTranslation(spawnTransform.GetTranslation());
+
+	std::shared_ptr<PlayerActor> pPlayerActor(
+		std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(mPlayerId).lock()));
+	pPlayerActor->GetAction().actionType = ACTION_RESPAWN;
 
 	if (!mProjectileActor)
 	{
@@ -1429,14 +1434,14 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		if (pTransformComponent && pPhysicComponent)
 		{
-			pPlayerActor->GetAction().actionType = ACTION_STAND;
-
 			bool updatedActionPlan = false;
 
 			Vector3<float> fall = mGravity;
 			Vector3<float> velocity = Vector3<float>::Zero();
 			if (pPhysicComponent->OnGround())
 			{
+				pPlayerActor->GetAction().actionType = ACTION_STAND;
+
 				mFallSpeed = mMaxFallSpeed;
 
 				if (pPlayerActor->GetAction().triggerPush != INVALID_ACTOR_ID)
@@ -1465,7 +1470,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					float push = mPushSpeed[AXIS_Y];
 #if defined(PHYSX) && defined(_WIN64)
 
-					push += direction[AXIS_Y] * 0.006f;
+					push += direction[AXIS_Y] * 0.004f;
 
 #else
 
@@ -1718,11 +1723,6 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 							velocity = HProject(direction);
 							velocity *= mMoveSpeed;
-#if defined(PHYSX) && defined(_WIN64)
-
-							velocity[AXIS_Y] = mGravity[AXIS_Y];
-
-#endif
 						}
 
 						fall = mGravity;
@@ -1887,7 +1887,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 				// This will give us the "look at" vector 
 				// in world space - we'll use that to move.
-				Vector4<float> atWorld = pPlayerActor->GetAction().actionType == ACTION_STAND ?
+				Vector4<float> atWorld = pPlayerActor->GetAction().actionType & ACTION_RESPAWN ?
 					Vector4<float>::Zero() : Vector4<float>::Unit(AXIS_X); // forward vector
 #if defined(GE_USE_MAT_VEC)
 				atWorld = rotation * atWorld;
@@ -1918,7 +1918,10 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
 				pTransformComponent->SetRotation(yawRotation * pitchRotation * rollRotation);
 
-				pPlayerActor->GetAction().actionType |= ACTION_FALL;
+				if (pPlayerActor->GetAction().actionType & ACTION_RESPAWN)
+					pPlayerActor->GetAction().actionType |= ACTION_FALL;
+				else
+					pPlayerActor->GetAction().actionType = ACTION_FALL;
 			}
 
 			QuakeAIManager* aiManager =
@@ -1961,15 +1964,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 			pPlayerActor->UpdateTimers(deltaMs);
 			pPlayerActor->UpdateWeapon(deltaMs);
-#if defined(PHYSX) && defined(_WIN64)
-
-			pPlayerActor->UpdateMovement(mGravity, mGravity);
-
-#else
-
 			pPlayerActor->UpdateMovement(Vector3<float>::Zero(), mGravity);
-
-#endif
 		}
 	}
 
