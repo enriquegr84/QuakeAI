@@ -120,6 +120,28 @@ bool PhysicComponent::Init(tinyxml2::XMLElement* pData)
 			mConvexSurfaces.insert(std::atoi(convexSurface.c_str()));
 	}
 
+	tinyxml2::XMLElement* pAddConvexSurface = pData->FirstChildElement("AddConvexSurface");
+	if (pAddConvexSurface)
+	{
+		for (tinyxml2::XMLElement* pSurfaceNode = pAddConvexSurface->FirstChildElement(); pSurfaceNode; pSurfaceNode = pSurfaceNode->NextSiblingElement())
+		{
+			unsigned int index = 0;
+			index = pSurfaceNode->IntAttribute("index", index);
+
+			for (tinyxml2::XMLElement* pSurfaceVertice = pSurfaceNode->FirstChildElement(); pSurfaceVertice; pSurfaceVertice = pSurfaceVertice->NextSiblingElement())
+			{
+				float x = 0;
+				float y = 0;
+				float z = 0;
+				x = pSurfaceVertice->FloatAttribute("x", x);
+				y = pSurfaceVertice->FloatAttribute("y", y);
+				z = pSurfaceVertice->FloatAttribute("z", z);
+
+				mAddConvexSurfaces[index].push_back(Vector3<float>{x, y, z});
+			}
+		}
+	}
+
 	tinyxml2::XMLElement* pIgnoreBSPSurface = pData->FirstChildElement("IgnoreBSPSurface");
 	if (pIgnoreBSPSurface)
 	{
@@ -203,6 +225,14 @@ tinyxml2::XMLElement* PhysicComponent::GenerateXml(void)
 	}
 	pBaseElement->LinkEndChild(pConvexSurface);
 
+	tinyxml2::XMLElement* pAddConvexSurface = doc.NewElement("AddConvexSurface");
+	for (auto addConvexSurface : mAddConvexSurfaces)
+	{
+		tinyxml2::XMLText* pAddConvexSurfaceText = doc.NewText(std::to_string(addConvexSurface.first).c_str());
+		pConvexSurface->LinkEndChild(pAddConvexSurfaceText);
+	}
+	pBaseElement->LinkEndChild(pConvexSurface);
+
 	tinyxml2::XMLElement* pIgnoreBSPSurface = doc.NewElement("IgnoreBSPSurface");
 	for (int ignoreBSPSurface : mIgnoreBSPSurfaces)
 	{
@@ -251,8 +281,8 @@ void PhysicComponent::PostInit(void)
 			{
 				const std::shared_ptr<BspResourceExtraData>& extra =
 					std::static_pointer_cast<BspResourceExtraData>(resHandle->GetExtra());
-				gamePhysics->AddBSP(extra->GetLoader(), mConvexSurfaces, mIgnoreConvexSurfaces, 
-					mIgnoreBSPSurfaces, mIgnorePhysSurfaces, mOwner, mDensity, mMaterial);
+				gamePhysics->AddBSP(extra->GetLoader(), mAddConvexSurfaces, mConvexSurfaces,
+					mIgnoreConvexSurfaces, mIgnoreBSPSurfaces, mIgnorePhysSurfaces, mOwner, mDensity, mMaterial);
 			}
 		}
 		else if (mShape == "PointCloud")

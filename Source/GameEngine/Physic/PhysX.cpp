@@ -285,7 +285,8 @@ public:
 		LogAssert(mGameActor, "no actor");
 	}
 
-	virtual void CreateCurvedSurfaceBezier(BspLoader& bspLoader, BSPSurface* surface, bool isConvexSurface)
+	virtual void CreateCurvedSurfaceBezier(BspLoader& bspLoader, 
+		BSPSurface* surface, const std::vector<Vector3<float>>& surfaceVertices, bool isConvexSurface)
 	{
 		unsigned int j, k;
 
@@ -303,7 +304,15 @@ public:
 		// Create space for a temporary array of the patch's control points
 		std::vector<S3DVertex2TCoords> controlPoint(controlWidth * controlHeight);
 		for (j = 0; j < controlPoint.size(); ++j)
+		{
 			copy(&controlPoint[j], &bspLoader.mDrawVertices[surface->firstVert + j]);
+			if (j < surfaceVertices.size())
+			{
+				controlPoint[j].vPosition.x = surfaceVertices[j][0];
+				controlPoint[j].vPosition.y = surfaceVertices[j][1];
+				controlPoint[j].vPosition.z = surfaceVertices[j][2];
+			}
+		}
 
 		// create a temporary patch
 		SBezier bezier;
@@ -342,7 +351,7 @@ public:
 		AddTriangleMeshCollider(bezierVertices, bezierIndices);
 	}
 
-	virtual void ConvertBsp(BspLoader& bspLoader,
+	virtual void ConvertBsp(BspLoader& bspLoader, const std::unordered_map<int, std::vector<Vector3<float>>>& addConvexSurfaces,
 		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces, float scaling)
 	{
@@ -366,7 +375,9 @@ public:
 						continue;
 
 					bool isConvexSurface = convexSurfaces.find(i) != convexSurfaces.end() ? true : false;
-					CreateCurvedSurfaceBezier(bspLoader, &surface, isConvexSurface);
+					CreateCurvedSurfaceBezier(bspLoader, &surface, std::vector<Vector3<float>>(), isConvexSurface);
+					if (addConvexSurfaces.find(i) != addConvexSurfaces.end())
+						CreateCurvedSurfaceBezier(bspLoader, &surface, addConvexSurfaces.at(i), isConvexSurface);
 				}
 			}
 		}
@@ -886,7 +897,7 @@ void PhysX::AddTrigger(const Vector3<float> &dimension,
 /////////////////////////////////////////////////////////////////////////////
 // PhysX::AddBSP
 //
-void PhysX::AddBSP(BspLoader& bspLoader,
+void PhysX::AddBSP(BspLoader& bspLoader, const std::unordered_map<int, std::vector<Vector3<float>>>& addConvexSurfaces,
 	const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 	const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 	std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial)
@@ -900,7 +911,8 @@ void PhysX::AddBSP(BspLoader& bspLoader,
 
 	BspToPhysXConverter bspToPhysX(this, pStrongActor, mass, physicMaterial);
 	float bspScaling = 1.0f;
-	bspToPhysX.ConvertBsp(bspLoader, convexSurfaces, ignoreConvexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
+	bspToPhysX.ConvertBsp(bspLoader, addConvexSurfaces, 
+		convexSurfaces, ignoreConvexSurfaces, ignoreBSPSurfaces, ignorePhysSurfaces, bspScaling);
 }
 
 /////////////////////////////////////////////////////////////////////////////

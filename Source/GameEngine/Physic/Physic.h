@@ -95,7 +95,7 @@ public:
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimensions, 
 		std::weak_ptr<Actor> pGameActor, const std::string& physicMaterial) = 0;
-	virtual void AddBSP(BspLoader& bspLoader,
+	virtual void AddBSP(BspLoader& bspLoader, const std::unordered_map<int, std::vector<Vector3<float>>>& addConvexSurfaces,
 		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 		std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial) = 0;
@@ -188,7 +188,7 @@ public:
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimensions,
 		std::weak_ptr<Actor> pGameActor, const std::string& physicMaterial) { }
-	virtual void AddBSP(BspLoader& bspLoader,
+	virtual void AddBSP(BspLoader& bspLoader, const std::unordered_map<int, std::vector<Vector3<float>>>& addConvexSurfaces,
 		const std::unordered_set<int>& convexSurfaces, const std::unordered_set<int>& ignoreConvexSurfaces,
 		const std::unordered_set<int>& ignoreBSPSurfaces, const std::unordered_set<int>& ignorePhysSurfaces,
 		std::weak_ptr<Actor> pGameActor, const std::string& densityStr, const std::string& physicMaterial) { }

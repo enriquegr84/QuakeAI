@@ -54,6 +54,14 @@
 
 #if defined(PHYSX) && defined(_WIN64)
 
+
+/////////////////////////////////////////////////////////////////////////////
+// helpers for conversion to and from physx data types
+static PxVec3 Vector3ToPxVector3(Vector3<float> const& vector3)
+{
+	return PxVec3(vector3[0], vector3[1], vector3[2]);
+}
+
 static Vector3<float> PxVector3ToVector3(PxVec3 const& pxVec)
 {
 	return Vector3<float>{ pxVec.x, pxVec.y, pxVec.z };
@@ -109,6 +117,8 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 	Transform transform = PxTransformToTransform(controller->getActor()->getGlobalPose());
 	transform.SetTranslation((float)position.x, (float)position.y, (float)position.z);
 	mInterpolations[playerId].push_back({transform, mCCTGround[controller]});
+	if (playerId == 63)
+		printf("\nPlayer %u position: %f, %f, %f on ground %u", playerId, position.x, position.y, position.z, mCCTGround[controller]);
 
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 	aiManager->SetPlayerGround(playerId, mCCTGround[controller]);
@@ -141,9 +151,6 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 		}
 	}
 
-	if (!enableUpdateState)
-		return false;
-
 	std::shared_ptr<QuakeAIView> aiView;
 	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
 	for (std::shared_ptr<BaseGameView> gameView : gameViews)
@@ -155,7 +162,8 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 		bool updatedActionPlan = aiView->UpdateActionPlan(false);
 
 		Vector3<float> currentPosition = transform.GetTranslation();
-		if (!aiView->UpdateActionPlan(currentPosition, 0.5f))
+		bool updatePlan = aiView->UpdateActionPlan(currentPosition, 0.5f);
+		if (!updatePlan || !enableUpdateState)
 		{
 			if (updatedActionPlan)
 				aiManager->UpdatePlayerView(playerId, aiView->GetActionPlayer(), false);
@@ -243,6 +251,7 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 	int substeps = 12;
 	float fixedDeltaSeconds = 1.f / 35.f;
 	float subDeltaTime = fixedDeltaSeconds / substeps;
+	PxVec3 gravity = Vector3ToPxVector3(mGravity);
 
 	for (auto& actorController : mActorIdToController)
 	{

@@ -495,8 +495,15 @@ bool StatBars::ReplaceHud(HudElement* hud, std::string hudName)
 //
 QuakeLogic::QuakeLogic() : GameLogic()
 {
+#if defined(PHYSX) && defined(_WIN64)
+
+	Settings::Get()->Set("default_gravity", "(0,0,-700)");
+
+#else
+
 	Settings::Get()->Set("default_gravity", "(0,0,-300)");
 
+#endif
 
 	mStatBars = std::make_shared<StatBars>();
 
