@@ -117,8 +117,6 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 	Transform transform = PxTransformToTransform(controller->getActor()->getGlobalPose());
 	transform.SetTranslation((float)position.x, (float)position.y, (float)position.z);
 	mInterpolations[playerId].push_back({transform, mCCTGround[controller]});
-	if (playerId == 63)
-		printf("\nPlayer %u position: %f, %f, %f on ground %u", playerId, position.x, position.y, position.z, mCCTGround[controller]);
 
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 	aiManager->SetPlayerGround(playerId, mCCTGround[controller]);
