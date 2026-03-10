@@ -2862,9 +2862,9 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-// EventDataEditPathing - edit pathing
+// EventDataEditPathingMap - edit pathing
 //---------------------------------------------------------------------------------------------------------------------
-class EventDataEditPathing : public EventData
+class EventDataEditPathingMap : public EventData
 {
 	std::string mFilter;
 
@@ -2876,14 +2876,14 @@ public:
 		return skEventType;
 	}
 
-	EventDataEditPathing(void) { }
-	EventDataEditPathing(const std::string& filter) : mFilter(filter)
+	EventDataEditPathingMap(void) { }
+	EventDataEditPathingMap(const std::string& filter) : mFilter(filter)
 	{
 	}
 
 	virtual BaseEventDataPtr Copy() const
 	{
-		return BaseEventDataPtr(new EventDataEditPathing(mFilter));
+		return BaseEventDataPtr(new EventDataEditPathingMap(mFilter));
 	}
 
 	virtual void Serialize(std::ostrstream& out) const
@@ -2903,7 +2903,7 @@ public:
 
 	virtual const char* GetName(void) const
 	{
-		return "EventDataEditPathing";
+		return "EventDataEditPathingMap";
 	}
 };
 

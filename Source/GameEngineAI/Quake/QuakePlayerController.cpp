@@ -70,10 +70,10 @@ QuakePlayerController::QuakePlayerController(
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.8f };
-	mMaxJumpSpeed = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.f };
+	mMaxJumpSpeed = Vector3<float>{ 0.85f, 0.85f, 0.9f };
 	mMaxFallSpeed = Vector3<float>{ 8.f, 8.f, 60.f };
-	mMaxMoveSpeed = 300.f;
+	mMaxMoveSpeed = 500.f;
 
 #else
 
@@ -515,13 +515,14 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 			pProjectileNode->GetRelativeTransform().SetRotation(mAbsoluteTransform);
 			pProjectileNode->UpdateAbsoluteTransform();
 		}
+
 		/*
 		Vector3<float> scale =
 			GameLogic::Get()->GetGamePhysics()->GetScale(pPlayerActor->GetId()) / 2.f;
 		Transform start = pPlayerPhysicComponent->GetTransform();
-		start.SetTranslation(start.GetTranslation() + scale[2] * Vector3<float>::Unit(AXIS_Y));
+		start.SetTranslation(start.GetTranslation() + scale[AXIS_Y] * Vector3<float>::Unit(AXIS_Y));
 		Transform end = pPlayerPhysicComponent->GetTransform();
-		end.SetTranslation(end.GetTranslation() + forward * 2000.f + scale[2] * Vector3<float>::Unit(AXIS_Y));
+		end.SetTranslation(end.GetTranslation() + forward * 2000.f + scale[AXIS_Y] * Vector3<float>::Unit(AXIS_Y));
 
 		std::vector<ActorId> collisionActors;
 		std::vector<Vector3<float>> collisions, collisionNormals;
@@ -532,21 +533,18 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 		std::optional<Vector3<float>> closestCollision = std::nullopt;
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (collisionActors[i] == INVALID_ACTOR_ID)
+			if (closestCollision.has_value())
 			{
-				if (closestCollision.has_value())
-				{
-					if (Length(closestCollision.value() - start.GetTranslation()) > Length(collisions[i] - start.GetTranslation()))
-					{
-						closestCollisionId = collisionActors[i];
-						closestCollision = collisions[i];
-					}
-				}
-				else
+				if (Length(closestCollision.value() - start.GetTranslation()) > Length(collisions[i] - start.GetTranslation()))
 				{
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
 				}
+			}
+			else
+			{
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
 			}
 		}
 		if (closestCollision.has_value())

@@ -46,10 +46,10 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.8f };
-	mMaxJumpSpeed = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.f };
+	mMaxJumpSpeed = Vector3<float>{ 0.85f, 0.85f, 0.9f };
 	mMaxFallSpeed = Vector3<float>{ 8.f, 8.f, 60.f };
-	mMaxMoveSpeed = 300.f;
+	mMaxMoveSpeed = 500.f;
 
 #else
 

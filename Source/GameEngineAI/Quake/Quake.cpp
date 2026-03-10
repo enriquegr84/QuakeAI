@@ -497,7 +497,7 @@ QuakeLogic::QuakeLogic() : GameLogic()
 {
 #if defined(PHYSX) && defined(_WIN64)
 
-	Settings::Get()->Set("default_gravity", "(0,0,-700)");
+	Settings::Get()->Set("default_gravity", "(0,0,-900)");
 
 #else
 

@@ -128,9 +128,8 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 	mCCTJumpAccel[controller] = PxVec3(PxZero);
 	mCCTFallAccel[controller] = PxVec3(PxZero);
 
-	PxExtendedVec3 footPosition = controller->getFootPosition();
-
 	QuakeLogic* quake = dynamic_cast<QuakeLogic*>(GameLogic::Get());
+	PxExtendedVec3 footPosition = controller->getFootPosition();
 	std::vector<std::shared_ptr<Actor>> triggers;
 	quake->GetTriggerActors(triggers);
 	for (auto& trigger : triggers)
@@ -247,7 +246,7 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 	ResetInterpolations();
 
 	int substeps = 12;
-	float fixedDeltaSeconds = 1.f / 35.f;
+	float fixedDeltaSeconds = 1.f / 60.f;
 	float subDeltaTime = fixedDeltaSeconds / substeps;
 	PxVec3 gravity = Vector3ToPxVector3(mGravity);
 
@@ -291,8 +290,6 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 				//printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], subDeltaTime);
 			}
 
-			//printf("\n physx player %u move %f elpased %f", actorController.first, velocity.magnitude(), subDeltaTime);
-
 			PxControllerFilters filters;
 			controller->move(velocity, 0.001f, subDeltaTime, filters);
 			updatePlayerState = UpdatePlayerState(playerId, controller, substep != substeps);
@@ -314,10 +311,10 @@ void QuakePhysX::AddCharacterController(
 		return;  // FUTURE WORK - Add a call to the error log here
 
 	ActorId playerId = pStrongActor->GetId();
-	mMaxPushSpeed[playerId] = Vector3<float>{ 0.4f, 0.4f, 1.8f };
-	mMaxJumpSpeed[playerId] = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxPushSpeed[playerId] = Vector3<float>{ 0.4f, 0.4f, 1.f };
+	mMaxJumpSpeed[playerId] = Vector3<float>{ 0.85f, 0.85f, 0.9f };
 	mMaxFallSpeed[playerId] = Vector3<float>{ 8.f, 8.f, 60.f };
-	mMaxMoveSpeed[playerId] = 300.f;
+	mMaxMoveSpeed[playerId] = 500.f;
 
 	mPushSpeed[playerId] = mMaxPushSpeed[playerId];
 	mJumpSpeed[playerId] = mMaxJumpSpeed[playerId];

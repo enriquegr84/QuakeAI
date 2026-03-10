@@ -89,9 +89,9 @@ const BaseEventType EventDataChangeAnalysisFrame::skEventType(0xd6a1d469);
 const BaseEventType EventDataShowGameSimulation::skEventType(0xe7dd903f);
 const BaseEventType EventDataShowGameState::skEventType(0xdf8ca2);
 
-const BaseEventType EventDataEditPathing::skEventType(0xc37cc8a6);
 const BaseEventType EventDataShowPathing::skEventType(0x1af3f6ee);
 const BaseEventType EventDataCreatePathing::skEventType(0x92c31d5d);
+const BaseEventType EventDataEditPathingMap::skEventType(0xc37cc8a6);
 const BaseEventType EventDataCreatePathingMap::skEventType(0xce4860a1);
 const BaseEventType EventDataCreatePathingNode::skEventType(0x37f528e9);
 const BaseEventType EventDataSimulateExploring::skEventType(0x8ffb7ec9);

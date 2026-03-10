@@ -3003,8 +3003,8 @@ void QuakeAIEditorView::SimulatePathingDelegate(BaseEventDataPtr pEventData)
 
 void QuakeAIEditorView::EditPathingGraphDelegate(BaseEventDataPtr pEventData)
 {
-	std::shared_ptr<EventDataEditPathing> pCastEventData = 
-		std::static_pointer_cast<EventDataEditPathing>(pEventData);
+	std::shared_ptr<EventDataEditPathingMap> pCastEventData =
+		std::static_pointer_cast<EventDataEditPathingMap>(pEventData);
 
 	mSelectedClusters.clear();
 
@@ -3721,7 +3721,7 @@ void QuakeAIEditorView::RegisterAllDelegates(void)
 
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIEditorView::EditPathingGraphDelegate),
-		EventDataEditPathing::skEventType);
+		EventDataEditPathingMap::skEventType);
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIEditorView::ShowPathingGraphDelegate),
 		EventDataShowPathing::skEventType);
@@ -3859,7 +3859,7 @@ void QuakeAIEditorView::RemoveAllDelegates(void)
 
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeAIEditorView::EditPathingGraphDelegate),
-		EventDataEditPathing::skEventType);
+		EventDataEditPathingMap::skEventType);
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeAIEditorView::ShowPathingGraphDelegate),
 		EventDataShowPathing::skEventType);
@@ -4460,7 +4460,7 @@ void QuakeAIEditorView::CreatePathingMap(const std::string& filter)
 		"field[0.25,7.5;7,0.75;te_orientation;Orientation;0]"
 		"button[0.5,8.5;2.5,0.75;btn_respawn; Respawn]"
 		"button[3,8.5;2.5,0.75;btn_create_node; Add Node]"
-		"button[5.5,8.5;2,0.75;btn_pathing; Pathing]"
+		"button[5.5,8.5;2,0.75;btn_create_map; Create]"
 		"button[7.5,8.5;1.5,0.75;btn_save; Save]";
 
 	/* Create menu */
@@ -4532,7 +4532,7 @@ void QuakeAIEditorView::EditPathingMap(const std::map<unsigned short, unsigned s
 		"field[0.25,7.5;7,0.75;te_orientation;Orientation;0]"
 		"button[0.25,8.5;2,0.75;btn_respawn; Respawn]"
 		"button[2.25,8.5;2,0.75;btn_create_node; Node]"
-		"button[4.25,8.5;2,0.75;btn_pathing; Pathing]"
+		"button[4.25,8.5;2,0.75;btn_create_map; Map]"
 		"button[6.25,8.5;1.5,0.75;btn_save; Save]"
 		"button[7.75,8.5;1.5,0.75;btn_reset; Reset]";
 
@@ -4797,14 +4797,14 @@ void QuakeAIEditorView::ShowPauseMenu()
 	std::ostringstream os;
 
 	os << "form_version[1]" << SIZE_TAG
-		<< "button_exit[4," << (yPos++) << ";3,0.5;btn_edit_map;"
-		<< "Edit Map" << "]" << "field[4.95,0;5,1.5;;" << "Main Menu" << ";]";
+		<< "button_exit[4," << (yPos++) << ";3,0.5;btn_edit_path;"
+		<< "Edit Path" << "]" << "field[4.95,0;5,1.5;;" << "Main Menu" << ";]";
 
 	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_create_path;"
 		<< "Create Path" << "]";
 
-	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_edit_path;"
-		<< "Edit Path" << "]";
+	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_edit_map;"
+		<< "Edit Map" << "]";
 
 	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_create_map;"
 		<< "Create Map" << "]";

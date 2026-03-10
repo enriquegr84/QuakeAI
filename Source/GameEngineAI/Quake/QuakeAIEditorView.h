@@ -373,7 +373,7 @@ struct EditPathingFormHandler : public TextDestination
 			}
 			if (fields.find("btn_mp_search") != fields.end() && fields.find("te_search") != fields.end())
 			{
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditPathing>(fields.at("te_search")));
+				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditPathingMap>(fields.at("te_search")));
 				return;
 			}
 			if (fields.find("graph") != fields.end())
@@ -420,7 +420,7 @@ struct EditPathingFormHandler : public TextDestination
 				return;
 			}
 
-			if (fields.find("btn_pathing") != fields.end())
+			if (fields.find("btn_create_map") != fields.end())
 			{
 				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
 				std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
@@ -439,7 +439,7 @@ struct EditPathingFormHandler : public TextDestination
 			{
 				mNodeId = -1;
 
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditPathing>());
+				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditPathingMap>());
 				return;
 			}
 		}
@@ -513,7 +513,7 @@ struct CreatePathingMapFormHandler : public TextDestination
 				return;
 			}
 
-			if (fields.find("btn_pathing") != fields.end())
+			if (fields.find("btn_create_map") != fields.end())
 			{
 				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataCreateMap>());
 				return;
@@ -732,7 +732,7 @@ struct EditorFormHandler : public TextDestination
 	{
 		if (mFormName == "PAUSE_MENU")
 		{
-			if (fields.find("btn_edit_map") != fields.end())
+			if (fields.find("btn_edit_path") != fields.end())
 			{
 				std::shared_ptr<EventDataEditMap> pEvent(new EventDataEditMap());
 				BaseEventManager::Get()->TriggerEvent(pEvent);
@@ -746,9 +746,9 @@ struct EditorFormHandler : public TextDestination
 				return;
 			}
 
-			if (fields.find("btn_edit_path") != fields.end())
+			if (fields.find("btn_edit_map") != fields.end())
 			{
-				std::shared_ptr<EventDataEditPathing> pEvent(new EventDataEditPathing());
+				std::shared_ptr<EventDataEditPathingMap> pEvent(new EventDataEditPathingMap());
 				BaseEventManager::Get()->TriggerEvent(pEvent);
 				return;
 			}

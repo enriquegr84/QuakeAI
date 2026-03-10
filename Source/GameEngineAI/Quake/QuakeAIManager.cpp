@@ -278,12 +278,12 @@ QuakeAIManager::QuakeAIManager() : AIManager()
 
 #if defined(PHYSX) && defined(_WIN64)
 
-	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.8f };
-	mMaxJumpSpeed = Vector3<float>{ 1.2f, 1.2f, 1.2f };
+	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.f };
+	mMaxJumpSpeed = Vector3<float>{ 0.85f, 0.85f, 0.9f };
 	mMaxFallSpeed = Vector3<float>{ 8.f, 8.f, 60.f };
-	mMaxMoveSpeed = 300.f;
+	mMaxMoveSpeed = 500.f;
 
-	mSimulationStep = 1.f / 35.f;
+	mSimulationStep = 1.f / 60.f;
 
 #else
 
@@ -13577,7 +13577,7 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, std::shared_ptr
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	// process the item actors which we have met
-	std::map<PathingNode*, ActorId> actorNodes, triggerNodes;
+	std::map<PathingNode*, ActorId> actorNodes;
 	std::map<Vector3<float>, ActorId>::iterator itActorPos;
 	for (itActorPos = mActorPositions.begin(); itActorPos != mActorPositions.end(); itActorPos++)
 	{
@@ -13587,7 +13587,7 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, std::shared_ptr
 		{
 			pClosestNode->SetActorId(pItemActor->GetId());
 			if (CheckActorNode(pClosestNode))
-				pClosestNode->SetActorId(pItemActor->GetId());
+				actorNodes[pClosestNode] = pItemActor->GetId();
 		}
 	}
 
@@ -13628,7 +13628,7 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, const Vector3<f
 	mOpenSet.pop_back();
 
 	// process the item actors which we have met
-	std::map<PathingNode*, ActorId> actorNodes, triggerNodes;
+	std::map<PathingNode*, ActorId> actorNodes;
 	std::map<Vector3<float>, ActorId>::iterator itActorPos;
 	for (itActorPos = mActorPositions.begin(); itActorPos != mActorPositions.end(); itActorPos++)
 	{
@@ -13638,7 +13638,7 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, const Vector3<f
 		{
 			pClosestNode->SetActorId(pItemActor->GetId());
 			if (CheckActorNode(pClosestNode))
-				pClosestNode->SetActorId(pItemActor->GetId());
+				actorNodes[pClosestNode] = pItemActor->GetId();
 		}
 	}
 
@@ -13751,7 +13751,7 @@ void QuakeAIManager::SimulatePathing(std::map<unsigned short, unsigned short>& s
 		PathingNode* pClosestNode = graph->FindClosestNode(itActorPos->first, false);
 		if (pClosestNode != NULL && actorNodes.find(pClosestNode) == actorNodes.end())
 		{
-			pClosestNode->SetActorId(pItemActor->GetId());
+			actorNodes[pClosestNode] = pItemActor->GetId();
 			if (CheckActorNode(pClosestNode))
 			{
 				actorNodes[pClosestNode] = pItemActor->GetId();
@@ -13859,7 +13859,6 @@ void QuakeAIManager::SimulatePathing(Transform transform, NodePlan& nodePlan, st
 			if (CheckActorNode(pClosestNode))
 			{
 				actorNodes[pClosestNode] = pItemActor->GetId();
-
 				if (pItemActor->GetComponent<PushTrigger>(PushTrigger::Name).lock())
 				{
 					std::shared_ptr<PushTrigger> pPushTrigger =
@@ -13950,8 +13949,7 @@ void QuakeAIManager::SimulatePathing(std::shared_ptr<PathingGraph>& graph)
 			pClosestNode->SetActorId(pItemActor->GetId());
 			if (CheckActorNode(pClosestNode))
 			{
-				pClosestNode->SetActorId(pItemActor->GetId());
-
+				actorNodes[pClosestNode] = pItemActor->GetId();
 				if (pItemActor->GetComponent<PushTrigger>(PushTrigger::Name).lock())
 				{
 					std::shared_ptr<PushTrigger> pPushTrigger =
@@ -14869,8 +14867,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 								PathingNode* pNewNode = new PathingNode(
 									GetNewNodeID(), INVALID_ACTOR_ID, (*itMove).first.GetTranslation());
 
-								//we only consider arcs with certain minimum and maximum length
-								if (totalTime >= 0.04f && totalTime <= 0.2f)
+								//we only consider arcs within certain time range
+								if (totalTime >= 0.03f && totalTime <= 0.2f)
 								{
 									PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pNewNode, totalTime);
 									pCurrentNode->AddArc(pNewArc);
@@ -14931,8 +14929,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 									mPlayerActor->GetId(), start, end, collision, collisionNormal);
 								if (!collision.has_value() || actorId != INVALID_ACTOR_ID)
 								{
-									//we only consider arcs with certain minimum and maximum length
-									if (totalTime >= 0.04f && totalTime <= 0.2f)
+									//we only consider arcs within certain time range
+									if (totalTime >= 0.03f && totalTime <= 0.2f)
 									{
 										PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pClosestNode, totalTime);
 										pCurrentNode->AddArc(pNewArc);
@@ -14975,7 +14973,6 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	// nodes closed to falling position
 	for (int angle = 0; angle < 360; angle += 5)
 	{
 		Matrix4x4<float> rotation = Rotation<4, float>(
@@ -15139,8 +15136,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 								PathingNode* pNewNode = new PathingNode(
 									GetNewNodeID(), INVALID_ACTOR_ID, (*itMove).first.GetTranslation());
 
-								//we only consider arcs with certain minimum and maximum length
-								if (totalTime >= 0.04f && totalTime <= 0.2f)
+								//we only consider arcs within certain time range
+								if (totalTime >= 0.03f && totalTime <= 0.2f)
 								{
 									PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pNewNode, totalTime);
 									pCurrentNode->AddArc(pNewArc);
@@ -15201,8 +15198,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 									mPlayerActor->GetId(), start, end, collision, collisionNormal);
 								if (!collision.has_value() || actorId != INVALID_ACTOR_ID)
 								{
-									//we only consider arcs with certain minimum and maximum length
-									if (totalTime >= 0.04f && totalTime <= 0.2f)
+									//we only consider arcs within certain time range
+									if (totalTime >= 0.03f && totalTime <= 0.2f)
 									{
 										PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pClosestNode, totalTime);
 										pCurrentNode->AddArc(pNewArc);
@@ -15398,7 +15395,6 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 
 	Vector3<float> direction, jump, fall, move;
 	std::map<PathingNode*, bool> visitedNodes;
-	// we do the jumping simulation by performing uniform jumps around the character
 	for (int angle = 0; angle < 360; angle += 5)
 	{
 		Matrix4x4<float> rotation = Rotation<4, float>(
@@ -15554,7 +15550,6 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 
 	Vector3<float> direction, fall, move;
 	std::map<PathingNode*, bool> visitedNodes;
-	// we do the fallen simulation by performing uniform falls around the character
 	for (int angle = 0; angle < 360; angle += 5)
 	{
 		Matrix4x4<float> rotation = Rotation<4, float>(
@@ -16359,8 +16354,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 								PathingNode* pNewNode = new PathingNode(
 									GetNewNodeID(), INVALID_ACTOR_ID, (*itMove).first.GetTranslation());
 
-								//we only consider arcs with certain minimum and maximum length
-								if (totalTime >= 0.04f && totalTime <= 0.2f)
+								//we only consider arcs within certain time range
+								if (totalTime >= 0.03f && totalTime <= 0.2f)
 								{
 									PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pNewNode, totalTime);
 									pCurrentNode->AddArc(pNewArc);
@@ -16419,8 +16414,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, Transform transform, std::
 									mPlayerActor->GetId(), start, end, collision, collisionNormal);
 								if (!collision.has_value() || actorId != INVALID_ACTOR_ID)
 								{
-									//we only consider arcs with certain minimum and maximum length
-									if (totalTime >= 0.04f && totalTime <= 0.2f)
+									//we only consider arcs within certain time range
+									if (totalTime >= 0.03f && totalTime <= 0.2f)
 									{
 										PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pClosestNode, totalTime);
 										pCurrentNode->AddArc(pNewArc);
@@ -16636,8 +16631,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 								PathingNode* pNewNode = new PathingNode(
 									GetNewNodeID(), INVALID_ACTOR_ID, (*itMove).first.GetTranslation());
 
-								//we only consider arcs with certain minimum and maximum length
-								if (totalTime >= 0.04f && totalTime <= 0.2f)
+								//we only consider arcs within certain time range
+								if (totalTime >= 0.03f && totalTime <= 0.2f)
 								{
 									PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pNewNode, totalTime);
 									pCurrentNode->AddArc(pNewArc);
@@ -16696,8 +16691,8 @@ void QuakeAIManager::SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGra
 									mPlayerActor->GetId(), start, end, collision, collisionNormal);
 								if (!collision.has_value() || actorId != INVALID_ACTOR_ID)
 								{
-									//we only consider arcs with certain minimum and maximum length
-									if (totalTime >= 0.04f && totalTime <= 0.2f)
+									//we only consider arcs within certain time range
+									if (totalTime >= 0.03f && totalTime <= 0.2f)
 									{
 										PathingArc* pNewArc = new PathingArc(GetNewArcID(), AT_MOVE, pClosestNode, totalTime);
 										pCurrentNode->AddArc(pNewArc);

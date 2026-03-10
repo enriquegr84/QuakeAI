@@ -1504,10 +1504,12 @@ ActorId PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform
 		PxVec3 centerPos(startPos[0], startPos[1], startPos[2]);
 		PxTransform pose(centerPos, PxQuat(PxIdentity));  // Identity rotation
 
-		// 2. Get exact capsule geometry
-		PxShape* shape = nullptr;
-		controller->getActor()->getShapes(&shape, 1);
-		const PxGeometry& capsuleGeom = shape->getGeometry();  // radius, halfHeight
+		// 2. Get exact geometry
+		PxBounds3 aabb = controller->getActor()->getWorldBounds();
+		// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
+		std::swap(aabb.minimum.x, aabb.minimum.z);
+		std::swap(aabb.maximum.x, aabb.maximum.z);
+		PxBoxGeometry boxGeom(aabb.getDimensions() / 2.f);
 
 		// 3. Single directional sweep
 		Vector3<float> dir = end.GetTranslation() - origin.GetTranslation();
@@ -1521,20 +1523,20 @@ ActorId PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform
 		PxQueryFilterData filter;
 		filter.flags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePOSTFILTER;
 		PxRigidActor* const collisionObject = FindPhysXCollisionObject(aId);
+
 		bool hasHit = mScene->sweep(
-			capsuleGeom, pose,			// Shape + start pose
-			sweepDir, sweepDist,		// Sweep dir + dist
-			hit,						// Output
-			hitFlags,					// IMPACT + NORMAL
-			filter,								// query filter
+			boxGeom, pose,					// Shape + start pose
+			sweepDir, sweepDist,			// Sweep dir + dist
+			hit,							// Output
+			hitFlags,						// IMPACT + NORMAL
+			filter,							// query filter
 			collisionObject ? &IgnoreCharacterFilter(collisionObject) : 0); // actor filter
 
-		if (hasHit && hit.hasAnyHits()) 
+		if (hasHit && hit.hasAnyHits())
 		{
 			for (unsigned int hitIdx = 0; hitIdx < hit.getNbAnyHits(); hitIdx++)
 			{
 				const PxSweepHit& sweepHit = hit.getAnyHit(hitIdx);
-
 				collisionPoint = PxVector3ToVector3(sweepHit.position);
 				collisionNormal = PxVector3ToVector3(sweepHit.normal);
 				return FindActorID(sweepHit.actor);
@@ -1561,10 +1563,12 @@ void PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& e
 		PxVec3 centerPos(startPos[0], startPos[1], startPos[2]);
 		PxTransform pose(centerPos, PxQuat(PxIdentity));  // Identity rotation
 
-		// 2. Get exact capsule geometry
-		PxShape* shape = nullptr;
-		controller->getActor()->getShapes(&shape, 1);
-		const PxGeometry& capsuleGeom = shape->getGeometry();  // radius, halfHeight
+		// 2. Get exact geometry
+		PxBounds3 aabb = controller->getActor()->getWorldBounds();
+		// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
+		std::swap(aabb.minimum.x, aabb.minimum.z);
+		std::swap(aabb.maximum.x, aabb.maximum.z);
+		PxBoxGeometry boxGeom(aabb.getDimensions() / 2.f);
 
 		// 3. Single directional sweep
 		Vector3<float> dir = end.GetTranslation() - origin.GetTranslation();
@@ -1578,20 +1582,20 @@ void PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& e
 		PxQueryFilterData filter;
 		filter.flags = PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePOSTFILTER;
 		PxRigidActor* const collisionObject = FindPhysXCollisionObject(aId);
+		float closeThreshold = 0.01f; // small buffer to prevent immediate re-collision
 		bool hasHit = mScene->sweep(
-			capsuleGeom, pose,			// Shape + start pose
+			boxGeom, pose,				// Shape + start pose
 			sweepDir, sweepDist,		// Sweep dir + dist
 			hit,						// Output
 			hitFlags,					// IMPACT + NORMAL
-			filter,								// query filter
+			filter,						// query filter
 			collisionObject ? &IgnoreCharacterFilter(collisionObject) : 0); // actor filter
 
-		if (hasHit && hit.hasAnyHits()) {
-
+		if (hasHit && hit.hasAnyHits()) 
+		{
 			for (unsigned int hitIdx = 0; hitIdx < hit.getNbAnyHits(); hitIdx++)
 			{
 				const PxSweepHit& sweepHit = hit.getAnyHit(hitIdx);
-
 				collisionPoints.push_back(PxVector3ToVector3(sweepHit.position));
 				collisionNormals.push_back(PxVector3ToVector3(sweepHit.normal));
 				collisionActors.push_back(FindActorID(sweepHit.actor));
@@ -1782,6 +1786,7 @@ bool PhysX::OnGround(ActorId aid)
 // PhysX::CheckPenetration
 bool PhysX::CheckPenetration(ActorId aid)
 {
+	/*
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(aid)))
 	{
 		// Get the controller's shape (capsule or box)
@@ -1807,7 +1812,7 @@ bool PhysX::CheckPenetration(ActorId aid)
 			return true;
 		}
 	}
-
+	*/
 	return false;
 }
 
