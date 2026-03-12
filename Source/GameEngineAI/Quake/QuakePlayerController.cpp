@@ -314,8 +314,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 			mYaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
 			//mPitchTarget = -yawPitchRoll.mAngle[AXIS_Z] * (float)GE_C_RAD_TO_DEG;
 
-			EventManager::Get()->TriggerEvent(
-				std::make_shared<EventDataTeleportActor>(actorId));
+			EventManager::Get()->TriggerEvent(std::make_shared<EventDataTeleportActor>(actorId));
 		}
 		else
 		{

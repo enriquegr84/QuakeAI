@@ -96,6 +96,11 @@ const BaseEventType EventDataCreatePathingMap::skEventType(0xce4860a1);
 const BaseEventType EventDataCreatePathingNode::skEventType(0x37f528e9);
 const BaseEventType EventDataSimulateExploring::skEventType(0x8ffb7ec9);
 const BaseEventType EventDataSimulatePathing::skEventType(0xe917e522);
+const BaseEventType EventDataSimulateJumping::skEventType(0xe5105849);
+const BaseEventType EventDataSimulateRunning::skEventType(0x1a84cdda);
+const BaseEventType EventDataSimulateFalling::skEventType(0x7e26d090);
+
+
 const BaseEventType EventDataSimulateAIGame::skEventType(0x95308432);
 const BaseEventType EventDataAnalyzeAIGame::skEventType(0x11131e45);
 const BaseEventType EventDataShowAIGameAnalysis::skEventType(0xd3924190);

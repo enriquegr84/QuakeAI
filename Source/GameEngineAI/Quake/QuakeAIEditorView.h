@@ -280,52 +280,93 @@ struct PathingFormHandler : public TextDestination
 				}
 				return;
 			}
-			if (fields.find("btn_respawn") != fields.end())
+			if (fields.find("dd_pathing_actions") != fields.end())
 			{
-				Matrix4x4<float> yawRotation = Rotation<4, float>(
-					AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
-				Transform spawnTransform;
-				spawnTransform.SetTranslation(mPosition);
-				spawnTransform.SetRotation(yawRotation);
-
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
-				std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
-				aiView->SetYaw(mYaw);
-				EventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataSpawnActor>(aiView->GetActorId(), spawnTransform));
-				return;
+				std::string row = fields.at("dd_pathing_actions");
+				std::string content = Trim(row);
+				mPathingAction = atoi(content.c_str());
 			}
-
-			if (fields.find("btn_pathing") != fields.end())
+			if (fields.find("btn_apply") != fields.end())
 			{
 				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 				std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
-				aiView->ResetActionPlan();
-				BaseEventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataSimulatePathing>(aiView->GetActorId()));
-				return;
-			}
 
-			if (fields.find("btn_exploring") != fields.end())
-			{
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
-				std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
-				aiView->ResetActionPlan();
-				/*
-				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-				PlayerView playerView;
-				aiManager->GetPlayerView(aiView->GetActorId(), playerView);
-				if (!playerView.simulation.plan.path.empty())
+				if (mPathingAction == 1)
 				{
+					//respawn
+					Matrix4x4<float> yawRotation = Rotation<4, float>(
+						AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
 					Transform spawnTransform;
-					spawnTransform.SetTranslation(playerView.simulation.plan.node->GetPosition());
+					spawnTransform.SetTranslation(mPosition);
+					spawnTransform.SetRotation(yawRotation);
+
+					aiView->SetYaw(mYaw);
 					EventManager::Get()->TriggerEvent(
 						std::make_shared<EventDataSpawnActor>(aiView->GetActorId(), spawnTransform));
+					return;
 				}
-				*/
-				mNodeId = -1;
-				BaseEventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataSimulateExploring>(aiView->GetActorId(), mNodeId));
+				else if (mPathingAction == 2)
+				{
+					//standing
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataCreatePathingNode>(aiView->GetActorId()));
+					return;
+				}
+				else if (mPathingAction == 3)
+				{
+					//jumping
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataSimulateJumping>(aiView->GetActorId()));
+					return;
+				}
+				else if (mPathingAction == 4)
+				{
+					//running
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataSimulateRunning>(aiView->GetActorId()));
+					return;
+				}
+				else if (mPathingAction == 5)
+				{
+					//falling
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataSimulateFalling>(aiView->GetActorId()));
+					return;
+				}
+				else if (mPathingAction == 6)
+				{
+					//exploring
+					aiView->ResetActionPlan();
+					/*
+					QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+					PlayerView playerView;
+					aiManager->GetPlayerView(aiView->GetActorId(), playerView);
+					if (!playerView.simulation.plan.path.empty())
+					{
+						Transform spawnTransform;
+						spawnTransform.SetTranslation(playerView.simulation.plan.node->GetPosition());
+						EventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataSpawnActor>(aiView->GetActorId(), spawnTransform));
+					}
+					*/
+					mNodeId = -1;
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataSimulateExploring>(aiView->GetActorId(), mNodeId));
+					return;
+				}
+				else if (mPathingAction == 7)
+				{
+					//pathing
+					aiView->ResetActionPlan();
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataSimulatePathing>(aiView->GetActorId()));
+					return;
+				}
+			}
+
+			if (fields.find("btn_save") != fields.end())
+			{
+				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataSaveMap>());
 				return;
 			}
 
@@ -353,6 +394,7 @@ struct PathingFormHandler : public TextDestination
 
 	float mYaw = 0.f;
 	int mNodeId = -1;
+	int mPathingAction = -1;
 	Vector3<float> mPosition = Vector3<float>::Zero();
 };
 
@@ -438,7 +480,6 @@ struct EditPathingFormHandler : public TextDestination
 			if (fields.find("btn_reset") != fields.end())
 			{
 				mNodeId = -1;
-
 				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditPathingMap>());
 				return;
 			}
@@ -936,6 +977,9 @@ public:
 	void CreatePathingNodeDelegate(BaseEventDataPtr pEventData);
 	void SimulateExploringDelegate(BaseEventDataPtr pEventData);
 	void SimulatePathingDelegate(BaseEventDataPtr pEventData);
+	void SimulateJumpingDelegate(BaseEventDataPtr pEventData);
+	void SimulateRunningDelegate(BaseEventDataPtr pEventData);
+	void SimulateFallingDelegate(BaseEventDataPtr pEventData);
 
 	void ShowNodeVisibilityDelegate(BaseEventDataPtr pEventData);
 	void ShowNodeConnectionDelegate(BaseEventDataPtr pEventData);

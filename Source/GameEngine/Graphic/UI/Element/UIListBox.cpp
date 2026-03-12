@@ -195,8 +195,9 @@ void UIListBox::RecalculateItemHeight()
 	mTotalItemHeight = mItemHeight * (int)mItems.size();
 	mScrollBar->SetMax(std::max(0, mTotalItemHeight - mAbsoluteRect.mExtent[1]));
 	int minItemHeight = mItemHeight > 0 ? mItemHeight : 1;
-	mScrollBar->SetSmallStep ( minItemHeight );
-	mScrollBar->SetLargeStep ( 2*minItemHeight );
+	mScrollBar->SetSmallStep( minItemHeight );
+	mScrollBar->SetLargeStep( 2*minItemHeight );
+	mScrollBar->SetPageSize( mTotalItemHeight );
 
 	if ( mTotalItemHeight <= mAbsoluteRect.mExtent[1] )
 		mScrollBar->SetVisible(false);
@@ -419,7 +420,7 @@ bool UIListBox::OnEvent(const Event& evt)
 					{
 						case MIE_MOUSE_WHEEL:
 							mScrollBar->SetPosition(
-								mScrollBar->GetPosition() + (evt.mMouseInput.mWheel < 0 ? -1 : 1)* - mItemHeight/2);
+								mScrollBar->GetPosition() + (evt.mMouseInput.mWheel < 0 ? -1 : 1) * - mItemHeight/2);
 							return true;
 
 						case MIE_LMOUSE_PRESSED_DOWN:
@@ -496,8 +497,8 @@ void UIListBox::UpdateAbsolutePosition()
 {
 	BaseUIElement::UpdateAbsolutePosition();
 
-	RecalculateScrollRectangle();
 	RecalculateItemHeight();
+	RecalculateScrollRectangle();
 }
 
 
@@ -652,7 +653,6 @@ void UIListBox::RecalculateScrollPosition()
 		mScrollBar->SetPosition(mScrollBar->GetPosition() + selPos - mAbsoluteRect.mExtent[1] + mItemHeight);
 	}
 }
-
 
 void UIListBox::RecalculateScrollRectangle()
 {

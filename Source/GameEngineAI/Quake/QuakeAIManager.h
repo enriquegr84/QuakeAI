@@ -1024,6 +1024,9 @@ public:
 	virtual void LoadGraph(const std::wstring& path);
 	virtual void LoadGraph(const std::wstring& path, std::shared_ptr<PathingGraph>& graph);
 
+	void CreatePathingJump(ActorId playerId, NodePlan& pathPlan, std::shared_ptr<PathingGraph>& graph);
+	void CreatePathingFall(ActorId playerId, NodePlan& pathPlan, std::shared_ptr<PathingGraph>& graph);
+	void CreatePathingRun(ActorId playerId, NodePlan& pathPlan, std::shared_ptr<PathingGraph>& graph);
 	void CreatePathing(ActorId playerId, NodePlan& pathPlan, std::shared_ptr<PathingGraph>& graph);
 	PathingNode* CreatePathingNode(ActorId playerId, std::shared_ptr<PathingGraph>& graph);
 	PathingNode* CreatePathingNode(ActorId playerId, const Vector3<float>& position, std::shared_ptr<PathingGraph>& graph);
@@ -1272,11 +1275,11 @@ private:
 
 	// physics simulation
 	void SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGraph>& graph);
-	void SimulateJump(PathingNode* pNode, Transform transform, std::shared_ptr<PathingGraph>& graph);
 	void SimulateMove(PathingNode* pNode, std::shared_ptr<PathingGraph>& graph);
-	void SimulateMove(PathingNode* pNode, Transform transform, std::shared_ptr<PathingGraph>& graph);
 	void SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGraph>& graph);
-	void SimulateFall(PathingNode* pNode, Transform transform, std::shared_ptr<PathingGraph>& graph);
+	PathingNode* SimulateJump(PathingNode* pNode, Transform transform, std::shared_ptr<PathingGraph>& graph);
+	PathingNode* SimulateMove(PathingNode* pNode, Transform transform, std::shared_ptr<PathingGraph>& graph);
+	PathingNode* SimulateFall(PathingNode* pNode, Transform transform, std::shared_ptr<PathingGraph>& graph);
 	void SimulateStanding(ActorId actorId, const Vector3<float>& position, std::shared_ptr<PathingGraph>& graph);
 	void SimulateTriggerPush(PathingNode* pNode, const Transform& target, std::shared_ptr<PathingGraph>& graph);
 	void SimulateTriggerTeleport(PathingNode* pNode, const Transform& target, std::shared_ptr<PathingGraph>& graph);

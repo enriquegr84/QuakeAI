@@ -2288,6 +2288,162 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
+// EventDataSimulateJumping - ai jumping simulation
+//---------------------------------------------------------------------------------------------------------------------
+class EventDataSimulateJumping : public EventData
+{
+	ActorId mActorId;
+
+public:
+	static const BaseEventType skEventType;
+
+	virtual const BaseEventType& GetEventType(void) const
+	{
+		return skEventType;
+	}
+
+	EventDataSimulateJumping(void)
+	{
+		mActorId = INVALID_ACTOR_ID;
+	}
+
+	EventDataSimulateJumping(ActorId actorId)
+		: mActorId(actorId)
+	{
+		//
+	}
+
+	virtual void Serialize(std::ostrstream& out) const
+	{
+		out << mActorId << " ";
+	}
+
+	virtual void Deserialize(std::istrstream& in)
+	{
+		in >> mActorId;
+	}
+
+	virtual BaseEventDataPtr Copy() const
+	{
+		return BaseEventDataPtr(new EventDataSimulateJumping(mActorId));
+	}
+
+	virtual const char* GetName(void) const
+	{
+		return "EventDataSimulateJumping";
+	}
+
+	ActorId GetActorId(void) const
+	{
+		return mActorId;
+	}
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventDataSimulateRunning - ai running simulation
+//---------------------------------------------------------------------------------------------------------------------
+class EventDataSimulateRunning : public EventData
+{
+	ActorId mActorId;
+
+public:
+	static const BaseEventType skEventType;
+
+	virtual const BaseEventType& GetEventType(void) const
+	{
+		return skEventType;
+	}
+
+	EventDataSimulateRunning(void)
+	{
+		mActorId = INVALID_ACTOR_ID;
+	}
+
+	EventDataSimulateRunning(ActorId actorId)
+		: mActorId(actorId)
+	{
+		//
+	}
+
+	virtual void Serialize(std::ostrstream& out) const
+	{
+		out << mActorId << " ";
+	}
+
+	virtual void Deserialize(std::istrstream& in)
+	{
+		in >> mActorId;
+	}
+
+	virtual BaseEventDataPtr Copy() const
+	{
+		return BaseEventDataPtr(new EventDataSimulateRunning(mActorId));
+	}
+
+	virtual const char* GetName(void) const
+	{
+		return "EventDataSimulateRunning";
+	}
+
+	ActorId GetActorId(void) const
+	{
+		return mActorId;
+	}
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventDataSimulateFalling - ai falling simulation
+//---------------------------------------------------------------------------------------------------------------------
+class EventDataSimulateFalling : public EventData
+{
+	ActorId mActorId;
+
+public:
+	static const BaseEventType skEventType;
+
+	virtual const BaseEventType& GetEventType(void) const
+	{
+		return skEventType;
+	}
+
+	EventDataSimulateFalling(void)
+	{
+		mActorId = INVALID_ACTOR_ID;
+	}
+
+	EventDataSimulateFalling(ActorId actorId)
+		: mActorId(actorId)
+	{
+		//
+	}
+
+	virtual void Serialize(std::ostrstream& out) const
+	{
+		out << mActorId << " ";
+	}
+
+	virtual void Deserialize(std::istrstream& in)
+	{
+		in >> mActorId;
+	}
+
+	virtual BaseEventDataPtr Copy() const
+	{
+		return BaseEventDataPtr(new EventDataSimulateFalling(mActorId));
+	}
+
+	virtual const char* GetName(void) const
+	{
+		return "EventDataSimulateFalling";
+	}
+
+	ActorId GetActorId(void) const
+	{
+		return mActorId;
+	}
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 // EventDataSimulateAIGame - ai simulation
 //---------------------------------------------------------------------------------------------------------------------
 class EventDataSimulateAIGame : public EventData

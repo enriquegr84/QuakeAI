@@ -3001,6 +3001,201 @@ void QuakeAIEditorView::SimulatePathingDelegate(BaseEventDataPtr pEventData)
 	}
 }
 
+void QuakeAIEditorView::SimulateJumpingDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataSimulateJumping> pCastEventData =
+		std::static_pointer_cast<EventDataSimulateJumping>(pEventData);
+
+	if (mGraphNode)
+		mGraphNode->SetVisible(false);
+
+	if (mHighlightNode)
+		mHighlightNode->SetVisible(false);
+
+	NodePlan playerPlan;
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	aiManager->CreatePathingJump(pCastEventData->GetActorId(), playerPlan, mPathingMap);
+
+	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
+	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
+	aiView->SetPathingGraph(mPathingMap);
+
+	if (playerPlan.node)
+	{
+		PlayerView playerView;
+		aiManager->GetPlayerView(pCastEventData->GetActorId(), playerView);
+
+		playerView.isUpdated = true;
+		playerView.simulation.plan = playerPlan;
+		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
+	}
+
+	std::vector<Vector3<float>> nodes;
+	for (auto const& pArc : playerPlan.path)
+	{
+		PathingTransition* pTransition = pArc->GetTransition();
+		if (pTransition)
+			for (auto const& position : pTransition->GetPositions())
+				nodes.push_back(position);
+	}
+	if (nodes.empty())
+		return;
+
+	if (!mPathNode)
+	{
+		std::shared_ptr<ResHandle>& resHandle =
+			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
+		if (resHandle)
+		{
+			const std::shared_ptr<ImageResourceExtraData>& extra =
+				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
+			extra->GetImage()->AutogenerateMipmaps();
+
+			Vector3<float> size{ 2.5f, 2.5f, 2.5f };
+			mPathNode = std::make_shared<PathNode>(GameLogic::Get()->GetNewActorID(),
+				&mScene->GetPVWUpdater(), extra->GetImage(), size);
+			mScene->AddSceneNode(mPathNode->GetId(), mPathNode);
+		}
+	}
+
+	if (mPathNode)
+	{
+		mPathNode->SetVisible(true);
+		mPathNode->GenerateMesh(nodes);
+	}
+}
+
+void QuakeAIEditorView::SimulateRunningDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataSimulateRunning> pCastEventData =
+		std::static_pointer_cast<EventDataSimulateRunning>(pEventData);
+
+	if (mGraphNode)
+		mGraphNode->SetVisible(false);
+
+	if (mHighlightNode)
+		mHighlightNode->SetVisible(false);
+
+	NodePlan playerPlan;
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	aiManager->CreatePathingRun(pCastEventData->GetActorId(), playerPlan, mPathingMap);
+
+	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
+	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
+	aiView->SetPathingGraph(mPathingMap);
+
+	if (playerPlan.node)
+	{
+		PlayerView playerView;
+		aiManager->GetPlayerView(pCastEventData->GetActorId(), playerView);
+
+		playerView.isUpdated = true;
+		playerView.simulation.plan = playerPlan;
+		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
+	}
+
+	std::vector<Vector3<float>> nodes;
+	for (auto const& pArc : playerPlan.path)
+	{
+		PathingTransition* pTransition = pArc->GetTransition();
+		if (pTransition)
+			for (auto const& position : pTransition->GetPositions())
+				nodes.push_back(position);
+	}
+	if (nodes.empty())
+		return;
+
+	if (!mPathNode)
+	{
+		std::shared_ptr<ResHandle>& resHandle =
+			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
+		if (resHandle)
+		{
+			const std::shared_ptr<ImageResourceExtraData>& extra =
+				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
+			extra->GetImage()->AutogenerateMipmaps();
+
+			Vector3<float> size{ 2.5f, 2.5f, 2.5f };
+			mPathNode = std::make_shared<PathNode>(GameLogic::Get()->GetNewActorID(),
+				&mScene->GetPVWUpdater(), extra->GetImage(), size);
+			mScene->AddSceneNode(mPathNode->GetId(), mPathNode);
+		}
+	}
+
+	if (mPathNode)
+	{
+		mPathNode->SetVisible(true);
+		mPathNode->GenerateMesh(nodes);
+	}
+}
+
+void QuakeAIEditorView::SimulateFallingDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataSimulateFalling> pCastEventData =
+		std::static_pointer_cast<EventDataSimulateFalling>(pEventData);
+
+	if (mGraphNode)
+		mGraphNode->SetVisible(false);
+
+	if (mHighlightNode)
+		mHighlightNode->SetVisible(false);
+
+	NodePlan playerPlan;
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	aiManager->CreatePathingFall(pCastEventData->GetActorId(), playerPlan, mPathingMap);
+
+	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
+	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
+	aiView->SetPathingGraph(mPathingMap);
+
+	if (playerPlan.node)
+	{
+		PlayerView playerView;
+		aiManager->GetPlayerView(pCastEventData->GetActorId(), playerView);
+
+		playerView.isUpdated = true;
+		playerView.simulation.plan = playerPlan;
+		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
+	}
+
+	std::vector<Vector3<float>> nodes;
+	for (auto const& pArc : playerPlan.path)
+	{
+		PathingTransition* pTransition = pArc->GetTransition();
+		if (pTransition)
+			for (auto const& position : pTransition->GetPositions())
+				nodes.push_back(position);
+	}
+	if (nodes.empty())
+		return;
+
+	if (!mPathNode)
+	{
+		std::shared_ptr<ResHandle>& resHandle =
+			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
+		if (resHandle)
+		{
+			const std::shared_ptr<ImageResourceExtraData>& extra =
+				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
+			extra->GetImage()->AutogenerateMipmaps();
+
+			Vector3<float> size{ 2.5f, 2.5f, 2.5f };
+			mPathNode = std::make_shared<PathNode>(GameLogic::Get()->GetNewActorID(),
+				&mScene->GetPVWUpdater(), extra->GetImage(), size);
+			mScene->AddSceneNode(mPathNode->GetId(), mPathNode);
+		}
+	}
+
+	if (mPathNode)
+	{
+		mPathNode->SetVisible(true);
+		mPathNode->GenerateMesh(nodes);
+	}
+}
+
 void QuakeAIEditorView::EditPathingGraphDelegate(BaseEventDataPtr pEventData)
 {
 	std::shared_ptr<EventDataEditPathingMap> pCastEventData =
@@ -3740,6 +3935,15 @@ void QuakeAIEditorView::RegisterAllDelegates(void)
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIEditorView::SimulatePathingDelegate),
 		EventDataSimulatePathing::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeAIEditorView::SimulateJumpingDelegate),
+		EventDataSimulateJumping::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeAIEditorView::SimulateRunningDelegate),
+		EventDataSimulateRunning::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeAIEditorView::SimulateFallingDelegate),
+		EventDataSimulateFalling::skEventType);
 
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIEditorView::ShowNodeVisibilityDelegate),
@@ -4194,12 +4398,14 @@ void QuakeAIEditorView::ShowPathingMap(const std::map<unsigned short, unsigned s
 			}
 		}
 	}
+
+	std::string pathingActions = "Respawn,Standing,Jumping,Running,Falling,Exploring,Pathing";
 	form += "]"
 		"field[0.25,7.5;7,0.75;te_orientation;Orientation;0]"
-		"button[0.25,8.5;2.25,0.75;btn_respawn; Respawn]"
-		"button[2.5,8.5;2.25,0.75;btn_pathing; Pathing]"
-		"button[4.75,8.5;2.25,0.75;btn_exploring; Exploring]"
-		"button[7,8.5;2.25,0.75;btn_reset; Reset]";
+		"dropdown[0.25,8.5;3;dd_pathing_actions;" + pathingActions + ";1]"
+		"button[3.5,8.5;2.0,1.0;btn_apply; Apply]"
+		"button[5.5,8.5;2.0,1.0;btn_save; Save]"
+		"button[7.5,8.5;2.0,1.0;btn_reset; Reset]";
 
 	/* Create menu */
 	/* Note: FormSource and PathingFormHandler are deleted by FormMenu */
