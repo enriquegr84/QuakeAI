@@ -77,7 +77,7 @@ const BaseEventType EventDataMoveActor::skEventType(0xeeaa0a40);
 const BaseEventType EventDataFallActor::skEventType(0x47d33df3);
 const BaseEventType EventDataRotateActor::skEventType(0xed6973fe);
 
-const BaseEventType EventDataClear::skEventType(0x970c61d);
+const BaseEventType EventClearMap::skEventType(0x970c61d);
 const BaseEventType EventDataRemoveArc::skEventType(0x61649f05);
 const BaseEventType EventDataRemoveArcType::skEventType(0xd1f03d64);
 const BaseEventType EventDataRemoveNode::skEventType(0x3ffa4396);
@@ -92,7 +92,6 @@ const BaseEventType EventDataShowGameState::skEventType(0xdf8ca2);
 const BaseEventType EventDataShowPathing::skEventType(0x1af3f6ee);
 const BaseEventType EventDataCreatePathing::skEventType(0x92c31d5d);
 const BaseEventType EventDataEditPathingMap::skEventType(0xc37cc8a6);
-const BaseEventType EventDataCreatePathingMap::skEventType(0xce4860a1);
 const BaseEventType EventDataCreatePathingNode::skEventType(0x37f528e9);
 const BaseEventType EventDataSimulateExploring::skEventType(0x8ffb7ec9);
 const BaseEventType EventDataSimulatePathing::skEventType(0xe917e522);

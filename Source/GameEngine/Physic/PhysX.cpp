@@ -957,7 +957,6 @@ void PhysX::AddCharacterController(
 	mCCTGround[controller] = false;
 	mCCTJump[controller] = PxVec3(PxZero);
 	mCCTFall[controller] = PxVec3(PxZero);
-	mCCTJumpAccel[controller] = PxVec3(PxZero);
 	mCCTFallAccel[controller] = PxVec3(PxZero);
 	mCCTMove[controller] = PxVec3(PxZero);
 	mActorIdToController[actorID] = controller;

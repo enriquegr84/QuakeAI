@@ -1331,8 +1331,8 @@ void PathingGraph::FindPathPlans(PathingNode* pStartNode,
 PathPlan* PathingGraph::FindPath(
 	const Vector3<float>& startPoint, const Vector3<float>& endPoint, int skipArc, float threshold)
 {
-	PathingNode* pStart = FindClosestNode(startPoint);
-	PathingNode* pGoal = FindClosestNode(endPoint);
+	PathingNode* pStart = FindClosestNode(startPoint, true);
+	PathingNode* pGoal = FindClosestNode(endPoint, true);
 	return FindPath(pStart, pGoal, skipArc, threshold);
 }
 
@@ -1347,14 +1347,14 @@ PathPlan* PathingGraph::FindPath(
 PathPlan* PathingGraph::FindPath(
 	const Vector3<float>& startPoint, PathingNode* pGoalNode, int skipArc, float threshold)
 {
-	PathingNode* pStart = FindClosestNode(startPoint);
+	PathingNode* pStart = FindClosestNode(startPoint, true);
 	return FindPath(pStart, pGoalNode, skipArc, threshold);
 }
 
 PathPlan* PathingGraph::FindPath(
 	PathingNode* pStartNode, const Vector3<float>& endPoint, int skipArc, float threshold)
 {
-	PathingNode* pGoal = FindClosestNode(endPoint);
+	PathingNode* pGoal = FindClosestNode(endPoint, true);
 	return FindPath(pStartNode, pGoal, skipArc, threshold);
 }
 

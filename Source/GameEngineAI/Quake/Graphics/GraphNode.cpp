@@ -178,23 +178,7 @@ void GraphNode::GenerateMesh(
 		else
 			transparentNodes.push_back(node);
 	}
-	/*
-	const ClusterMap& pathingClusters = pathingGraph->GetClusters();
-	for (ClusterMap::const_iterator it = pathingClusters.begin(); it != pathingClusters.end(); ++it)
-	{
-		Cluster* cluster = (*it).second;
-		const PathingNodeMap& pathingNodes = cluster->GetNodes();
-		for (PathingNodeMap::const_iterator it = pathingNodes.begin(); it != pathingNodes.end(); ++it)
-		{
-			PathingNode* node = (*it).second;
 
-			if (node == cluster->GetNode())
-				solidNodes.push_back(node);
-			else
-				transparentNodes.push_back(node);
-		}
-	}
-	*/
 	mMesh = std::make_shared<NormalMesh>();
 	if (!transparentNodes.empty())
 	{

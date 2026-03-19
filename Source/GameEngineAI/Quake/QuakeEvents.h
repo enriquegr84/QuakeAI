@@ -1677,9 +1677,9 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-// EventDataClear - sent for clearing displayed map info
+// EventClearMap - sent for clearing displayed map info
 //---------------------------------------------------------------------------------------------------------------------
-class EventDataClear : public EventData
+class EventClearMap : public EventData
 {
 public:
 	static const BaseEventType skEventType;
@@ -1689,7 +1689,7 @@ public:
 		return skEventType;
 	}
 
-	EventDataClear(void)
+	EventClearMap(void)
 	{
 		//
 	}
@@ -1706,12 +1706,12 @@ public:
 
 	virtual BaseEventDataPtr Copy() const
 	{
-		return BaseEventDataPtr(new EventDataClear());
+		return BaseEventDataPtr(new EventClearMap());
 	}
 
 	virtual const char* GetName(void) const
 	{
-		return "EventDataClear";
+		return "EventClearMap";
 	}
 };
 
@@ -3137,58 +3137,6 @@ public:
 	virtual const char* GetName(void) const
 	{
 		return "EventDataCreatePathing";
-	}
-
-	ActorId GetActorId(void) const
-	{
-		return mActorId;
-	}
-};
-
-//---------------------------------------------------------------------------------------------------------------------
-// EventDataCreatePathingMap - create pathing map
-//---------------------------------------------------------------------------------------------------------------------
-class EventDataCreatePathingMap : public EventData
-{
-	ActorId mActorId;
-
-public:
-	static const BaseEventType skEventType;
-
-	virtual const BaseEventType& GetEventType(void) const
-	{
-		return skEventType;
-	}
-
-	EventDataCreatePathingMap(void)
-	{
-		mActorId = INVALID_ACTOR_ID;
-	}
-
-	EventDataCreatePathingMap(ActorId actorId)
-		: mActorId(actorId)
-	{
-		//
-	}
-
-	virtual void Serialize(std::ostrstream& out) const
-	{
-		out << mActorId << " ";
-	}
-
-	virtual void Deserialize(std::istrstream& in)
-	{
-		in >> mActorId;
-	}
-
-	virtual BaseEventDataPtr Copy() const
-	{
-		return BaseEventDataPtr(new EventDataCreatePathingMap(mActorId));
-	}
-
-	virtual const char* GetName(void) const
-	{
-		return "EventDataCreatePathingMap";
 	}
 
 	ActorId GetActorId(void) const

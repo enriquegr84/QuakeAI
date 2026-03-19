@@ -47,7 +47,7 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 #if defined(PHYSX) && defined(_WIN64)
 
 	mMaxPushSpeed = Vector3<float>{ 0.4f, 0.4f, 1.f };
-	mMaxJumpSpeed = Vector3<float>{ 0.85f, 0.85f, 0.9f };
+	mMaxJumpSpeed = Vector3<float>{ 1.f, 1.f, 0.9f };
 	mMaxFallSpeed = Vector3<float>{ 8.f, 8.f, 60.f };
 	mMaxMoveSpeed = 500.f;
 
@@ -1467,6 +1467,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					Vector3<float> targetPosition = pPushTrigger->GetTarget().GetTranslation();
 					Vector3<float> playerPosition = pPhysicComponent->GetTransform().GetTranslation();
 					Vector3<float> direction = targetPosition - playerPosition;
+
 					float push = mPushSpeed[AXIS_Y];
 #if defined(PHYSX) && defined(_WIN64)
 
@@ -1479,6 +1480,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 #endif
 					direction[AXIS_Y] = 0;
 					Normalize(direction);
+					mYaw = mYawSmooth = atan2(direction[AXIS_Z], direction[AXIS_X]) * (float)GE_C_RAD_TO_DEG;
 
 					velocity[AXIS_X] = direction[AXIS_X] * mPushSpeed[AXIS_X];
 					velocity[AXIS_Z] = direction[AXIS_Z] * mPushSpeed[AXIS_Z];
@@ -1499,7 +1501,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					{
 						Vector3<float> currentPosition = pPhysicComponent->GetTransform().GetTranslation();
 						if (mCurrentPlayerData.plan.node == NULL)
-							mCurrentPlayerData.plan.node = mPathingGraph->FindClosestNode(currentPosition);
+							mCurrentPlayerData.plan.node = mPathingGraph->FindClosestNode(currentPosition, true);
 
 						updatedActionPlan = UpdateActionPlan(true);
 
@@ -1507,7 +1509,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						{
 							if (mBehavior == BT_PATROL)
 							{
-								PathingNode* currentNode = mPathingGraph->FindClosestNode(currentPosition);
+								PathingNode* currentNode = mPathingGraph->FindClosestNode(currentPosition, true);
 								if (mGoalNode == NULL || mGoalNode == currentNode)
 								{
 									//printf("\n random node %u : ", mPlayerId);
@@ -1575,6 +1577,11 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 							else
 							{
 								mYawSmooth = mYaw;
+
+								mCurrentPlanArc = NULL;
+								mCurrentPlayerData.plan.id = -1;
+								mCurrentPlayerData.plan.path.clear();
+								mCurrentPlayerData.plan.node = mPathingGraph->FindClosestNode(currentPosition, true);
 							}
 						}
 						else
@@ -1632,7 +1639,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 										mCurrentPlanArc = NULL;
 										mCurrentPlayerData.plan.id = -1;
 										mCurrentPlayerData.plan.path.clear();
-										mCurrentPlayerData.plan.node = mPathingGraph->FindClosestNode(currentPosition);
+										mCurrentPlayerData.plan.node = mPathingGraph->FindClosestNode(currentPosition, true);
 
 										mStationaryTime = 0;
 									}

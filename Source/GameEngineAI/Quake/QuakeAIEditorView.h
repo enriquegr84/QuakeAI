@@ -293,16 +293,19 @@ struct PathingFormHandler : public TextDestination
 
 				if (mPathingAction == 1)
 				{
-					//respawn
-					Matrix4x4<float> yawRotation = Rotation<4, float>(
-						AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
-					Transform spawnTransform;
-					spawnTransform.SetTranslation(mPosition);
-					spawnTransform.SetRotation(yawRotation);
+					if (mNodeId != -1)
+					{
+						//respawn
+						Matrix4x4<float> yawRotation = Rotation<4, float>(
+							AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+						Transform spawnTransform;
+						spawnTransform.SetTranslation(mPosition);
+						spawnTransform.SetRotation(yawRotation);
 
-					aiView->SetYaw(mYaw);
-					EventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataSpawnActor>(aiView->GetActorId(), spawnTransform));
+						aiView->SetYaw(mYaw);
+						EventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataSpawnActor>(aiView->GetActorId(), spawnTransform));
+					}
 					return;
 				}
 				else if (mPathingAction == 2)
@@ -398,181 +401,6 @@ struct PathingFormHandler : public TextDestination
 	Vector3<float> mPosition = Vector3<float>::Zero();
 };
 
-struct EditPathingFormHandler : public TextDestination
-{
-	EditPathingFormHandler(const std::string& formName)
-	{
-		mFormName = formName;
-	}
-
-	void GotText(const StringMap& fields)
-	{
-		if (mFormName == "EDIT_PATHING")
-		{
-			if (fields.find("te_orientation") != fields.end())
-			{
-				mYaw = (float)atof(fields.at("te_orientation").c_str());
-			}
-			if (fields.find("btn_mp_search") != fields.end() && fields.find("te_search") != fields.end())
-			{
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditPathingMap>(fields.at("te_search")));
-				return;
-			}
-			if (fields.find("graph") != fields.end())
-			{
-				std::string row = fields.at("graph");
-				if (row.rfind("CHG:") != std::string::npos)
-				{
-					std::string content = Trim(row.substr(row.rfind("CNT:") + 4));
-					std::vector<std::string> values = StringSplit(content, ' ');
-					if (values.size() > 2)
-					{
-						mPosition = Vector3<float>{
-							(float)atof(values[values.size() - 3].c_str()),
-							(float)atof(values[values.size() - 2].c_str()),
-							(float)atof(values[values.size() - 1].c_str()) };
-
-						mNodeId = atoi(values[0].c_str());
-						EventManager::Get()->TriggerEvent(std::make_shared<EventDataHighlightNode>(mNodeId));
-					}
-					return;
-				}
-			}
-			if (fields.find("btn_respawn") != fields.end())
-			{
-				Matrix4x4<float> yawRotation = Rotation<4, float>(
-					AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
-				Transform spawnTransform;
-				spawnTransform.SetTranslation(mPosition);
-				spawnTransform.SetRotation(yawRotation);
-
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
-				std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
-				EventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataSpawnActor>(humanView->GetActorId(), spawnTransform));
-				return;
-			}
-
-			if (fields.find("btn_create_node") != fields.end())
-			{
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
-				std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
-				BaseEventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataCreatePathingNode>(humanView->GetActorId()));
-				return;
-			}
-
-			if (fields.find("btn_create_map") != fields.end())
-			{
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
-				std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
-				BaseEventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataCreatePathing>(humanView->GetActorId()));
-				return;
-			}
-
-			if (fields.find("btn_save") != fields.end())
-			{
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataSaveMap>());
-				return;
-			}
-
-			if (fields.find("btn_reset") != fields.end())
-			{
-				mNodeId = -1;
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditPathingMap>());
-				return;
-			}
-		}
-	}
-
-	float mYaw = 0.f;
-	int mNodeId = -1;
-	Vector3<float> mPosition = Vector3<float>::Zero();
-};
-
-struct CreatePathingMapFormHandler : public TextDestination
-{
-	CreatePathingMapFormHandler(const std::string& formName)
-	{
-		mFormName = formName;
-	}
-
-	void GotText(const StringMap& fields)
-	{
-		if (mFormName == "CREATE_PATHING")
-		{
-			if (fields.find("te_orientation") != fields.end())
-			{
-				mYaw = (float)atof(fields.at("te_orientation").c_str());
-			}
-			if (fields.find("btn_mp_search") != fields.end() && fields.find("te_search") != fields.end())
-			{
-				return;
-			}
-			if (fields.find("graph") != fields.end())
-			{
-				std::string row = fields.at("graph");
-				if (row.rfind("CHG:") != std::string::npos)
-				{
-					std::string content = Trim(row.substr(row.rfind("CNT:") + 4));
-					std::vector<std::string> values = StringSplit(content, ' ');
-					if (values.size() > 2)
-					{
-						mPosition = Vector3<float>{
-							(float)atof(values[values.size() - 3].c_str()),
-							(float)atof(values[values.size() - 2].c_str()),
-							(float)atof(values[values.size() - 1].c_str()) };
-
-						mNodeId = atoi(values[0].c_str());
-						EventManager::Get()->TriggerEvent(std::make_shared<EventDataHighlightNode>(mNodeId));
-					}
-					return;
-				}
-			}
-			if (fields.find("btn_respawn") != fields.end())
-			{
-				Matrix4x4<float> yawRotation = Rotation<4, float>(
-					AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
-				Transform spawnTransform;
-				spawnTransform.SetTranslation(mPosition);
-				spawnTransform.SetRotation(yawRotation);
-
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
-				std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
-				EventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataSpawnActor>(humanView->GetActorId(), spawnTransform));
-				return;
-			}
-
-			if (fields.find("btn_create_node") != fields.end())
-			{
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
-				std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
-				BaseEventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataCreatePathingNode>(humanView->GetActorId()));
-				return;
-			}
-
-			if (fields.find("btn_create_map") != fields.end())
-			{
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataCreateMap>());
-				return;
-			}
-
-			if (fields.find("btn_save") != fields.end())
-			{
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataSaveMap>());
-				return;
-			}
-		}
-	}
-
-	float mYaw = 0.f;
-	int mNodeId = -1;
-	Vector3<float> mPosition = Vector3<float>::Zero();
-};
-
 struct MapFormHandler : public TextDestination
 {
 	MapFormHandler(const std::string& formName)
@@ -589,6 +417,7 @@ struct MapFormHandler : public TextDestination
 				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataShowMap>(fields.at("te_search")));
 				return;
 			}
+
 			if (fields.find("graph_nodes") != fields.end())
 			{
 				std::string row = fields.at("graph_nodes");
@@ -605,6 +434,7 @@ struct MapFormHandler : public TextDestination
 					return;
 				}
 			}
+
 			if (fields.find("graph_arcs") != fields.end())
 			{
 				std::string row = fields.at("graph_arcs");
@@ -617,28 +447,44 @@ struct MapFormHandler : public TextDestination
 					return;
 				}
 			}
-			if (fields.find("btn_visibility") != fields.end())
+
+			if (fields.find("dd_map_actions") != fields.end())
 			{
-				if (mNodeId != INVALID_ACTOR_ID)
-				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataNodeVisibility>(mNodeId));
-				}
-				return;
+				std::string row = fields.at("dd_map_actions");
+				std::string content = Trim(row);
+				mMapAction = atoi(content.c_str());
 			}
-			if (fields.find("btn_connection") != fields.end())
+
+			if (fields.find("btn_apply") != fields.end())
 			{
-				if (mArcId != -1)
+				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
+				std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
+
+				if (mMapAction == 1)
 				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataArcConnection>(mArcId));
+					//node visibility
+					if (mNodeId != -1)
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataNodeVisibility>(mNodeId));
+					}
+					return;
 				}
-				else
+				else if (mMapAction == 2)
 				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataNodeConnection>(mNodeId));
+					//connection
+					if (mArcId != -1)
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataArcConnection>(mArcId));
+					}
+					else
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataNodeConnection>(mNodeId));
+					}
+					return;
 				}
-				return;
 			}
 
 			if (fields.find("btn_save_all") != fields.end())
@@ -658,20 +504,21 @@ struct MapFormHandler : public TextDestination
 		}
 	}
 
+	int mMapAction = -1;
 	int mNodeId = -1;
 	int mArcId = -1;
 };
 
-struct EditMapFormHandler : public TextDestination
+struct EditPathingFormHandler : public TextDestination
 {
-	EditMapFormHandler(const std::string& formName)
+	EditPathingFormHandler(const std::string& formName)
 	{
 		mFormName = formName;
 	}
 
 	void GotText(const StringMap& fields)
 	{
-		if (mFormName == "EDIT_MAP")
+		if (mFormName == "EDIT_PATHING")
 		{
 			if (fields.find("btn_mp_search") != fields.end() && fields.find("te_search") != fields.end())
 			{
@@ -706,60 +553,195 @@ struct EditMapFormHandler : public TextDestination
 					return;
 				}
 			}
-			if (fields.find("btn_clear") != fields.end())
+			if (fields.find("dd_pathing_actions") != fields.end())
 			{
-				mNodeId = -1;
-				mArcId = -1;
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataClear>());
-				return;
+				std::string row = fields.at("dd_pathing_actions");
+				std::string content = Trim(row);
+				mPathingAction = atoi(content.c_str());
 			}
-			if (fields.find("btn_connection") != fields.end())
+
+			if (fields.find("btn_apply") != fields.end())
 			{
-				if (mArcId != -1)
+				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
+				std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
+
+				if (mPathingAction == 1)
 				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataArcConnection>(mArcId));
+					//remove node or arc
+					if (mArcId != -1)
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataRemoveArc>(mArcId));
+					}
+					else if (mNodeId != -1)
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataRemoveNode>(mNodeId));
+					}
+					return;
 				}
-				else if (mNodeId != -1)
+				else if (mPathingAction == 2)
 				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataNodeConnection>(mNodeId));
+					//remove arc type
+					if (mArcId != -1)
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataRemoveArcType>(mArcId));
+					}
+					return;
 				}
-				return;
+				else if (mPathingAction == 3)
+				{
+					//node or arc connections
+					if (mArcId != -1)
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataArcConnection>(mArcId));
+					}
+					else if (mNodeId != -1)
+					{
+						BaseEventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataNodeConnection>(mNodeId));
+					}
+					return;
+				}
 			}
-			if (fields.find("btn_remove") != fields.end())
-			{
-				if (mArcId != -1)
-				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataRemoveArc>(mArcId));
-				}
-				else if (mNodeId != -1)
-				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataRemoveNode>(mNodeId));
-				}
-				return;
-			}
-			if (fields.find("btn_remove_type") != fields.end())
-			{
-				if (mArcId != -1)
-				{
-					BaseEventManager::Get()->TriggerEvent(
-						std::make_shared<EventDataRemoveArcType>(mArcId));
-				}
-				return;
-			}
+
 			if (fields.find("btn_save") != fields.end())
 			{
 				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataSaveMap>());
 				return;
 			}
+
+			if (fields.find("btn_reset") != fields.end())
+			{
+				mNodeId = -1;
+				mArcId = -1;
+				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventClearMap>());
+				return;
+			}
 		}
 	}
 
+	int mPathingAction = -1;
 	int mNodeId = -1;
 	int mArcId = -1;
+};
+
+struct EditMapFormHandler : public TextDestination
+{
+	EditMapFormHandler(const std::string& formName)
+	{
+		mFormName = formName;
+	}
+
+	void GotText(const StringMap& fields)
+	{
+		if (mFormName == "EDIT_MAP")
+		{
+			if (fields.find("te_orientation") != fields.end())
+			{
+				mYaw = (float)atof(fields.at("te_orientation").c_str());
+			}
+			if (fields.find("btn_mp_search") != fields.end() && fields.find("te_search") != fields.end())
+			{
+				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataEditMap>(fields.at("te_search")));
+				return;
+			}
+			if (fields.find("graph") != fields.end())
+			{
+				std::string row = fields.at("graph");
+				if (row.rfind("CHG:") != std::string::npos)
+				{
+					std::string content = Trim(row.substr(row.rfind("CNT:") + 4));
+					std::vector<std::string> values = StringSplit(content, ' ');
+					if (values.size() > 2)
+					{
+						mPosition = Vector3<float>{
+								(float)atof(values[values.size() - 3].c_str()),
+								(float)atof(values[values.size() - 2].c_str()),
+								(float)atof(values[values.size() - 1].c_str()) };
+
+						mNodeId = atoi(values[0].c_str());
+						EventManager::Get()->TriggerEvent(std::make_shared<EventDataHighlightNode>(mNodeId));
+					}
+					return;
+				}
+			}
+			if (fields.find("dd_map_actions") != fields.end())
+			{
+				std::string row = fields.at("dd_map_actions");
+				std::string content = Trim(row);
+				mMapAction = atoi(content.c_str());
+			}
+
+			if (fields.find("btn_apply") != fields.end())
+			{
+				if (mMapAction == 1)
+				{
+					if (mNodeId != -1)
+					{
+						//respawn
+						std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
+						std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
+
+						Matrix4x4<float> yawRotation = Rotation<4, float>(
+							AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+						Transform spawnTransform;
+						spawnTransform.SetTranslation(mPosition);
+						spawnTransform.SetRotation(yawRotation);
+
+						//aiView->SetYaw(mYaw);
+						EventManager::Get()->TriggerEvent(
+							std::make_shared<EventDataSpawnActor>(humanView->GetActorId(), spawnTransform));
+					}
+					return;
+				}
+				else if (mMapAction == 2)
+				{
+					//create node
+					std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
+					std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataCreatePathingNode>(humanView->GetActorId()));
+					return;
+				}
+				else if (mMapAction == 3)
+				{
+					//create pathing map
+					BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataCreateMap>());
+					return;
+				}
+				else if (mMapAction == 4)
+				{
+					//edit pathing map
+					std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
+					std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataCreatePathing>(humanView->GetActorId()));
+					return;
+				}
+			}
+
+			if (fields.find("btn_save") != fields.end())
+			{
+				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataSaveMap>());
+				return;
+			}
+
+			if (fields.find("btn_reset") != fields.end())
+			{
+				mNodeId = -1;
+				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventClearMap>());
+				return;
+			}
+		}
+	}
+
+	float mYaw = 0.f;
+	int mMapAction = -1;
+	int mNodeId = -1;
+	Vector3<float> mPosition = Vector3<float>::Zero();
 };
 
 struct EditorFormHandler : public TextDestination
@@ -775,7 +757,7 @@ struct EditorFormHandler : public TextDestination
 		{
 			if (fields.find("btn_edit_path") != fields.end())
 			{
-				std::shared_ptr<EventDataEditMap> pEvent(new EventDataEditMap());
+				std::shared_ptr<EventDataEditPathingMap> pEvent(new EventDataEditPathingMap());
 				BaseEventManager::Get()->TriggerEvent(pEvent);
 				return;
 			}
@@ -789,16 +771,8 @@ struct EditorFormHandler : public TextDestination
 
 			if (fields.find("btn_edit_map") != fields.end())
 			{
-				std::shared_ptr<EventDataEditPathingMap> pEvent(new EventDataEditPathingMap());
+				std::shared_ptr<EventDataEditMap> pEvent(new EventDataEditMap());
 				BaseEventManager::Get()->TriggerEvent(pEvent);
-				return;
-			}
-
-			if (fields.find("btn_create_map") != fields.end())
-			{
-				std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
-				std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
-				BaseEventManager::Get()->TriggerEvent(std::make_shared<EventDataCreatePathingMap>(humanView->GetActorId()));
 				return;
 			}
 
@@ -970,10 +944,9 @@ public:
 	void EditMapNodeDelegate(BaseEventDataPtr pEventData);
 	void ShowMapNodeDelegate(BaseEventDataPtr pEventData);
 
-	void EditPathingGraphDelegate(BaseEventDataPtr pEventData);
+	void EditPathingMapDelegate(BaseEventDataPtr pEventData);
 	void ShowPathingGraphDelegate(BaseEventDataPtr pEventData);
 	void CreatePathingGraphDelegate(BaseEventDataPtr pEventData);
-	void CreatePathingMapDelegate(BaseEventDataPtr pEventData);
 	void CreatePathingNodeDelegate(BaseEventDataPtr pEventData);
 	void SimulateExploringDelegate(BaseEventDataPtr pEventData);
 	void SimulatePathingDelegate(BaseEventDataPtr pEventData);
@@ -1088,13 +1061,12 @@ protected:
 
 private:
 
-	void EditMap(PathingNode* pNode);
-	void EditMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter = "");
+	void EditPathingMap(PathingNode* pNode);
 	void EditPathingMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter = "");
+	void EditMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter = "");
 	void ShowPathingMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter = "");
 	void ShowMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter = "");
 	void ShowMap(PathingNode* pNode);
-	void CreatePathingMap(const std::string& filter = "");
 
 	void ShowPauseMenu();
 

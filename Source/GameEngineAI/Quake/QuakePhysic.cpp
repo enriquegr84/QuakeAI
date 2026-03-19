@@ -105,8 +105,10 @@ QuakePhysX::~QuakePhysX()
 
 }
 
-bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, bool enableUpdateState)
+void QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, float subDeltaTime, bool enableUpdateState)
 {
+	bool wasOnGround = mCCTGround[controller];
+
 	PxControllerState controllerState;
 	controller->getState(controllerState);
 
@@ -121,12 +123,26 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 	aiManager->SetPlayerGround(playerId, mCCTGround[controller]);
 	if (!mCCTGround[controller])
-		return false;
+	{
+		Vector3<float> direction = PxVector3ToVector3(mCCTMove[controller]);
+		direction[AXIS_Y] = 0;
+		Normalize(direction);
+
+		Vector3<float> fall;
+		fall[AXIS_X] = direction[AXIS_X] * mFallSpeed[playerId][AXIS_X];
+		fall[AXIS_Z] = direction[AXIS_Z] * mFallSpeed[playerId][AXIS_Z];
+		fall[AXIS_Y] = -mFallSpeed[playerId][AXIS_Y];
+		if (wasOnGround)
+			mCCTFallAccel[controller] = Vector3ToPxVector3(fall) * subDeltaTime;
+
+		EventManager::Get()->TriggerEvent(
+			std::make_shared<EventDataFallActor>(playerId, fall));
+		return;
+	}
 
 	mCCTJump[controller] = PxVec3(PxZero);
-	mCCTFall[controller] = PxVec3(PxZero);
-	mCCTJumpAccel[controller] = PxVec3(PxZero);
-	mCCTFallAccel[controller] = PxVec3(PxZero);
+	mCCTFall[controller] = Vector3ToPxVector3(mGravity);
+	mCCTFallAccel[controller] = mCCTFall[controller] * subDeltaTime;
 
 	QuakeLogic* quake = dynamic_cast<QuakeLogic*>(GameLogic::Get());
 	PxExtendedVec3 footPosition = controller->getFootPosition();
@@ -143,7 +159,7 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 			{
 				std::shared_ptr<EventDataPhysTriggerEnter> pEvent(new EventDataPhysTriggerEnter(trigger->GetId(), playerId));
 				BaseEventManager::Get()->TriggerEvent(pEvent);
-				return false;
+				return;
 			}
 		}
 	}
@@ -164,8 +180,7 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 		{
 			if (updatedActionPlan)
 				aiManager->UpdatePlayerView(playerId, aiView->GetActionPlayer(), false);
-
-			return false;
+			return;
 		}
 
 		if (updatedActionPlan)
@@ -216,7 +231,6 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 
 			EventManager::Get()->TriggerEvent(
 				std::make_shared<EventDataJumpActor>(playerId, velocity, fall));
-			return true;
 		}
 		else if (aiView->GetActionPlanType() == AT_MOVE)
 		{
@@ -231,11 +245,8 @@ bool QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, b
 
 			EventManager::Get()->TriggerEvent(
 				std::make_shared<EventDataMoveActor>(playerId, velocity, fall));
-			return true;
 		}
 	}
-
-	return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -248,7 +259,6 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 	int substeps = 12;
 	float fixedDeltaSeconds = 1.f / 60.f;
 	float subDeltaTime = fixedDeltaSeconds / substeps;
-	PxVec3 gravity = Vector3ToPxVector3(mGravity);
 
 	for (auto& actorController : mActorIdToController)
 	{
@@ -257,42 +267,46 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 
 		// update physics player at fixed delta time steps for more consistent behavior
 		PxVec3 velocity = PxVec3(PxZero);
-		bool updatePlayerState = true;
+		if (mCCTGround[controller])
+			mCCTFallAccel[controller] = mCCTFall[controller] * subDeltaTime;
+		else
+			mCCTFallAccel[controller] += mCCTFall[controller] * subDeltaTime;
+
 		for (int substep = 1; substep <= substeps; substep++)
 		{
-			if (updatePlayerState)
+			velocity = mCCTMove[controller] * subDeltaTime;
+
+			if (mCCTJump[controller].z > 0.f)  //jump condition
 			{
-				velocity = mCCTMove[controller] * subDeltaTime;
-
-				if (mCCTJump[controller].z > 0.f)  //jump condition
+				if (mCCTGround[controller])
 				{
-					if (mCCTGround[controller])
-					{
-						// Instantly teleport the capsule upward by a small amount (e.g. 0.01–0.1)
-						PxExtendedVec3 upOffset = PxExtendedVec3(0.f, 0.f, 0.1f);   // small upward nudge
-						controller->setPosition(controller->getPosition() + upOffset);
+					// Instantly teleport the capsule upward by a small amount (e.g. 0.01–0.1)
+					PxExtendedVec3 upOffset = PxExtendedVec3(0.f, 0.f, 0.1f);   // small upward nudge
+					controller->setPosition(controller->getPosition() + upOffset);
 
-						// Then apply upward velocity via the displacement vector
-						mCCTJumpAccel[controller] = mCCTJump[controller];
-						velocity = mCCTJumpAccel[controller];
-						//printf("\n physx initial jump %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], subDeltaTime);
-					}
-					else if (mCCTJumpAccel[controller].z > 0.f)
-					{
-						mCCTJumpAccel[controller] -= mCCTJump[controller] * subDeltaTime * 0.0001f;
-						velocity = mCCTJumpAccel[controller];
-						//printf("\n physx jumping %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], subDeltaTime);
-					}
+					// Then apply upward velocity via the displacement vector
+					velocity = mCCTJump[controller];
+					//printf("\n physx initial jump %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], subDeltaTime);
 				}
+				else 
+				{
+					velocity = mCCTJump[controller];
+					//printf("\n physx jumping %f %f %f elpased %f", velocity[0], velocity[1], velocity[2], subDeltaTime);
 
-				mCCTFallAccel[controller] += mCCTFall[controller] * subDeltaTime;
+					velocity += mCCTFallAccel[controller];
+					//printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], subDeltaTime);
+				}
+			}
+			else
+			{
 				velocity += mCCTFallAccel[controller];
 				//printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], subDeltaTime);
 			}
 
+
 			PxControllerFilters filters;
 			controller->move(velocity, 0.001f, subDeltaTime, filters);
-			updatePlayerState = UpdatePlayerState(playerId, controller, substep != substeps);
+			UpdatePlayerState(playerId, controller, subDeltaTime, substep != substeps);
 		}
 	}
 
@@ -312,7 +326,7 @@ void QuakePhysX::AddCharacterController(
 
 	ActorId playerId = pStrongActor->GetId();
 	mMaxPushSpeed[playerId] = Vector3<float>{ 0.4f, 0.4f, 1.f };
-	mMaxJumpSpeed[playerId] = Vector3<float>{ 0.85f, 0.85f, 0.9f };
+	mMaxJumpSpeed[playerId] = Vector3<float>{ 1.f, 1.f, 0.9f };
 	mMaxFallSpeed[playerId] = Vector3<float>{ 8.f, 8.f, 60.f };
 	mMaxMoveSpeed[playerId] = 500.f;
 

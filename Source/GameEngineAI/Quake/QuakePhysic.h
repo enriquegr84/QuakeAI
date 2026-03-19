@@ -72,7 +72,7 @@ public:
 
 protected:
 
-	bool UpdatePlayerState(ActorId playerId, PxController* controller, bool enableUpdateState);
+	void UpdatePlayerState(ActorId playerId, PxController* controller, float subDeltaTime, bool enableUpdateState);
 
 	void ResetInterpolations() { mInterpolations.clear(); }
 

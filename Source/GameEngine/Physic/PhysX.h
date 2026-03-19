@@ -205,7 +205,7 @@ protected:
 	// keep track of the existing controllers: To check them for updates
 	// to the actors' positions, and to remove them when their lives are over.
 	std::map<PxController*, bool> mCCTGround;
-	std::map<PxController*, PxVec3> mCCTMove, mCCTJump, mCCTJumpAccel, mCCTFall, mCCTFallAccel;
+	std::map<PxController*, PxVec3> mCCTMove, mCCTJump, mCCTFall, mCCTFallAccel;
 	typedef std::map<ActorId, PxController*> ActorIDToPhysXControllerMap;
 	ActorIDToPhysXControllerMap mActorIdToController;
 	PxController* FindPhysXController(ActorId id) const;

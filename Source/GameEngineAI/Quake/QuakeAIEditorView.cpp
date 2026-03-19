@@ -2479,8 +2479,8 @@ void QuakeAIEditorView::RotateActorDelegate(BaseEventDataPtr pEventData)
 
 void QuakeAIEditorView::ClearMapDelegate(BaseEventDataPtr pEventData)
 {
-	std::shared_ptr<EventDataClear> pCastEventData =
-		std::static_pointer_cast<EventDataClear>(pEventData);
+	std::shared_ptr<EventClearMap> pCastEventData =
+		std::static_pointer_cast<EventClearMap>(pEventData);
 
 	mSelectedClusters.clear();
 
@@ -2497,7 +2497,11 @@ void QuakeAIEditorView::ClearMapDelegate(BaseEventDataPtr pEventData)
 			Cluster* cluster = (*it).second;
 			selectedClusters[cluster->GetId()] = 0;
 		}
-		EditMap(selectedClusters);
+
+		if (mUI->mFormName == "EDIT_MAP")
+			EditMap(selectedClusters);
+		else if (mUI->mFormName == "EDIT_PATHING")
+			EditPathingMap(selectedClusters);
 	}
 
 	if (mHighlightNode)
@@ -2518,11 +2522,13 @@ void QuakeAIEditorView::RemoveArcTypeDelegate(BaseEventDataPtr pEventData)
 		if (pArc)
 		{
 			PathingNode* pNode = mPathingMap->FindNode(pArc);
-			for (auto& arc : pNode->GetArcs())
-				if (arc.second->GetType() == pArc->GetType())
-					pNode->RemoveArc(arc.second->GetId());
+			PathingArcMap nodesArcs = pNode->GetArcs();
+			unsigned int arcType = pArc->GetType();
+			for (auto& nodeArc : nodesArcs)
+				if (nodeArc.second->GetType() == arcType)
+					pNode->RemoveArc(nodeArc.second->GetId());
 
-			EditMap(pNode);
+			EditPathingMap(pNode);
 		}
 	}
 }
@@ -2540,7 +2546,7 @@ void QuakeAIEditorView::RemoveArcDelegate(BaseEventDataPtr pEventData)
 			PathingNode* pNode = mPathingMap->FindNode(pArc);
 			pNode->RemoveArc(pArc->GetId());
 
-			EditMap(pNode);
+			EditPathingMap(pNode);
 		}
 	}
 }
@@ -2555,17 +2561,16 @@ void QuakeAIEditorView::RemoveNodeDelegate(BaseEventDataPtr pEventData)
 		PathingNode* pNode = mPathingMap->FindNode(pCastEventData->GetId());
 		if (pNode)
 		{
+			std::map<unsigned short, unsigned short> selectedClusters;
+			selectedClusters[pNode->GetCluster()] = 0;
 			mPathingMap->RemoveNode(pNode);
 
 			if (mGraphNode)
 			{
-				std::map<unsigned short, unsigned short> selectedClusters;
-				selectedClusters[pNode->GetCluster()] = 0;
-
 				mGraphNode->SetVisible(true);
 				mGraphNode->GenerateMesh(selectedClusters, mPathingMap);
 
-				EditMap(selectedClusters);
+				EditPathingMap(selectedClusters);
 			}
 
 			if (mHighlightNode)
@@ -2595,7 +2600,7 @@ void QuakeAIEditorView::EditMapNodeDelegate(BaseEventDataPtr pEventData)
 				mGraphNode->GenerateMesh(selectedClusters, mPathingMap);
 				mGraphNode->SetVisible(true);
 
-				EditMap(pNode);
+				EditPathingMap(pNode);
 			}
 
 			if (!mHighlightNode)
@@ -2702,13 +2707,19 @@ void QuakeAIEditorView::HighlightNodeDelegate(BaseEventDataPtr pEventData)
 	std::shared_ptr<EventDataHighlightNode> pCastEventData =
 		std::static_pointer_cast<EventDataHighlightNode>(pEventData);
 
-	PathingNode* pNode = 
-		mPathingMap ? mPathingMap->FindNode(pCastEventData->GetId()) : nullptr;
-	if (!pNode)
-		pNode = mMap ? mMap->FindNode(pCastEventData->GetId()) : nullptr;
+	PathingNode* pNode = nullptr;
+	if (mUI->mFormName == "MAP")
+		pNode = mMap->FindNode(pCastEventData->GetId());
+	else if (mUI->mFormName == "PATHING")
+		pNode = mPathingMap->FindNode(pCastEventData->GetId());
+	else if (mUI->mFormName == "EDIT_MAP")
+		pNode = mPathingMap->FindNode(pCastEventData->GetId());
+	else if (mUI->mFormName == "EDIT_PATHING")
+		pNode = mPathingMap->FindNode(pCastEventData->GetId());
+
 	if (!pNode)
 		return;
-		
+
 	if (!mHighlightNode)
 	{
 		std::shared_ptr<ResHandle>& resHandle =
@@ -2767,7 +2778,7 @@ void QuakeAIEditorView::SimulateExploringDelegate(BaseEventDataPtr pEventData)
 		std::shared_ptr<PhysicComponent> pPhysicComponent(
 			pActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		if (pPhysicComponent)
-			pStartNode = mPathingMap->FindClosestNode(pPhysicComponent->GetTransform().GetTranslation());
+			pStartNode = mPathingMap->FindClosestNode(pPhysicComponent->GetTransform().GetTranslation(), true);
 	}
 
 	NodePlan playerPlan;
@@ -2775,6 +2786,7 @@ void QuakeAIEditorView::SimulateExploringDelegate(BaseEventDataPtr pEventData)
 	if (pathPlan)
 	{
 		playerPlan.ResetPathPlan(pathPlan->GetArcs());
+
 		playerPlan.node = pStartNode;
 		delete pathPlan;
 	}
@@ -3196,10 +3208,10 @@ void QuakeAIEditorView::SimulateFallingDelegate(BaseEventDataPtr pEventData)
 	}
 }
 
-void QuakeAIEditorView::EditPathingGraphDelegate(BaseEventDataPtr pEventData)
+void QuakeAIEditorView::EditMapDelegate(BaseEventDataPtr pEventData)
 {
-	std::shared_ptr<EventDataEditPathingMap> pCastEventData =
-		std::static_pointer_cast<EventDataEditPathingMap>(pEventData);
+	std::shared_ptr<EventDataEditMap> pCastEventData =
+		std::static_pointer_cast<EventDataEditMap>(pEventData);
 
 	mSelectedClusters.clear();
 
@@ -3266,103 +3278,7 @@ void QuakeAIEditorView::EditPathingGraphDelegate(BaseEventDataPtr pEventData)
 		Cluster* cluster = (*it).second;
 		selectedClusters[cluster->GetId()] = 0;
 	}
-	EditPathingMap(selectedClusters);
-
-	if (mHighlightNode)
-		mHighlightNode->SetVisible(false);
-
-	if (mPathNode)
-		mPathNode->SetVisible(false);
-}
-
-void QuakeAIEditorView::CreatePathingMapDelegate(BaseEventDataPtr pEventData)
-{
-	std::shared_ptr<EventDataCreatePathingMap> pCastEventData =
-		std::static_pointer_cast<EventDataCreatePathingMap>(pEventData);
-
-	mSelectedClusters.clear();
-
-	if (!mPathingMap)
-	{
-		mPathingMap = std::make_shared<PathingGraph>();
-		std::string filePath = "ai/quake/" + Settings::Get()->Get("selected_world") + "/map.bin";
-		if (!FileSystem::Get()->ExistFile(ToWideString(filePath)))
-		{
-			std::string fullFilePath = ToString(FileSystem::Get()->GetWorkingDirectory().c_str()) + "/../../assets/" + filePath;
-			if (!FileSystem::Get()->SafeWriteToFile(fullFilePath, ""))
-			{
-				LogError("Error creating map file: \"" + filePath + "\"");
-				return;
-			}
-
-			QuakeLogic* game = dynamic_cast<QuakeLogic*>(GameLogic::Get());
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(game->GetAIManager());
-
-			std::vector<std::shared_ptr<Actor>> actors;
-			game->GetAmmoActors(actors);
-			game->GetWeaponActors(actors);
-			game->GetHealthActors(actors);
-			game->GetArmorActors(actors);
-			for (std::shared_ptr<Actor> actor : actors)
-			{
-				std::shared_ptr<TransformComponent> pTransformComponent(
-					actor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-				if (pTransformComponent)
-				{ 
-					PathingNode* pNode = aiManager->CreatePathingNode(
-						pCastEventData->GetActorId(), pTransformComponent->GetPosition(), mPathingMap);
-					mCreatedNodes.push_back(pNode);
-				}
-			}
-
-			actors.clear();
-			game->GetTargetActors(actors);
-			for (std::shared_ptr<Actor> actor : actors)
-			{
-				if (actor->GetComponent<LocationTarget>(LocationTarget::Name).lock())
-				{
-					std::shared_ptr<TransformComponent> pTransformComponent(
-						actor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-					if (pTransformComponent)
-					{
-						PathingNode* pNode = aiManager->CreatePathingNode(
-							pCastEventData->GetActorId(), pTransformComponent->GetPosition(), mPathingMap);
-						mCreatedNodes.push_back(pNode);
-					}
-				}
-			}
-		}
-		else
-		{
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-			aiManager->LoadPathingMap(ToWideString(FileSystem::Get()->GetPath(filePath.c_str()).c_str()), mPathingMap);
-			for (auto& node : mPathingMap->GetNodes())
-				if (!mPathingMap->FindCluster(node.second->GetCluster()))
-					mCreatedNodes.push_back(node.second);
-		}
-
-		std::shared_ptr<ResHandle>& resHandle =
-			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
-		if (resHandle)
-		{
-			const std::shared_ptr<ImageResourceExtraData>& extra =
-				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
-			extra->GetImage()->AutogenerateMipmaps();
-
-			Vector3<float> size = Vector3<float>{ 12.f, 12.f, 26.f };
-			for (PathingNode* pNode : mCreatedNodes)
-			{
-				GameLogic::Get()->GetNewActorID();
-				std::shared_ptr<Node> boxNode = mScene->AddBoxNode(
-					0, extra->GetImage(), { 1.0f, 1.0f }, size, GameLogic::Get()->GetLastActorID() + pNode->GetId());
-				boxNode->GetRelativeTransform().SetTranslation(pNode->GetPosition());
-				boxNode->UpdateAbsoluteTransform();
-				boxNode->SetVisible(true);
-			}
-		}
-	}
-
-	CreatePathingMap();
+	EditMap(selectedClusters);
 
 	if (mHighlightNode)
 		mHighlightNode->SetVisible(false);
@@ -3406,11 +3322,16 @@ void QuakeAIEditorView::ShowNodeVisibilityDelegate(BaseEventDataPtr pEventData)
 	std::shared_ptr<EventDataNodeVisibility> pCastEventData =
 		std::static_pointer_cast<EventDataNodeVisibility>(pEventData);
 
-	PathingNode* pathingNode = mMap->FindNode(pCastEventData->GetId());
-	if (pathingNode && mGraphNode)
+	PathingNode* pNode = nullptr;
+	if (mUI->mFormName == "MAP")
+		pNode = mMap->FindNode(pCastEventData->GetId());
+	else
+		pNode = mPathingMap->FindNode(pCastEventData->GetId());
+
+	if (pNode && mGraphNode)
 	{
 		mGraphNode->SetVisible(true);
-		mGraphNode->GenerateMesh(pathingNode->GetVisibileNodes(), mMap);
+		mGraphNode->GenerateMesh(pNode->GetVisibileNodes(), mMap);
 
 		std::map<unsigned short, unsigned short> selectedClusters;
 		const ClusterMap& clusters = mMap->GetClusters();
@@ -3419,7 +3340,7 @@ void QuakeAIEditorView::ShowNodeVisibilityDelegate(BaseEventDataPtr pEventData)
 			Cluster* cluster = (*it).second;
 			selectedClusters[cluster->GetId()] = 0;
 		}
-		ShowMap(selectedClusters);
+		ShowMap(pNode);
 	}
 }
 
@@ -3477,13 +3398,14 @@ void QuakeAIEditorView::ShowNodeConnectionDelegate(BaseEventDataPtr pEventData)
 	else if (!mSelectedClusters.empty())
 	{
 		mGraphNode->SetVisible(true);
+
+		std::map<unsigned short, unsigned short> selectedClusters;
+		unsigned short cluster = mSelectedClusters.begin()->first;
+
+		std::map<PathingCluster*, PathingArcVec> clusterPaths, otherClusterPaths;
+		std::map<PathingCluster*, float> clusterPathWeights, otherClusterPathWeights;
 		if (mUI->mFormName == "MAP")
 		{
-			std::map<unsigned short, unsigned short> selectedClusters;
-			unsigned short cluster = mSelectedClusters.begin()->first;
-
-			std::map<PathingCluster*, PathingArcVec> clusterPaths, otherClusterPaths;
-			std::map<PathingCluster*, float> clusterPathWeights, otherClusterPathWeights;
 			PathingNode* clusterNode = mMap->FindClusterNode(cluster);
 			clusterNode->GetClusters(AT_MOVE, 100, clusterPaths, clusterPathWeights);
 			clusterNode->GetClusters(AT_JUMP, 100, clusterPaths, clusterPathWeights);
@@ -3494,11 +3416,6 @@ void QuakeAIEditorView::ShowNodeConnectionDelegate(BaseEventDataPtr pEventData)
 		}
 		else
 		{
-			std::map<unsigned short, unsigned short> selectedClusters;
-			unsigned short cluster = mSelectedClusters.begin()->first;
-
-			std::map<PathingCluster*, PathingArcVec> clusterPaths, otherClusterPaths;
-			std::map<PathingCluster*, float> clusterPathWeights, otherClusterPathWeights;
 			PathingNode* clusterNode = mPathingMap->FindClusterNode(cluster);
 			clusterNode->GetClusters(AT_MOVE, 100, clusterPaths, clusterPathWeights);
 			clusterNode->GetClusters(AT_JUMP, 100, clusterPaths, clusterPathWeights);
@@ -3517,17 +3434,11 @@ void QuakeAIEditorView::ShowArcConnectionDelegate(BaseEventDataPtr pEventData)
 
 	PathingArc* pathingArc = nullptr;
 	if (mUI->mFormName == "MAP")
-	{
 		pathingArc = mMap->FindArc(pCastEventData->GetId());
-		if (!pathingArc)
-			return;
-	}
 	else
-	{
 		pathingArc = mPathingMap->FindArc(pCastEventData->GetId());
-		if (!pathingArc)
-			return;
-	}
+	if (!pathingArc)
+		return;
 
 	std::vector<Vector3<float>> nodes;
 	PathingTransition* transition = pathingArc->GetTransition();
@@ -3581,10 +3492,10 @@ void QuakeAIEditorView::SaveMapDelegate(BaseEventDataPtr pEventData)
 	}
 }
 
-void QuakeAIEditorView::EditMapDelegate(BaseEventDataPtr pEventData)
+void QuakeAIEditorView::EditPathingMapDelegate(BaseEventDataPtr pEventData)
 {
-	std::shared_ptr<EventDataEditMap> pCastEventData =
-		std::static_pointer_cast<EventDataEditMap>(pEventData);
+	std::shared_ptr<EventDataEditPathingMap> pCastEventData =
+		std::static_pointer_cast<EventDataEditPathingMap>(pEventData);
 
 	if (!mPathingMap)
 	{
@@ -3642,7 +3553,7 @@ void QuakeAIEditorView::EditMapDelegate(BaseEventDataPtr pEventData)
 		Cluster* cluster = (*it).second;
 		selectedClusters[cluster->GetId()] = 0;
 	}
-	EditMap(selectedClusters, pCastEventData->GetFilter());
+	EditPathingMap(selectedClusters, pCastEventData->GetFilter());
 
 	if (mHighlightNode)
 		mHighlightNode->SetVisible(false);
@@ -3912,17 +3823,14 @@ void QuakeAIEditorView::RegisterAllDelegates(void)
 		EventDataShowMapNode::skEventType);
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIEditorView::ClearMapDelegate),
-		EventDataClear::skEventType);
+		EventClearMap::skEventType);
 
 	pGlobalEventManager->AddListener(
-		MakeDelegate(this, &QuakeAIEditorView::EditPathingGraphDelegate),
+		MakeDelegate(this, &QuakeAIEditorView::EditPathingMapDelegate),
 		EventDataEditPathingMap::skEventType);
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIEditorView::ShowPathingGraphDelegate),
 		EventDataShowPathing::skEventType);
-	pGlobalEventManager->AddListener(
-		MakeDelegate(this, &QuakeAIEditorView::CreatePathingMapDelegate),
-		EventDataCreatePathingMap::skEventType);
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIEditorView::CreatePathingNodeDelegate),
 		EventDataCreatePathingNode::skEventType);
@@ -4059,17 +3967,14 @@ void QuakeAIEditorView::RemoveAllDelegates(void)
 		EventDataShowMapNode::skEventType);
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeAIEditorView::ClearMapDelegate),
-		EventDataClear::skEventType);
+		EventClearMap::skEventType);
 
 	pGlobalEventManager->RemoveListener(
-		MakeDelegate(this, &QuakeAIEditorView::EditPathingGraphDelegate),
+		MakeDelegate(this, &QuakeAIEditorView::EditPathingMapDelegate),
 		EventDataEditPathingMap::skEventType);
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeAIEditorView::ShowPathingGraphDelegate),
 		EventDataShowPathing::skEventType);
-	pGlobalEventManager->RemoveListener(
-		MakeDelegate(this, &QuakeAIEditorView::CreatePathingMapDelegate),
-		EventDataCreatePathingMap::skEventType);
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeAIEditorView::CreatePathingNodeDelegate),
 		EventDataCreatePathingNode::skEventType);
@@ -4495,11 +4400,12 @@ void QuakeAIEditorView::ShowMap(const std::map<unsigned short, unsigned short>& 
 		}
 	}
 	*/
+	std::string mapActions = "Visibility,Connection";
 	form += "]"
-		"button[0.5,13;2.5,0.75;btn_visibility; Visibility]"
-		"button[3,13;2.5,0.75;btn_connection; Connection]"
-		"button[5.5,13;2.5,0.75;btn_save_all; Save All]"
-		"button[8,13;1.5,0.75;btn_reset; Reset]";
+		"dropdown[0.25,12.5;3;dd_map_actions;" + mapActions + ";1]"
+		"button[3.5,12.5;2.0,1.0;btn_apply; Apply]"
+		"button[5.5,12.5;2.0,1.0;btn_save_all; Save All]"
+		"button[7.5,12.5;2.0,1.0;btn_reset; Reset]";
 
 	/* Create menu */
 	/* Note: FormSource and MapFormHandler are deleted by FormMenu */
@@ -4590,11 +4496,12 @@ void QuakeAIEditorView::ShowMap(PathingNode* pNode)
 			std::to_string(pArc->GetType()) + "," +
 			std::to_string(pArc->GetWeight());
 	}
+	std::string mapActions = "Visibility,Connection";
 	form += "]"
-		"button[0.5,13;2.5,0.75;btn_visibility; Visibility]"
-		"button[3,13;2.5,0.75;btn_connection; Connection]"
-		"button[5.5,13;2.5,0.75;btn_save_all; Save All]"
-		"button[8,13;1.5,0.75;btn_reset; Reset]";
+		"dropdown[0.25,12.5;3;dd_map_actions;" + mapActions + ";1]"
+		"button[3.5,12.5;2.0,1.0;btn_apply; Apply]"
+		"button[5.5,12.5;2.0,1.0;btn_save_all; Save All]"
+		"button[7.5,12.5;2.0,1.0;btn_reset; Reset]";
 
 	/* Create menu */
 	/* Note: FormSource and MapFormHandler are deleted by FormMenu */
@@ -4626,76 +4533,7 @@ void QuakeAIEditorView::ShowMap(PathingNode* pNode)
 	}
 }
 
-void QuakeAIEditorView::CreatePathingMap(const std::string& filter)
-{
-	std::string form =
-		"form_version[3]size[10,10]position[0.2,0.35]"
-		"field[0.25,0.25;7,0.75;te_search;;]field_close_on_enter[te_search;false]container[7.25,0.25]"
-		"image_button[0,0;0.75,0.75;art/quake/textures/search.png;btn_mp_search;]"
-		"image_button[0.75,0;0.75,0.75;art/quake/textures/clear.png;btn_mp_clear;]"
-		"image_button[1.5,0;0.75,0.75;art/quake/textures/refresh.png;btn_mp_refresh;]"
-		"tooltip[btn_mp_clear;Clear]tooltip[btn_mp_search;Search]tooltip[btn_mp_refresh;Refresh]"
-		"container_end[]"
-		"tablecolumns[color,span=1;text,align=inline;"
-		"color,span=4;text,align=inline,width=3.25;"
-		"text,align=inline,width=3.25;"
-		"text,align=inline,width=3.25;"
-		"text,align=inline,width=9.25]"
-		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,1;9.25,5.75;graph;#4bdd42,Pathing Graph,,,,,";
-
-	const PathingNodeMap& pathingNodes = mPathingMap->GetNodes();
-	for (PathingNodeMap::const_iterator it = pathingNodes.begin(); it != pathingNodes.end(); ++it)
-	{
-		PathingNode* node = (*it).second;
-		std::string str = std::to_string(node->GetId());
-		std::string::size_type start = str.find(filter, 0);
-		if (start != str.npos)
-		{
-			Vector3<float> pos = node->GetPosition();
-			form += ",,,#ffffff," +
-				std::to_string(node->GetId()) + "," +
-				std::to_string(node->GetCluster()) + "," +
-				std::to_string(node->GetActorId()) + "," +
-				std::to_string(int(round(pos[0]))) + " " +
-				std::to_string(int(round(pos[1]))) + " " +
-				std::to_string(int(round(pos[2])));
-		}
-	}
-	form += "]"
-		"field[0.25,7.5;7,0.75;te_orientation;Orientation;0]"
-		"button[0.5,8.5;2.5,0.75;btn_respawn; Respawn]"
-		"button[3,8.5;2.5,0.75;btn_create_node; Add Node]"
-		"button[5.5,8.5;2,0.75;btn_create_map; Create]"
-		"button[7.5,8.5;1.5,0.75;btn_save; Save]";
-
-	/* Create menu */
-	/* Note: FormSource and CreatePathingMapFormHandler are deleted by FormMenu */
-	std::string formPr;
-	std::shared_ptr<FormSource> formSrc = std::make_shared<FormSource>(form);
-	std::shared_ptr<CreatePathingMapFormHandler> textDst = std::make_shared<CreatePathingMapFormHandler>("CREATE_PATHING");
-
-	RectangleShape<2, int> rectangle;
-	rectangle.mCenter = Vector2<int>{ 50, 50 };
-	rectangle.mExtent = Vector2<int>{ 100, 100 };
-
-	if (mUI->mFormName == "CREATE_PATHING")
-	{
-		std::shared_ptr<BaseUIForm>& formUI = mUI->GetForm();
-		formUI->SetFormPrepend(formPr);
-		formUI->SetFormSource(formSrc);
-		formUI->SetTextDestination(textDst);
-	}
-	else
-	{
-		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("CREATE_PATHING");
-		formUI.reset(new UIForm(mUI.get(), -1, rectangle, formSrc, textDst, formPr, false));
-		formUI->SetParent(mUI->GetRootUIElement());
-		formUI->OnInit();
-	}
-}
-
-void QuakeAIEditorView::EditPathingMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter)
+void QuakeAIEditorView::EditMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter)
 {
 	std::string form =
 		"form_version[3]size[10,10]position[0.2,0.35]"
@@ -4734,25 +4572,26 @@ void QuakeAIEditorView::EditPathingMap(const std::map<unsigned short, unsigned s
 			}
 		}
 	}
+
+	std::string mapActions = "Respawn,Create Node,Create Map,Edit Map";
 	form += "]"
 		"field[0.25,7.5;7,0.75;te_orientation;Orientation;0]"
-		"button[0.25,8.5;2,0.75;btn_respawn; Respawn]"
-		"button[2.25,8.5;2,0.75;btn_create_node; Node]"
-		"button[4.25,8.5;2,0.75;btn_create_map; Map]"
-		"button[6.25,8.5;1.5,0.75;btn_save; Save]"
-		"button[7.75,8.5;1.5,0.75;btn_reset; Reset]";
+		"dropdown[0.25,8.5;3;dd_map_actions;" + mapActions + ";1]"
+		"button[3.5,8.5;2.0,1.0;btn_apply; Apply]"
+		"button[5.5,8.5;2.0,1.0;btn_save; Save]"
+		"button[7.5,8.5;2.0,1.0;btn_reset; Reset]";
 
 	/* Create menu */
-	/* Note: FormSource and EditPathingFormHandler are deleted by FormMenu */
+	/* Note: FormSource and MapFormHandler are deleted by FormMenu */
 	std::string formPr;
 	std::shared_ptr<FormSource> formSrc = std::make_shared<FormSource>(form);
-	std::shared_ptr<EditPathingFormHandler> textDst = std::make_shared<EditPathingFormHandler>("EDIT_PATHING");
+	std::shared_ptr<EditMapFormHandler> textDst = std::make_shared<EditMapFormHandler>("EDIT_MAP");
 
 	RectangleShape<2, int> rectangle;
 	rectangle.mCenter = Vector2<int>{ 50, 50 };
 	rectangle.mExtent = Vector2<int>{ 100, 100 };
 
-	if (mUI->mFormName == "EDIT_PATHING")
+	if (mUI->mFormName == "EDIT_MAP")
 	{
 		std::shared_ptr<BaseUIForm>& formUI = mUI->GetForm();
 		formUI->SetFormPrepend(formPr);
@@ -4761,14 +4600,14 @@ void QuakeAIEditorView::EditPathingMap(const std::map<unsigned short, unsigned s
 	}
 	else
 	{
-		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("EDIT_PATHING");
+		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("EDIT_MAP");
 		formUI.reset(new UIForm(mUI.get(), -1, rectangle, formSrc, textDst, formPr, false));
 		formUI->SetParent(mUI->GetRootUIElement());
 		formUI->OnInit();
 	}
 }
 
-void QuakeAIEditorView::EditMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter)
+void QuakeAIEditorView::EditPathingMap(const std::map<unsigned short, unsigned short>& clusters, const std::string& filter)
 {
 	std::string form =
 		"form_version[3]size[10,14]position[0.2,0.5]"
@@ -4784,7 +4623,7 @@ void QuakeAIEditorView::EditMap(const std::map<unsigned short, unsigned short>& 
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=9.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,1;9.25,5.75;graph_nodes;#4bdd42,Map Nodes,,,,,";
+		"table[0.25,1;9.25,5.25;graph_nodes;#4bdd42,Pathing Nodes,,,,,";
 
 	const PathingNodeMap& pathingNodes = mPathingMap->GetNodes();
 	for (PathingNodeMap::const_iterator it = pathingNodes.begin(); it != pathingNodes.end(); ++it)
@@ -4814,7 +4653,7 @@ void QuakeAIEditorView::EditMap(const std::map<unsigned short, unsigned short>& 
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=3.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,7;9.25,5.75;graph_arcs;#4bdd42,Map Arcs,,,,,";
+		"table[0.25,7;9.25,5.25;graph_arcs;#4bdd42,Pathing Arcs,,,,,";
 	/*
 	for (auto node : mPathingMap->GetNodes())
 	{
@@ -4831,23 +4670,24 @@ void QuakeAIEditorView::EditMap(const std::map<unsigned short, unsigned short>& 
 		}
 	}
 	*/
+	std::string pathingActions = "Remove,RemoveType,Connection";
 	form += "]"
-		"button[1,13;1.5,0.75;btn_clear; Clear]"
-		"button[2.5,13;2.5,0.75;btn_connection; Connection]"
-		"button[5,13;2.5,0.75;btn_remove; Remove]"
-		"button[7.5,13;1.5,0.75;btn_save; Save]";
+		"dropdown[0.25,12.5;3;dd_pathing_actions;" + pathingActions + ";1]"
+		"button[3.5,12.5;2.0,1.0;btn_apply; Apply]"
+		"button[5.5,12.5;2.0,1.0;btn_save; Save]"
+		"button[7.5,12.5;2.0,1.0;btn_reset; Reset]";
 
 	/* Create menu */
-	/* Note: FormSource and MapFormHandler are deleted by FormMenu */
+	/* Note: FormSource and EditPathingFormHandler are deleted by FormMenu */
 	std::string formPr;
 	std::shared_ptr<FormSource> formSrc = std::make_shared<FormSource>(form);
-	std::shared_ptr<EditMapFormHandler> textDst = std::make_shared<EditMapFormHandler>("EDIT_MAP");
+	std::shared_ptr<EditPathingFormHandler> textDst = std::make_shared<EditPathingFormHandler>("EDIT_PATHING");
 
 	RectangleShape<2, int> rectangle;
 	rectangle.mCenter = Vector2<int>{ 50, 50 };
 	rectangle.mExtent = Vector2<int>{ 100, 100 };
 
-	if (mUI->mFormName == "EDIT_MAP")
+	if (mUI->mFormName == "EDIT_PATHING")
 	{
 		std::shared_ptr<UIForm>& formUI = std::static_pointer_cast<UIForm>(mUI->GetForm());
 		formUI->SetFormPrepend(formPr);
@@ -4863,14 +4703,14 @@ void QuakeAIEditorView::EditMap(const std::map<unsigned short, unsigned short>& 
 	}
 	else
 	{
-		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("EDIT_MAP");
+		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("EDIT_PATHING");
 		formUI.reset(new UIForm(mUI.get(), -1, rectangle, formSrc, textDst, formPr, false));
 		formUI->SetParent(mUI->GetRootUIElement());
 		formUI->OnInit();
 	}
 }
 
-void QuakeAIEditorView::EditMap(PathingNode* pNode)
+void QuakeAIEditorView::EditPathingMap(PathingNode* pNode)
 {
 	std::string form =
 		"form_version[3]size[10,14]position[0.2,0.5]"
@@ -4886,7 +4726,7 @@ void QuakeAIEditorView::EditMap(PathingNode* pNode)
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=9.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,1;9.25,5.75;graph_nodes;#4bdd42,Map Nodes,,,,,";
+		"table[0.25,1;9.25,5.25;graph_nodes;#4bdd42,Pathing Nodes,,,,,";
 
 	unsigned int selectedIdx = 2, nodeIdx = 2;
 	const PathingNodeMap& pathingNodes = mPathingMap->GetNodes();
@@ -4916,7 +4756,7 @@ void QuakeAIEditorView::EditMap(PathingNode* pNode)
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=3.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,7;9.25,5.75;graph_arcs;#4bdd42,Map Arcs,,,,,";
+		"table[0.25,7;9.25,5.25;graph_arcs;#4bdd42,Pathing Arcs,,,,,";
 	for (auto const& arc : pNode->GetArcs())
 	{
 		PathingArc* pArc = arc.second;
@@ -4927,23 +4767,24 @@ void QuakeAIEditorView::EditMap(PathingNode* pNode)
 			std::to_string(pArc->GetType()) + "," +
 			std::to_string(pArc->GetWeight());
 	}
+	std::string pathingActions = "Remove,RemoveType,Connection";
 	form += "]"
-		"button[0.5,13;1.5,0.75;btn_clear; Clear]"
-		"button[2,13;2.5,0.75;btn_connection; Connection]"
-		"button[4.5,13;2,0.75;btn_remove; Remove]"
-		"button[6.5,13;3,0.75;btn_remove_type; RemoveType]";
+		"dropdown[0.25,12.5;3;dd_pathing_actions;" + pathingActions + ";1]"
+		"button[3.5,12.5;2.0,1.0;btn_apply; Apply]"
+		"button[5.5,12.5;2.0,1.0;btn_save; Save]"
+		"button[7.5,12.5;2.0,1.0;btn_reset; Reset]";
 
 	/* Create menu */
-	/* Note: FormSource and MapFormHandler are deleted by FormMenu */
+	/* Note: FormSource and EditPathingFormHandler are deleted by FormMenu */
 	std::string formPr;
 	std::shared_ptr<FormSource> formSrc = std::make_shared<FormSource>(form);
-	std::shared_ptr<EditMapFormHandler> textDst = std::make_shared<EditMapFormHandler>("EDIT_MAP");
+	std::shared_ptr<EditPathingFormHandler> textDst = std::make_shared<EditPathingFormHandler>("EDIT_PATHING");
 
 	RectangleShape<2, int> rectangle;
 	rectangle.mCenter = Vector2<int>{ 50, 50 };
 	rectangle.mExtent = Vector2<int>{ 100, 100 };
 
-	if (mUI->mFormName == "EDIT_MAP")
+	if (mUI->mFormName == "EDIT_PATHING")
 	{
 		std::shared_ptr<UIForm>& formUI = std::static_pointer_cast<UIForm>(mUI->GetForm());
 		formUI->SetFormPrepend(formPr);
@@ -4956,7 +4797,7 @@ void QuakeAIEditorView::EditMap(PathingNode* pNode)
 	}
 	else
 	{
-		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("EDIT_MAP");
+		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("EDIT_PATHING");
 		formUI.reset(new UIForm(mUI.get(), -1, rectangle, formSrc, textDst, formPr, false));
 		formUI->SetParent(mUI->GetRootUIElement());
 		formUI->OnInit();
@@ -5012,15 +4853,12 @@ void QuakeAIEditorView::ShowPauseMenu()
 	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_edit_map;"
 		<< "Edit Map" << "]";
 
-	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_create_map;"
-		<< "Create Map" << "]";
-
 	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_show_map;"
-		<< "Show Map" << "]"
-	/*
+		<< "Show Map" << "]";
+
 	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_exit_menu;"
 		<< "Exit Editor" << "]"
-	*/
+
 		<< "textarea[7.5,0.25;3.9,6.25;;" << controlText << ";]"
 		<< "textarea[0.4,0.25;3.9,6.25;;" << "Quake \n"
 		<< "\n" << "Editor info:" << "\n";
