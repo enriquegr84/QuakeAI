@@ -2778,7 +2778,7 @@ void QuakeAIEditorView::SimulateExploringDelegate(BaseEventDataPtr pEventData)
 		std::shared_ptr<PhysicComponent> pPhysicComponent(
 			pActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		if (pPhysicComponent)
-			pStartNode = mPathingMap->FindClosestNode(pPhysicComponent->GetTransform().GetTranslation(), true);
+			pStartNode = mPathingMap->FindClosestNode(pPhysicComponent->GetPosition(), true);
 	}
 
 	NodePlan playerPlan;

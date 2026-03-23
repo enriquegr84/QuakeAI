@@ -701,7 +701,7 @@ void QuakeAIView::UpdatePlayerWeapon(const PlayerView& playerView)
 		{
 			std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
 				pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-			Vector3<float> playerPosition = pPlayerPhysicComponent->GetTransform().GetTranslation();
+			Vector3<float> playerPosition = pPlayerPhysicComponent->GetPosition();
 
 			const PlayerGuessView& playerGuessView = playerView.guessViews.at(playerView.simulation.target);
 			Vector3<float> playerGuessPosition = aiManager->CalculatePathPosition(playerGuessView.data);
@@ -1465,7 +1465,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						pItemActor->GetComponent<PushTrigger>(PushTrigger::Name).lock();
 
 					Vector3<float> targetPosition = pPushTrigger->GetTarget().GetTranslation();
-					Vector3<float> playerPosition = pPhysicComponent->GetTransform().GetTranslation();
+					Vector3<float> playerPosition = pPhysicComponent->GetPosition();
 					Vector3<float> direction = targetPosition - playerPosition;
 
 					float push = mPushSpeed[AXIS_Y];
@@ -1499,7 +1499,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 					if (mPathingGraph)
 					{
-						Vector3<float> currentPosition = pPhysicComponent->GetTransform().GetTranslation();
+						Vector3<float> currentPosition = pPhysicComponent->GetPosition();
 						if (mCurrentPlayerData.plan.node == NULL)
 							mCurrentPlayerData.plan.node = mPathingGraph->FindClosestNode(currentPosition, true);
 
@@ -1744,12 +1744,12 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 							if (pPlayerTarget->GetState().stats[STAT_HEALTH] > 0)
 							{
 								//set muzzle location relative to pivoting eye
-								Vector3<float> playerPos = pPhysicComponent->GetTransform().GetTranslation();
+								Vector3<float> playerPos = pPhysicComponent->GetPosition();
 								playerPos += Vector3<float>::Unit(AXIS_Y) * (float)pPlayerActor->GetState().viewHeight;
 
 								std::shared_ptr<PhysicComponent> pTargetPhysicComponent(
 									pPlayerTarget->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-								Vector3<float> targetPos = pTargetPhysicComponent->GetTransform().GetTranslation();
+								Vector3<float> targetPos = pTargetPhysicComponent->GetPosition();
 								//targetPos += Vector3<float>::Unit(AXIS_Y) * (float)pPlayerTarget->GetState().viewHeight;
 
 								std::vector<ActorId> collisionActors;
@@ -1999,7 +1999,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 		//set muzzle location relative to pivoting eye
 		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-		Vector3<float> muzzle = pPlayerPhysicComponent->GetTransform().GetTranslation();
+		Vector3<float> muzzle = pPlayerPhysicComponent->GetPosition();
 		muzzle += up * (float)pPlayerActor->GetState().viewHeight;
 		muzzle += forward * 5.f;
 		muzzle -= right * 5.f;

@@ -494,7 +494,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 		//set muzzle location relative to pivoting eye
 		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-		Vector3<float> muzzle = pPlayerPhysicComponent->GetTransform().GetTranslation();
+		Vector3<float> muzzle = pPlayerPhysicComponent->GetPosition();
 		muzzle += up * (float)pPlayerActor->GetState().viewHeight;
 		muzzle += forward * 5.f;
 		muzzle -= right * 5.f;

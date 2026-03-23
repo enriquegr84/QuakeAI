@@ -8019,7 +8019,7 @@ void QuakeAIManager::SpawnActor(ActorId playerId)
 
 			if (mPathingGraph)
 			{
-				PathingNode* spawnNode = mPathingGraph->FindClosestNode(pPhysicComponent->GetTransform().GetTranslation(), false);
+				PathingNode* spawnNode = mPathingGraph->FindClosestNode(pPhysicComponent->GetPosition(), false);
 				playerView.data.plan = NodePlan(spawnNode, PathingArcVec());
 
 				//assuming the guessing players has no idea where our player is located, lets take a random spawn spot
@@ -9794,7 +9794,7 @@ float QuakeAIManager::CalculatePathWeight(const PlayerData& playerData)
 
 		std::shared_ptr<PhysicComponent> pPhysicComponent(
 			playerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-		Vector3<float> currentPosition = pPhysicComponent->GetTransform().GetTranslation();
+		Vector3<float> currentPosition = pPhysicComponent->GetPosition();
 
 		PathingArc* currentArc = *playerData.plan.path.begin();
 		auto transitionWeights = currentArc->GetTransition()->GetWeights();
@@ -17690,7 +17690,7 @@ void QuakeAIManager::PhysicsTriggerEnterDelegate(BaseEventDataPtr pEventData)
 			mPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		if (pPhysicComponent->OnGround())
 		{
-			Vector3<float> position = pPhysicComponent->GetTransform().GetTranslation();
+			Vector3<float> position = pPhysicComponent->GetPosition();
 			mActorPositions[position] = pItemActor->GetId();
 		}
 	}

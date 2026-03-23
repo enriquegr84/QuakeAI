@@ -1688,6 +1688,25 @@ Vector3<float> PhysX::GetVelocity(ActorId actorId)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// PhysX::GetPosition
+//
+Vector3<float> PhysX::GetPosition(ActorId actorId)
+{
+	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
+	{
+		PxExtendedVec3 position = controller->getPosition();
+		return PxVector3ToVector3(PxVec3((float)position.x, (float)position.y, (float)position.z));
+	}
+	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
+	{
+		PxRigidDynamic* const rigidDynamic = static_cast<PxRigidDynamic*>(rigidActor);
+		PxVec3 position = rigidDynamic->getGlobalPose().p;
+		return PxVector3ToVector3(position);
+	}
+	return Vector3<float>::Zero();
+}
+
+/////////////////////////////////////////////////////////////////////////////
 float PhysX::GetJumpSpeed(ActorId actorId)
 {
 	float jumpSpeed = 0.f;

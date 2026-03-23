@@ -448,6 +448,12 @@ Vector3<float> PhysicComponent::GetVelocity(void)
     return gamePhysics->GetVelocity(mOwner->GetId());
 }
 
+Vector3<float> PhysicComponent::GetPosition(void)
+{
+	BaseGamePhysic* gamePhysics = GameLogic::Get()->GetGamePhysics().get();
+	return gamePhysics->GetPosition(mOwner->GetId());
+}
+
 float PhysicComponent::GetJumpSpeed()
 {
 	BaseGamePhysic* gamePhysics = GameLogic::Get()->GetGamePhysics().get();
