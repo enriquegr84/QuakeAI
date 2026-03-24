@@ -35,8 +35,7 @@
 #include "Games/Actors/LocationTarget.h"
 #include "Games/Actors/SpeakerTarget.h"
 
-#include <ppl.h>
-#include <ppltasks.h>
+#include <oneapi/tbb.h>
 
 #define	MAX_SPAWN_POINTS 128
 #define	DEFAULT_SHOTGUN_DAMAGE 10
@@ -1988,28 +1987,29 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 		for (std::shared_ptr<PlayerActor> playerActor : playerActors)
 			aiManager->SpawnActor(playerActor->GetId());
 
-		Concurrency::create_task([&]
+		oneapi::tbb::task_arena taskArena;
+		taskArena.enqueue([&]
 		{
 			//guessing decision making
 			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 			aiManager->RunAIGuessing();
 		});
 
-		Concurrency::create_task([&]
+		taskArena.enqueue([&]
 		{
 			//guessing decision making
 			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 			aiManager->RunHumanGuessing();
 		});
 
-		Concurrency::create_task([&]
+		taskArena.enqueue([&]
 		{
 			//aware decision making
 			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 			aiManager->RunHumanAwareDecision();
 		});
 
-		Concurrency::create_task([&]
+		taskArena.enqueue([&]
 		{
 			//aware decision making
 			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
@@ -2431,7 +2431,8 @@ void QuakeLogic::SaveAIGameDelegate(BaseEventDataPtr pEventData)
 	std::shared_ptr<EventDataSaveAIGame> pCastEventData =
 		std::static_pointer_cast<EventDataSaveAIGame>(pEventData);
 
-	Concurrency::create_task([&]
+	oneapi::tbb::task_arena taskArena;
+	taskArena.enqueue([&]
 	{
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 		aiManager->SaveGameAnalysis();

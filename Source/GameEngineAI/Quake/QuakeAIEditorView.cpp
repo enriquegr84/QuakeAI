@@ -78,9 +78,6 @@
 #include "Games/Actors/LocationTarget.h"
 #include "Game/Actor/RenderComponent.h"
 
-#include <ppl.h>
-#include <ppltasks.h>
-
 namespace AIEditor
 {
 	/*

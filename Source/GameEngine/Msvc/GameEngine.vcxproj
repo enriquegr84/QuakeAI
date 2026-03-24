@@ -830,6 +830,7 @@
     <ClInclude Include="..\Core\3rdParty\fastdelegate\FastDelegate.h" />
     <ClInclude Include="..\Core\3rdParty\fastdelegate\FastDelegateBind.h" />
     <ClInclude Include="..\Core\3rdParty\json\json.hpp" />
+    <ClInclude Include="..\Core\3rdParty\oneapi\include\oneapi\tbb.h" />
     <ClInclude Include="..\Core\3rdParty\tinyxml2\tinyxml2.h" />
     <ClInclude Include="..\Core\Core.h" />
     <ClInclude Include="..\Core\CoreStd.h" />
@@ -2570,13 +2571,13 @@
     <IntDir>$(SolutionDir)..\..\..\Temp\$(ProjectName)$(PlatformName)$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x64);$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\</OutDir>
@@ -2588,13 +2589,13 @@
     <IntDir>$(SolutionDir)..\..\..\Temp\$(ProjectName)$(PlatformName)$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x64);$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\</OutDir>
@@ -2606,13 +2607,13 @@
     <IntDir>$(SolutionDir)..\..\..\Temp\$(ProjectName)$(PlatformName)$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x64);$(LibraryPath)</LibraryPath>
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\</OutDir>
@@ -2624,13 +2625,13 @@
     <IntDir>$(SolutionDir)..\..\..\Temp\$(ProjectName)$(PlatformName)$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.lib</TargetExt>
-    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\;$(ProjectDir)..\Graphic\3rdParty\zlib\include;$(ProjectDir)..\Graphic\3rdParty\assimp\include;$(ProjectDir)..\Core\3rdParty\cereal\include;$(ProjectDir)..\Core\3rdParty\json;$(ProjectDir)..\Core\3rdParty\fastdelegate;$(ProjectDir)..\Core\3rdParty\tinyxml2;$(ProjectDir)..\Core\3rdParty\oneapi\include;$(ProjectDir)..\Audio\3rdParty\vorbis\include;$(ProjectDir)..\Audio\3rdParty\ogg\include;$(ProjectDir)..\Audio\3rdParty\AL\include;$(ProjectDir)..\Physic\3rdParty\bullet3\src;$(ProjectDir)..\Physic\3rdParty\physx\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)PlatformSDK\lib;$(WindowsSDK_LibraryPath_x64);$(LibraryPath)</LibraryPath>
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\</OutDir>

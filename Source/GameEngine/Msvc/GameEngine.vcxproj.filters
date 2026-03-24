@@ -253,6 +253,15 @@
     <Filter Include="Physic\3rdParty\physx\include">
       <UniqueIdentifier>{25a3eb20-8896-4b8c-bc45-3477e9bc1003}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\3rdParty\oneapi">
+      <UniqueIdentifier>{1e9835dc-436c-41ca-b531-250bb7b0e9ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\3rdParty\oneapi\include">
+      <UniqueIdentifier>{3fad0371-d990-4d69-82de-dd84aa5d3d07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\3rdParty\oneapi\include\oneapi">
+      <UniqueIdentifier>{e27ec222-7b35-4f95-be6c-516db15d8e67}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\GameEngineStd.cpp" />
@@ -2475,6 +2484,9 @@
     </ClInclude>
     <ClInclude Include="..\Physic\PhysicStd.h">
       <Filter>Physic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Core\3rdParty\oneapi\include\oneapi\tbb.h">
+      <Filter>Core\3rdParty\oneapi\include\oneapi</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
