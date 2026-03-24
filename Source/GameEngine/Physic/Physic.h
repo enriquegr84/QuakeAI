@@ -155,7 +155,6 @@ public:
 	virtual Vector3<float> GetCenter(ActorId actorId) = 0;
 	virtual Vector3<float> GetScale(ActorId actorId) = 0;
 	virtual Vector3<float> GetVelocity(ActorId actorId) = 0;
-	virtual Vector3<float> GetPosition(ActorId actorId) = 0;
 	virtual float GetJumpSpeed(ActorId actorId) = 0;
 	virtual void SetGravity(ActorId actorId, const Vector3<float>& g) = 0;
 	virtual void SetVelocity(ActorId actorId, const Vector3<float>& vel) = 0;
@@ -253,7 +252,6 @@ public:
 	virtual Vector3<float> GetCenter(ActorId actorId) { return Vector3<float>::Zero(); }
 	virtual Vector3<float> GetScale(ActorId actorId) { return Vector3<float>::Zero(); }
 	virtual Vector3<float> GetVelocity(ActorId actorId) { return Vector3<float>::Zero(); }
-	virtual Vector3<float> GetPosition(ActorId actorId) { return Vector3<float>::Zero(); }
 	virtual float GetJumpSpeed(ActorId actorId) { return 0; }
 	virtual void SetGravity(ActorId actorId, const Vector3<float>& g) { }
 	virtual void SetVelocity(ActorId actorId, const Vector3<float>& vel) { }

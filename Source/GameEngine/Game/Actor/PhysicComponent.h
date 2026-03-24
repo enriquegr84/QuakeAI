@@ -87,7 +87,6 @@ public:
     Vector3<float> GetScale(void);
 	Vector3<float> GetCenter(void);
 	Vector3<float> GetVelocity(void);
-	Vector3<float> GetPosition(void);
 	float GetJumpSpeed(void);
 	void SetGravity(const Vector3<float>& gravity);
     void SetVelocity(const Vector3<float>& velocity);

@@ -1685,18 +1685,6 @@ Vector3<float> BulletPhysics::GetVelocity(ActorId actorId)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// BulletPhysics::GetPosition
-//
-Vector3<float> BulletPhysics::GetPosition(ActorId actorId)
-{
-	btCollisionObject* pCollisionObject = FindBulletCollisionObject(actorId);
-	LogAssert(pCollisionObject, "no collision object");
-
-	const btTransform& actorTransform = pCollisionObject->getWorldTransform();
-	return btVector3ToVector3(actorTransform.getOrigin());
-}
-
-/////////////////////////////////////////////////////////////////////////////
 float BulletPhysics::GetJumpSpeed(ActorId actorId)
 {
 	float jumpSpeed = 0.f;

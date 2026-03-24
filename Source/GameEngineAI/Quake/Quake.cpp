@@ -1772,7 +1772,7 @@ void QuakeLogic::SpawnActorDelegate(BaseEventDataPtr pEventData)
 
 			if (spawnTransform.IsIdentity())
 			{
-				SelectSpawnPoint(pPhysicComponent->GetPosition(), spawnTransform);
+				SelectSpawnPoint(pPhysicComponent->GetTransform().GetTranslation(), spawnTransform);
 
 				spawnTransform.GetRotation(localRotation);
 				yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
