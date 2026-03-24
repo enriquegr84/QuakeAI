@@ -142,6 +142,7 @@ public:
 	virtual Vector3<float> GetCenter(ActorId actorId);
 	virtual Vector3<float> GetScale(ActorId actorId);
 	virtual Vector3<float> GetVelocity(ActorId actorId);
+	virtual Vector3<float> GetPosition(ActorId actorId);
 	virtual float GetJumpSpeed(ActorId actorId);
 	virtual void SetGravity(ActorId actorId, const Vector3<float>& g);
 	virtual void SetVelocity(ActorId actorId, const Vector3<float>& vel);
