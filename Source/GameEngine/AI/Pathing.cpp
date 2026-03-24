@@ -173,18 +173,20 @@ void PathingNode::GetArcs(unsigned int arcType, PathingArcVec& outArcs)
 {
 	if (arcType == AT_NORMAL)
 	{
-		for (auto const& arc : mArcs)
+		PathingArcMap::const_iterator itArc;
+		for (itArc = mArcs.begin(); itArc != mArcs.end(); itArc++)
 		{
-			PathingArc* pArc = arc.second;
+			PathingArc* pArc = (*itArc).second;
 			if (pArc->GetType() == AT_NORMAL)
 				outArcs.push_back(pArc);
 		}
 	}
 	else
 	{
-		for (auto const& arc : mArcs)
+		PathingArcMap::const_iterator itArc;
+		for (itArc = mArcs.begin(); itArc != mArcs.end(); itArc++)
 		{
-			PathingArc* pArc = arc.second;
+			PathingArc* pArc = (*itArc).second;
 			if (pArc->GetType() & arcType)
 				outArcs.push_back(pArc);
 		}
@@ -257,9 +259,10 @@ void PathingNode::AddCluster(PathingCluster* pCluster)
 
 void PathingNode::GetClusters(unsigned int pathingType, PathingClusterVec& outClusters)
 {
-	for (auto const& pathCluster : mClusters)
-		if (pathCluster.second->GetType() == pathingType)
-			outClusters.push_back(pathCluster.second);
+	PathingClusterMap::const_iterator itCluster;
+	for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
+		if ((*itCluster).second->GetType() == pathingType)
+			outClusters.push_back((*itCluster).second);
 }
 
 void PathingNode::GetClusters(unsigned int pathingType,
@@ -268,24 +271,25 @@ void PathingNode::GetClusters(unsigned int pathingType,
 {
 	std::multimap<float, PathingCluster*> clusterPathWeightsLimit;
 	std::map<PathingCluster*, PathingArcVec> clusterPathsLimit;
-	for (auto const& pathingCluster : mClusters)
+	PathingClusterMap::const_iterator itCluster;
+	for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
 	{
-		if (pathingCluster.second->GetType() != pathingType)
+		if ((*itCluster).second->GetType() != pathingType)
 			continue;
 
 		float clusterPathWeight = 0.f;
 		PathingNode* currentNode = this;
-		while (currentNode != pathingCluster.second->GetTarget())
+		while (currentNode != (*itCluster).second->GetTarget())
 		{
-			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, pathingCluster.second->GetTarget());
+			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, (*itCluster).second->GetTarget());
 			PathingArc* currentArc = currentNode->FindArc(currentCluster->GetNode());
 
-			clusterPathsLimit[pathingCluster.second].push_back(currentArc);
+			clusterPathsLimit[(*itCluster).second].push_back(currentArc);
 			clusterPathWeight += currentArc->GetWeight();
 
 			currentNode = currentArc->GetNode();
 		}
-		clusterPathWeightsLimit.insert({ clusterPathWeight, pathingCluster.second });
+		clusterPathWeightsLimit.insert({ clusterPathWeight, (*itCluster).second });
 	}
 
 	unsigned int clusterCount = 0;
@@ -306,24 +310,25 @@ void PathingNode::GetClusters(unsigned int pathingType, unsigned int clusterLimi
 {
 	std::multimap<float, PathingCluster*> clusterPathWeightsLimit;
 	std::map<PathingCluster*, PathingArcVec> clusterPathsLimit;
-	for (auto const& pathingCluster : mClusters)
+	PathingClusterMap::const_iterator itCluster;
+	for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
 	{
-		if (pathingCluster.second->GetType() != pathingType)
+		if ((*itCluster).second->GetType() != pathingType)
 			continue;
 
 		float clusterPathWeight = 0.f;
 		PathingNode* currentNode = this;
-		while (currentNode != pathingCluster.second->GetTarget())
+		while (currentNode != (*itCluster).second->GetTarget())
 		{
-			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, pathingCluster.second->GetTarget());
+			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, (*itCluster).second->GetTarget());
 			PathingArc* currentArc = currentNode->FindArc(currentCluster->GetNode());
 
-			clusterPathsLimit[pathingCluster.second].push_back(currentArc);
+			clusterPathsLimit[(*itCluster).second].push_back(currentArc);
 			clusterPathWeight += currentArc->GetWeight();
 
 			currentNode = currentArc->GetNode();
 		}
-		clusterPathWeightsLimit.insert({ clusterPathWeight, pathingCluster.second });
+		clusterPathWeightsLimit.insert({ clusterPathWeight, (*itCluster).second });
 	}
 
 	unsigned int clusterCount = 0;
@@ -347,9 +352,10 @@ PathingCluster* PathingNode::FindCluster(unsigned int pathingClusterId)
 
 PathingCluster* PathingNode::FindCluster(unsigned int pathingType, unsigned int clusterId)
 {
-	for (auto const& cluster : mClusters)
+	PathingClusterMap::const_iterator itCluster;
+	for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
 	{
-		PathingCluster* pathingCluster = cluster.second;
+		PathingCluster* pathingCluster = (*itCluster).second;
 		if (pathingCluster->GetType() == pathingType)
 			if (pathingCluster->GetTarget()->GetCluster() == clusterId)
 				return pathingCluster;
@@ -386,9 +392,10 @@ void PathingNode::AddActor(PathingActor* pActor)
 
 void PathingNode::GetActors(unsigned int pathingType, PathingActorVec& outActors)
 {
-	for (auto const& pathActor : mActors)
-		if (pathActor.second->GetType() == pathingType)
-			outActors.push_back(pathActor.second);
+	PathingActorMap::const_iterator itActor;
+	for (itActor = mActors.begin(); itActor != mActors.end(); itActor++)
+		if ((*itActor).second->GetType() == pathingType)
+			outActors.push_back((*itActor).second);
 }
 
 PathingActor* PathingNode::FindActor(unsigned int pathingActorId)

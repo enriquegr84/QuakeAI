@@ -35,7 +35,8 @@
 #include "Games/Actors/LocationTarget.h"
 #include "Games/Actors/SpeakerTarget.h"
 
-#include <oneapi/tbb.h>
+#include <ppl.h>
+#include <ppltasks.h>
 
 #define	MAX_SPAWN_POINTS 128
 #define	DEFAULT_SHOTGUN_DAMAGE 10
@@ -43,41 +44,41 @@
 
 Vector3<float> SoundParams::GetPosition(bool* posExists) const
 {
-    if (posExists) 
+	if (posExists)
 		*posExists = false;
-    switch (type) 
-    {
-        case SP_LOCAL:
-        {
-            return Vector3<float>::Zero();
-        }
-		break;
+	switch (type)
+	{
+	case SP_LOCAL:
+	{
+		return Vector3<float>::Zero();
+	}
+	break;
 
-        case SP_POSITIONAL:
-        {
-            if (posExists) 
-				*posExists = true;
-            return position;
-        }
-		break;
+	case SP_POSITIONAL:
+	{
+		if (posExists)
+			*posExists = true;
+		return position;
+	}
+	break;
 
-        case SP_OBJECT: 
-        {
-            if (object == 0)
-                return  Vector3<float>::Zero();
-			std::shared_ptr<Actor> pGameActor(GameLogic::Get()->GetActor(object).lock());
-            if (!pGameActor)
-                return  Vector3<float>::Zero();
-            if (posExists) 
-				*posExists = true;
-			std::shared_ptr<TransformComponent> pTransformComponent(
-				pGameActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-			if (pTransformComponent)
-				pTransformComponent->GetPosition();
-        }
-		break;
-    }
-    return Vector3<float>::Zero();
+	case SP_OBJECT:
+	{
+		if (object == 0)
+			return  Vector3<float>::Zero();
+		std::shared_ptr<Actor> pGameActor(GameLogic::Get()->GetActor(object).lock());
+		if (!pGameActor)
+			return  Vector3<float>::Zero();
+		if (posExists)
+			*posExists = true;
+		std::shared_ptr<TransformComponent> pTransformComponent(
+			pGameActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		if (pTransformComponent)
+			pTransformComponent->GetPosition();
+	}
+	break;
+	}
+	return Vector3<float>::Zero();
 }
 
 //
@@ -692,7 +693,7 @@ void QuakeLogic::UpdateGameAISimulation(unsigned short frame)
 					pPhysicComponent->SetTransform(playerTransform);
 				break;
 			}
-			
+
 			pathingWeight += pathingArc->GetWeight();
 			pathingNode = pathingArc->GetNode();
 		}
@@ -743,7 +744,7 @@ void QuakeLogic::UpdateGameAIState()
 				pPlayerActor->GetState().stats[STAT_WEAPONS] |= (1 << weapon.id);
 				pPlayerActor->GetState().ammo[weapon.id] = weapon.ammo;
 			}
-			
+
 			pPlayerActor->ChangeWeapon((WeaponType)player.weapon);
 		}
 	}
@@ -759,27 +760,27 @@ void QuakeLogic::UpdateGameAIState()
 
 		std::shared_ptr<Actor> projectileActor;
 		std::weak_ptr<Actor> gameActor;
-		if (gameActors.find(projectile.id) != gameActors.end()) 
+		if (gameActors.find(projectile.id) != gameActors.end())
 			gameActor = GetActor(gameActors[projectile.id]);
 		if (gameActor.expired())
 		{
 			switch (projectile.code)
 			{
-				case 1:
-					projectileActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &transform);
-					projectileActor->RemoveComponent(PlasmaFire::Name);
-					gameActors[projectile.id] = projectileActor->GetId();
-					break;
-				case 2:
-					projectileActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &transform);
-					projectileActor->RemoveComponent(RocketFire::Name);
-					gameActors[projectile.id] = projectileActor->GetId();
-					break;
-				case 3:
-					projectileActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &transform);
-					projectileActor->RemoveComponent(GrenadeFire::Name);
-					gameActors[projectile.id] = projectileActor->GetId();
-					break;
+			case 1:
+				projectileActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &transform);
+				projectileActor->RemoveComponent(PlasmaFire::Name);
+				gameActors[projectile.id] = projectileActor->GetId();
+				break;
+			case 2:
+				projectileActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &transform);
+				projectileActor->RemoveComponent(RocketFire::Name);
+				gameActors[projectile.id] = projectileActor->GetId();
+				break;
+			case 3:
+				projectileActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &transform);
+				projectileActor->RemoveComponent(GrenadeFire::Name);
+				gameActors[projectile.id] = projectileActor->GetId();
+				break;
 			}
 		}
 		else
@@ -885,63 +886,63 @@ void QuakeLogic::UpdateGameAI(float deltaMs)
 
 						switch (evt.weapon)
 						{
-							case WP_SHOTGUN:
-								initTransform.SetTranslation(evtCollision);
-								CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
-								break;
-							case WP_MACHINEGUN:
-								initTransform.SetTranslation(evtCollision);
-								CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
-								break;
-							case WP_GRENADE_LAUNCHER:
-								initTransform.SetRotation(yawRotation * pitchRotation);
-								initTransform.SetTranslation(evtCollision);
-								gameActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &initTransform);
-								gameActor->RemoveComponent(GrenadeFire::Name);
-								gameActors[evt.actor] = gameActor->GetId();
-								mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
-								break;
-							case WP_ROCKET_LAUNCHER:
-								initTransform.SetRotation(yawRotation * pitchRotation);
-								initTransform.SetTranslation(evtCollision);
-								gameActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &initTransform);
-								gameActor->RemoveComponent(RocketFire::Name);
-								gameActors[evt.actor] = gameActor->GetId();
-								mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
-								break;
-							case WP_PLASMAGUN:
-								initTransform.SetRotation(yawRotation * pitchRotation);
-								initTransform.SetTranslation(evtCollision);
-								gameActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &initTransform);
-								gameActor->RemoveComponent(PlasmaFire::Name);
-								gameActors[evt.actor] = gameActor->GetId();
-								mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
-								break;
-							case WP_RAILGUN:
-								yawRotation = Rotation<4, float>(
-									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
-								pitchRotation = Rotation<4, float>(
-									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
+						case WP_SHOTGUN:
+							initTransform.SetTranslation(evtCollision);
+							CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
+							break;
+						case WP_MACHINEGUN:
+							initTransform.SetTranslation(evtCollision);
+							CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
+							break;
+						case WP_GRENADE_LAUNCHER:
+							initTransform.SetRotation(yawRotation * pitchRotation);
+							initTransform.SetTranslation(evtCollision);
+							gameActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &initTransform);
+							gameActor->RemoveComponent(GrenadeFire::Name);
+							gameActors[evt.actor] = gameActor->GetId();
+							mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
+							break;
+						case WP_ROCKET_LAUNCHER:
+							initTransform.SetRotation(yawRotation * pitchRotation);
+							initTransform.SetTranslation(evtCollision);
+							gameActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &initTransform);
+							gameActor->RemoveComponent(RocketFire::Name);
+							gameActors[evt.actor] = gameActor->GetId();
+							mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
+							break;
+						case WP_PLASMAGUN:
+							initTransform.SetRotation(yawRotation * pitchRotation);
+							initTransform.SetTranslation(evtCollision);
+							gameActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &initTransform);
+							gameActor->RemoveComponent(PlasmaFire::Name);
+							gameActors[evt.actor] = gameActor->GetId();
+							mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
+							break;
+						case WP_RAILGUN:
+							yawRotation = Rotation<4, float>(
+								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+							pitchRotation = Rotation<4, float>(
+								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
 
-								initTransform.SetRotation(yawRotation * pitchRotation);
-								initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
-								initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
-								CreateActor("actors/quake/effects/railgunfire.xml", nullptr, &initTransform);
-								break;
-							case WP_LIGHTNING:
-								yawRotation = Rotation<4, float>(
-									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
-								pitchRotation = Rotation<4, float>(
-									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
+							initTransform.SetRotation(yawRotation * pitchRotation);
+							initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
+							initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
+							CreateActor("actors/quake/effects/railgunfire.xml", nullptr, &initTransform);
+							break;
+						case WP_LIGHTNING:
+							yawRotation = Rotation<4, float>(
+								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+							pitchRotation = Rotation<4, float>(
+								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
 
-								initTransform.SetRotation(yawRotation * pitchRotation);
-								initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
-								initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
-								CreateActor("actors/quake/effects/lightningfire.xml", nullptr, &initTransform);
-								break;
-							default:
-								// FIXME Error( "Bad ent->state->weapon" );
-								break;
+							initTransform.SetRotation(yawRotation * pitchRotation);
+							initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
+							initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
+							CreateActor("actors/quake/effects/lightningfire.xml", nullptr, &initTransform);
+							break;
+						default:
+							// FIXME Error( "Bad ent->state->weapon" );
+							break;
 						}
 					}
 				}
@@ -1146,21 +1147,21 @@ bool QuakeLogic::GetChatMessage(std::wstring& res)
 
 	switch (chatMessage->type)
 	{
-		case CHATMESSAGE_TYPE_RAW:
-		case CHATMESSAGE_TYPE_ANNOUNCE:
-		case CHATMESSAGE_TYPE_SYSTEM:
+	case CHATMESSAGE_TYPE_RAW:
+	case CHATMESSAGE_TYPE_ANNOUNCE:
+	case CHATMESSAGE_TYPE_SYSTEM:
+		res = chatMessage->message;
+		break;
+	case CHATMESSAGE_TYPE_NORMAL:
+	{
+		if (!chatMessage->sender.empty())
+			res = L"<" + chatMessage->sender + L"> " + chatMessage->message;
+		else
 			res = chatMessage->message;
-			break;
-		case CHATMESSAGE_TYPE_NORMAL:
-		{
-			if (!chatMessage->sender.empty())
-				res = L"<" + chatMessage->sender + L"> " + chatMessage->message;
-			else
-				res = chatMessage->message;
-			break;
-		}
-		default:
-			break;
+		break;
+	}
+	default:
+		break;
 	}
 
 	delete chatMessage;
@@ -1298,162 +1299,162 @@ void QuakeLogic::ChangeState(BaseGameState newState)
 
 	switch (newState)
 	{
-		case BGS_MAINMENU:
-		{
-			std::shared_ptr<BaseGameView> menuView(new QuakeMainMenuView());
-			GameApplication::Get()->AddView(menuView);
+	case BGS_MAINMENU:
+	{
+		std::shared_ptr<BaseGameView> menuView(new QuakeMainMenuView());
+		GameApplication::Get()->AddView(menuView);
 
-			break;
-		}
+		break;
+	}
 
-		case BGS_WAITINGFORPLAYERS:
+	case BGS_WAITINGFORPLAYERS:
+	{
+		// spawn all local players (should only be one, though we might support more in the future)
+		LogAssert(mExpectedPlayers == 1, "needs only one player");
+		for (int i = 0; i < mExpectedPlayers; ++i)
 		{
-			// spawn all local players (should only be one, though we might support more in the future)
-			LogAssert(mExpectedPlayers == 1, "needs only one player");
-			for (int i = 0; i < mExpectedPlayers; ++i)
+			if (Settings::Get()->Get("selected_game") == "duel")
 			{
-				if (Settings::Get()->Get("selected_game") == "duel")
-				{
-					std::shared_ptr<BaseGameView> playersView(new QuakeHumanView());
-					GameApplication::Get()->AddView(playersView);
-				}
-				else if (Settings::Get()->Get("selected_game") == "edit")
-				{
-					std::shared_ptr<BaseGameView> aiEditorView(new QuakeAIEditorView());
-					GameApplication::Get()->AddView(aiEditorView);
-				}
-				else if (Settings::Get()->Get("selected_game") == "analyze")
-				{
-					std::shared_ptr<BaseGameView> aiAnalyzerView(new QuakeAIAnalyzerView());
-					GameApplication::Get()->AddView(aiAnalyzerView);
-				}
-
-
-				if (mIsProxy)
-				{
-					// if we are a remote player, all we have to do is spawn our view - the server will do the rest.
-					return;
-				}
+				std::shared_ptr<BaseGameView> playersView(new QuakeHumanView());
+				GameApplication::Get()->AddView(playersView);
 			}
-			// spawn all remote player's views on the game
-			for (int i = 0; i < mExpectedRemotePlayers; ++i)
+			else if (Settings::Get()->Get("selected_game") == "edit")
 			{
-				std::shared_ptr<BaseGameView> remoteGameView(new NetworkGameView());
-				GameApplication::Get()->AddView(remoteGameView);
+				std::shared_ptr<BaseGameView> aiEditorView(new QuakeAIEditorView());
+				GameApplication::Get()->AddView(aiEditorView);
+			}
+			else if (Settings::Get()->Get("selected_game") == "analyze")
+			{
+				std::shared_ptr<BaseGameView> aiAnalyzerView(new QuakeAIAnalyzerView());
+				GameApplication::Get()->AddView(aiAnalyzerView);
 			}
 
-			// spawn all AI's views on the game
-			for (int i = 0; i < mExpectedAI; ++i)
-			{
-				std::shared_ptr<BaseGameView> aiView(new QuakeAIView());
-				GameApplication::Get()->AddView(aiView);
-			}
 
-			break;
-		}
-
-		case BGS_SPAWNINGPLAYERACTORS:
-		{
 			if (mIsProxy)
 			{
-				// only the server needs to do this.
+				// if we are a remote player, all we have to do is spawn our view - the server will do the rest.
 				return;
 			}
+		}
+		// spawn all remote player's views on the game
+		for (int i = 0; i < mExpectedRemotePlayers; ++i)
+		{
+			std::shared_ptr<BaseGameView> remoteGameView(new NetworkGameView());
+			GameApplication::Get()->AddView(remoteGameView);
+		}
 
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+		// spawn all AI's views on the game
+		for (int i = 0; i < mExpectedAI; ++i)
+		{
+			std::shared_ptr<BaseGameView> aiView(new QuakeAIView());
+			GameApplication::Get()->AddView(aiView);
+		}
+
+		break;
+	}
+
+	case BGS_SPAWNINGPLAYERACTORS:
+	{
+		if (mIsProxy)
+		{
+			// only the server needs to do this.
+			return;
+		}
+
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+		{
+			std::shared_ptr<BaseGameView> pView = *it;
+			if (pView->GetType() == GV_HUMAN)
+			{
+				std::shared_ptr<PlayerActor> pPlayerActor =
+					CreatePlayerActor("actors\\quake\\players\\player.xml", NULL);
+				if (pPlayerActor)
+				{
+					pView->OnAttach(pView->GetId(), pPlayerActor->GetId());
+					pPlayerActor->PlayerSpawn();
+
+					aiManager->OnAttach(pView->GetType(), pPlayerActor->GetId());
+
+					if (!mGameSpec.mModding)
+					{
+						std::shared_ptr<EventDataNewActor> pNewActorEvent(
+							new EventDataNewActor(pPlayerActor->GetId(), pView->GetId()));
+						BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
+					}
+				}
+			}
+			else if (pView->GetType() == GV_REMOTE)
+			{
+				std::shared_ptr<NetworkGameView> pNetworkGameView =
+					std::static_pointer_cast<NetworkGameView, BaseGameView>(pView);
+				std::shared_ptr<PlayerActor> pPlayerActor =
+					CreatePlayerActor("actors\\quake\\players\\remote_player.xml", NULL);
+				if (pPlayerActor)
+				{
+					pView->OnAttach(pView->GetId(), pPlayerActor->GetId());
+					pPlayerActor->PlayerSpawn();
+
+					aiManager->OnAttach(pView->GetType(), pPlayerActor->GetId());
+
+					std::shared_ptr<EventDataNewActor> pNewActorEvent(
+						new EventDataNewActor(pPlayerActor->GetId(), pNetworkGameView->GetId()));
+					BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
+				}
+			}
+			else if (pView->GetType() == GV_AI)
+			{
+				std::shared_ptr<QuakeAIView> pAiView =
+					std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
+				std::shared_ptr<PlayerActor> pPlayerActor =
+					CreatePlayerActor("actors\\quake\\players\\ai_player.xml", NULL);
+				if (pPlayerActor)
+				{
+					pAiView->OnAttach(pView->GetId(), pPlayerActor->GetId());
+					pPlayerActor->PlayerSpawn();
+
+					aiManager->OnAttach(pView->GetType(), pPlayerActor->GetId());
+
+					std::shared_ptr<EventDataNewActor> pNewActorEvent(
+						new EventDataNewActor(pPlayerActor->GetId(), pAiView->GetId()));
+					BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
+				}
+			}
+		}
+
+		if (mGameSpec.mModding)
+		{
 			for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
 			{
 				std::shared_ptr<BaseGameView> pView = *it;
 				if (pView->GetType() == GV_HUMAN)
 				{
-					std::shared_ptr<PlayerActor> pPlayerActor = 
-						CreatePlayerActor("actors\\quake\\players\\player.xml", NULL);
-					if (pPlayerActor)
-					{
-						pView->OnAttach(pView->GetId(), pPlayerActor->GetId());
-						pPlayerActor->PlayerSpawn();
+					std::shared_ptr<BaseGameView> pAiView(new QuakeAIView());
+					GameApplication::Get()->AddView(pAiView);
 
-						aiManager->OnAttach(pView->GetType(), pPlayerActor->GetId());
+					pAiView->OnAttach(pAiView->GetId(), pView->GetActorId());
+					std::shared_ptr<PlayerActor> pPlayerActor(
+						std::dynamic_pointer_cast<PlayerActor>(GetActor(pView->GetActorId()).lock()));
+					pPlayerActor->PlayerSpawn();
 
-						if (!mGameSpec.mModding)
-						{
-							std::shared_ptr<EventDataNewActor> pNewActorEvent(
-								new EventDataNewActor(pPlayerActor->GetId(), pView->GetId()));
-							BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
-						}
-					}
-				}
-				else if (pView->GetType() == GV_REMOTE)
-				{
-					std::shared_ptr<NetworkGameView> pNetworkGameView =
-						std::static_pointer_cast<NetworkGameView, BaseGameView>(pView);
-					std::shared_ptr<PlayerActor> pPlayerActor =
-						CreatePlayerActor("actors\\quake\\players\\remote_player.xml", NULL);
-					if (pPlayerActor)
-					{
-						pView->OnAttach(pView->GetId(), pPlayerActor->GetId());
-						pPlayerActor->PlayerSpawn();
+					aiManager->OnAttach(pView->GetType(), pView->GetActorId());
 
-						aiManager->OnAttach(pView->GetType(), pPlayerActor->GetId());
+					std::shared_ptr<EventDataNewActor> pNewActorEvent(
+						new EventDataNewActor(pView->GetActorId(), pAiView->GetId()));
+					BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
 
-						std::shared_ptr<EventDataNewActor> pNewActorEvent(
-							new EventDataNewActor(pPlayerActor->GetId(), pNetworkGameView->GetId()));
-						BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
-					}
-				}
-				else if (pView->GetType() == GV_AI)
-				{
-					std::shared_ptr<QuakeAIView> pAiView = 
-						std::static_pointer_cast<QuakeAIView, BaseGameView>(pView);
-					std::shared_ptr<PlayerActor> pPlayerActor =
-						CreatePlayerActor("actors\\quake\\players\\ai_player.xml", NULL);
-					if (pPlayerActor)
-					{
-						pAiView->OnAttach(pView->GetId(), pPlayerActor->GetId());
-						pPlayerActor->PlayerSpawn();
-
-						aiManager->OnAttach(pView->GetType(), pPlayerActor->GetId());
-
-						std::shared_ptr<EventDataNewActor> pNewActorEvent(
-							new EventDataNewActor(pPlayerActor->GetId(), pAiView->GetId()));
-						BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
-					}
+					break;
 				}
 			}
-
-			if (mGameSpec.mModding)
-			{
-				for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-				{
-					std::shared_ptr<BaseGameView> pView = *it;
-					if (pView->GetType() == GV_HUMAN)
-					{
-						std::shared_ptr<BaseGameView> pAiView(new QuakeAIView());
-						GameApplication::Get()->AddView(pAiView);
-
-						pAiView->OnAttach(pAiView->GetId(), pView->GetActorId());
-						std::shared_ptr<PlayerActor> pPlayerActor(
-							std::dynamic_pointer_cast<PlayerActor>(GetActor(pView->GetActorId()).lock()));
-						pPlayerActor->PlayerSpawn();
-
-						aiManager->OnAttach(pView->GetType(), pView->GetActorId());
-
-						std::shared_ptr<EventDataNewActor> pNewActorEvent(
-							new EventDataNewActor(pView->GetActorId(), pAiView->GetId()));
-						BaseEventManager::Get()->TriggerEvent(pNewActorEvent);
-
-						break;
-					}
-				}
-			}
-
-			break;
 		}
+
+		break;
+	}
 	}
 }
 
-void QuakeLogic::SyncActor(const ActorId id, Transform const &transform)
+void QuakeLogic::SyncActor(const ActorId id, Transform const& transform)
 {
 	GameLogic::SyncActor(id, transform);
 
@@ -1519,7 +1520,7 @@ void QuakeLogic::RemoteClientDelegate(BaseEventDataPtr pEventData)
 {
 	// This event is always sent from clients to the game server.
 
-	std::shared_ptr<EventDataRemoteClient> pCastEventData = 
+	std::shared_ptr<EventDataRemoteClient> pCastEventData =
 		std::static_pointer_cast<EventDataRemoteClient>(pEventData);
 	const int sockID = pCastEventData->GetSocketId();
 	const int ipAddress = pCastEventData->GetIpAddress();
@@ -1531,7 +1532,7 @@ void QuakeLogic::RemoteClientDelegate(BaseEventDataPtr pEventData)
 		std::shared_ptr<BaseGameView> pView = *it;
 		if (pView->GetType() == GV_REMOTE)
 		{
-			std::shared_ptr<NetworkGameView> pNetworkGameView = 
+			std::shared_ptr<NetworkGameView> pNetworkGameView =
 				std::static_pointer_cast<NetworkGameView, BaseGameView>(pView);
 			if (!pNetworkGameView->HasRemotePlayerAttached())
 			{
@@ -1711,7 +1712,7 @@ void QuakeLogic::TeleportActorDelegate(BaseEventDataPtr pEventData)
 			pPhysicComponent->SetTransform(pTeleporterTrigger->GetTarget());
 			pPhysicComponent->KinematicMove(direction);
 
-			Vector3<float> fallSpeed{ 
+			Vector3<float> fallSpeed{
 				DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_XZ, DEFAULT_FALL_SPEED_Y };
 			direction[AXIS_X] *= fallSpeed[AXIS_X];
 			direction[AXIS_Z] *= fallSpeed[AXIS_Z];
@@ -1860,7 +1861,7 @@ void QuakeLogic::MoveActorDelegate(BaseEventDataPtr pEventData)
 			const Vector3<float>& direction = pCastEventData->GetDirection();
 			pPhysicComponent->KinematicMove(direction);
 
-			Vector2<float> move = {direction[AXIS_X], direction[AXIS_Z]};
+			Vector2<float> move = { direction[AXIS_X], direction[AXIS_Z] };
 			if (Length(move) > 0.f)
 			{
 				if (pPhysicComponent->OnGround() && pPlayerActor->GetState().moveTime == 0)
@@ -1952,7 +1953,7 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 			{
 				std::shared_ptr<AmmoPickup> pAmmoPickup = pActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
 
-				AIAnalysis::ActorPickup* ammoPickup = new AIAnalysis::ActorPickup(pAmmoPickup->GetCode(), 
+				AIAnalysis::ActorPickup* ammoPickup = new AIAnalysis::ActorPickup(pAmmoPickup->GetCode(),
 					pActor->GetType(), pAmmoPickup->GetWait(), pAmmoPickup->GetAmount(), pAmmoPickup->GetMaximum());
 				gameActorPickups[pActor->GetId()] = ammoPickup;
 			}
@@ -1960,7 +1961,7 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 			{
 				std::shared_ptr<ArmorPickup> pArmorPickup = pActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
 
-				AIAnalysis::ActorPickup* armorPickup = new AIAnalysis::ActorPickup(pArmorPickup->GetCode(), 
+				AIAnalysis::ActorPickup* armorPickup = new AIAnalysis::ActorPickup(pArmorPickup->GetCode(),
 					pActor->GetType(), pArmorPickup->GetWait(), pArmorPickup->GetAmount(), pArmorPickup->GetMaximum());
 				gameActorPickups[pActor->GetId()] = armorPickup;
 			}
@@ -1968,7 +1969,7 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 			{
 				std::shared_ptr<WeaponPickup> pWeaponPickup = pActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
 
-				AIAnalysis::WeaponActorPickup* weaponPickup = new AIAnalysis::WeaponActorPickup(pWeaponPickup->GetCode(), pActor->GetType(), 
+				AIAnalysis::WeaponActorPickup* weaponPickup = new AIAnalysis::WeaponActorPickup(pWeaponPickup->GetCode(), pActor->GetType(),
 					pWeaponPickup->GetWait(), pWeaponPickup->GetAmount(), pWeaponPickup->GetMaximum(), pWeaponPickup->GetAmmo());
 				gameActorPickups[pActor->GetId()] = weaponPickup;
 			}
@@ -1976,7 +1977,7 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 			{
 				std::shared_ptr<HealthPickup> pHealthPickup = pActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
 
-				AIAnalysis::ActorPickup* healthPickup = new AIAnalysis::ActorPickup(pHealthPickup->GetCode(), 
+				AIAnalysis::ActorPickup* healthPickup = new AIAnalysis::ActorPickup(pHealthPickup->GetCode(),
 					pActor->GetType(), pHealthPickup->GetWait(), pHealthPickup->GetAmount(), pHealthPickup->GetMaximum());
 				gameActorPickups[pActor->GetId()] = healthPickup;
 			}
@@ -1987,34 +1988,33 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 		for (std::shared_ptr<PlayerActor> playerActor : playerActors)
 			aiManager->SpawnActor(playerActor->GetId());
 
-		oneapi::tbb::task_arena taskArena;
-		taskArena.enqueue([&]
-		{
-			//guessing decision making
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->RunAIGuessing();
-		});
+		Concurrency::create_task([&]
+			{
+				//guessing decision making
+				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+				aiManager->RunAIGuessing();
+			});
 
-		taskArena.enqueue([&]
-		{
-			//guessing decision making
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->RunHumanGuessing();
-		});
+		Concurrency::create_task([&]
+			{
+				//guessing decision making
+				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+				aiManager->RunHumanGuessing();
+			});
 
-		taskArena.enqueue([&]
-		{
-			//aware decision making
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->RunHumanAwareDecision();
-		});
+		Concurrency::create_task([&]
+			{
+				//aware decision making
+				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+				aiManager->RunHumanAwareDecision();
+			});
 
-		taskArena.enqueue([&]
-		{
-			//aware decision making
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->RunAIAwareDecision();
-		});
+		Concurrency::create_task([&]
+			{
+				//aware decision making
+				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+				aiManager->RunAIAwareDecision();
+			});
 
 		mGameAICombat = true;
 	}
@@ -2195,7 +2195,7 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 	}
 }
 
-void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex, unsigned short analysisFrame, 
+void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex, unsigned short analysisFrame,
 	unsigned short playerIndex, const std::string& decisionCluster, const std::string& evaluationCluster)
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
@@ -2255,13 +2255,13 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex, unsigned short an
 		aiManager->GetPlayerInput(mOtherPlayerInput, otherPlayer, otherPlayerOffset);
 
 		PathingArcVec playerPath, otherPlayerPath;
-		aiManager->BuildPlayerPath(simulation->playerSimulation, 
+		aiManager->BuildPlayerPath(simulation->playerSimulation,
 			player.plan.node, playerOffset.plan.weight, playerPath);
-		aiManager->BuildPlayerPath(simulation->otherPlayerSimulation, 
+		aiManager->BuildPlayerPath(simulation->otherPlayerSimulation,
 			otherPlayer.plan.node, otherPlayerOffset.plan.weight, otherPlayerPath);
 
 		aiManager->Simulation(
-			(EvaluationType)evaluation.type, gameItems, 
+			(EvaluationType)evaluation.type, gameItems,
 			player, playerPath, playerOffset.plan.weight,
 			otherPlayer, otherPlayerPath, otherPlayerOffset.plan.weight);
 
@@ -2431,12 +2431,11 @@ void QuakeLogic::SaveAIGameDelegate(BaseEventDataPtr pEventData)
 	std::shared_ptr<EventDataSaveAIGame> pCastEventData =
 		std::static_pointer_cast<EventDataSaveAIGame>(pEventData);
 
-	oneapi::tbb::task_arena taskArena;
-	taskArena.enqueue([&]
-	{
-		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-		aiManager->SaveGameAnalysis();
-	});
+	Concurrency::create_task([&]
+		{
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->SaveGameAnalysis();
+		});
 }
 
 void QuakeLogic::SaveAllDelegate(BaseEventDataPtr pEventData)
@@ -2996,22 +2995,22 @@ void QuakeLogic::CreateNetworkEventForwarder(const int socketId)
 		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 		EventDataPhysSeparation::skEventType);
 	pGlobalEventManager->AddListener(
-		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 		EventDataDestroyActor::skEventType);
 	pGlobalEventManager->AddListener(
-		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 		EventDataEnvironmentLoaded::skEventType);
 	pGlobalEventManager->AddListener(
-		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 		EventDataNewActor::skEventType);
 	pGlobalEventManager->AddListener(
 		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 		EventDataSyncActor::skEventType);
 	pGlobalEventManager->AddListener(
-		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 		EventDataRequestNewActor::skEventType);
 	pGlobalEventManager->AddListener(
-		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+		MakeDelegate(pNetworkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 		EventDataNetworkPlayerActorAssignment::skEventType);
 
 	pGlobalEventManager->AddListener(
@@ -3089,22 +3088,22 @@ void QuakeLogic::DestroyAllNetworkEventForwarders(void)
 			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 			EventDataPhysSeparation::skEventType);
 		eventManager->RemoveListener(
-			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 			EventDataDestroyActor::skEventType);
 		eventManager->RemoveListener(
-			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 			EventDataEnvironmentLoaded::skEventType);
 		eventManager->RemoveListener(
-			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 			EventDataNewActor::skEventType);
 		eventManager->RemoveListener(
 			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 			EventDataSyncActor::skEventType);
 		eventManager->RemoveListener(
-			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 			EventDataRequestNewActor::skEventType);
 		eventManager->RemoveListener(
-			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent), 
+			MakeDelegate(networkEventForwarder, &NetworkEventForwarder::ForwardEvent),
 			EventDataNetworkPlayerActorAssignment::skEventType);
 
 
@@ -3188,8 +3187,8 @@ AIManager* QuakeLogic::CreateAIManager(void)
 	return aiManager;
 }
 
-std::shared_ptr<PlayerActor> QuakeLogic::CreatePlayerActor(const std::string &actorResource,
-	tinyxml2::XMLElement *overrides, const Transform *initialTransform, const ActorId serversActorId)
+std::shared_ptr<PlayerActor> QuakeLogic::CreatePlayerActor(const std::string& actorResource,
+	tinyxml2::XMLElement* overrides, const Transform* initialTransform, const ActorId serversActorId)
 {
 	QuakeActorFactory* actorFactory = dynamic_cast<QuakeActorFactory*>(mActorFactory);
 	LogAssert(actorFactory, "quake actor factory is not initialized");
@@ -3246,14 +3245,14 @@ bool QuakeLogic::AddMediaFile(const std::wstring& fileName, const std::wstring& 
 	// If name is not in a supported format, ignore it
 	const char* supportedExt[] = {
 		".png", ".jpg", ".bmp", ".tga", ".pcx",
-		".ppm", ".psd", ".wal", ".rgb", ".ogg", 
-		".wav", ".bsp", ".pk3", ".md3", NULL};
+		".ppm", ".psd", ".wal", ".rgb", ".ogg",
+		".wav", ".bsp", ".pk3", ".md3", NULL };
 	if (StringRemoveEnd(ToString(fileName), supportedExt).empty())
 	{
 		LogInformation(L"Ignoring unsupported file extension: \"" + fileName + L"\"");
 		return false;
 	}
-	
+
 	// Put in list
 	mMedia[fileName] = MediaInfo(fileRelativePath);
 
@@ -3274,7 +3273,7 @@ void QuakeLogic::FillMediaCache()
 		return;
 	}
 	std::vector<std::string> files = StringSplit(conf.Get("media"), ',');
-	
+
 	// Collect media file information from paths into cache
 	const std::set<wchar_t> ignore = { L'.' };
 	std::wstring mediaPath = ToWideString(mGameSpec.mPath) + L"/../../..";
@@ -3380,7 +3379,7 @@ void QuakeLogic::LoadActors(BspLoader& bspLoader)
 					initTransform.SetTranslation(origin[0], origin[1], origin[2]);
 					if (className.find("weapon") != std::wstring::npos)
 						initTransform.SetScale(1.25f, 1.25f, 1.25f);
-					
+
 					std::shared_ptr<Actor> pActor = CreateActor(
 						modelResources[className], nullptr, &initTransform);
 					if (pActor)
@@ -4361,7 +4360,7 @@ GAUNTLET
 ======================================================================
 */
 
-void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player, 
+void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 	const Vector3<float>& muzzle, const Vector3<float>& forward)
 {
 	//set muzzle location relative to pivoting eye
@@ -4430,8 +4429,8 @@ MACHINEGUN
 ======================================================================
 */
 
-void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player, 
-	const Vector3<float>& muzzle, const Vector3<float>& forward, const Vector3<float>& right, 
+void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
+	const Vector3<float>& muzzle, const Vector3<float>& forward, const Vector3<float>& right,
 	const Vector3<float>& up, float spread, int damage)
 {
 	float r = ((Randomizer::Rand() & 0x7fff) / (float)0x7fff) * (float)GE_C_PI * 2.f;
@@ -4518,7 +4517,7 @@ SHOTGUN
 ======================================================================
 */
 
-bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player, 
+bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 	const Vector3<float>& forward, const Vector3<float>& start, const Vector3<float>& end)
 {
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
@@ -4583,7 +4582,7 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 	return false;
 }
 
-void QuakeLogic::ShotgunFire(const std::shared_ptr<PlayerActor>& player, 
+void QuakeLogic::ShotgunFire(const std::shared_ptr<PlayerActor>& player,
 	const Vector3<float>& muzzle, const Vector3<float>& forward,
 	const Vector3<float>& right, const Vector3<float>& up)
 {
@@ -4620,7 +4619,7 @@ GRENADE LAUNCHER
 ======================================================================
 */
 
-void QuakeLogic::GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player, 
+void QuakeLogic::GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player,
 	const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
 {
 	Matrix4x4<float> yawRotation = Rotation<4, float>(
@@ -4636,7 +4635,7 @@ void QuakeLogic::GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player,
 	Vector3<float> direction = end - muzzle;
 	Normalize(direction);
 
-	std::shared_ptr<Actor> pGameActor = 
+	std::shared_ptr<Actor> pGameActor =
 		CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &initTransform);
 	if (pGameActor)
 	{
@@ -4694,7 +4693,7 @@ ROCKET
 ======================================================================
 */
 
-void QuakeLogic::RocketLauncherFire(const std::shared_ptr<PlayerActor>& player, 
+void QuakeLogic::RocketLauncherFire(const std::shared_ptr<PlayerActor>& player,
 	const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
 {
 	Matrix4x4<float> yawRotation = Rotation<4, float>(
@@ -4770,7 +4769,7 @@ PLASMA GUN
 ======================================================================
 */
 
-void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player, 
+void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player,
 	const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
 {
 	Matrix4x4<float> yawRotation = Rotation<4, float>(
@@ -5068,33 +5067,33 @@ void QuakeLogic::FireWeaponDelegate(BaseEventDataPtr pEventData)
 	// fire the specific weapon
 	switch (pPlayerActor->GetState().weapon)
 	{
-		case WP_GAUNTLET:
-			GauntletAttack(pPlayerActor, muzzle, forward);
-			break;
-		case WP_SHOTGUN:
-			ShotgunFire(pPlayerActor, muzzle, forward, right, up);
-			break;
-		case WP_MACHINEGUN:
-			BulletFire(pPlayerActor, muzzle, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
-			break;
-		case WP_GRENADE_LAUNCHER:
-			GrenadeLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
-			break;
-		case WP_ROCKET_LAUNCHER:
-			RocketLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
-			break;
-		case WP_PLASMAGUN:
-			PlasmagunFire(pPlayerActor, muzzle, forward, viewAngles);
-			break;
-		case WP_RAILGUN:
-			RailgunFire(pPlayerActor, muzzle, forward);
-			break;
-		case WP_LIGHTNING:
-			LightningFire(pPlayerActor, muzzle, forward);
-			break;
-		default:
-			// FIXME Error( "Bad ent->state->weapon" );
-			break;
+	case WP_GAUNTLET:
+		GauntletAttack(pPlayerActor, muzzle, forward);
+		break;
+	case WP_SHOTGUN:
+		ShotgunFire(pPlayerActor, muzzle, forward, right, up);
+		break;
+	case WP_MACHINEGUN:
+		BulletFire(pPlayerActor, muzzle, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
+		break;
+	case WP_GRENADE_LAUNCHER:
+		GrenadeLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
+		break;
+	case WP_ROCKET_LAUNCHER:
+		RocketLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
+		break;
+	case WP_PLASMAGUN:
+		PlasmagunFire(pPlayerActor, muzzle, forward, viewAngles);
+		break;
+	case WP_RAILGUN:
+		RailgunFire(pPlayerActor, muzzle, forward);
+		break;
+	case WP_LIGHTNING:
+		LightningFire(pPlayerActor, muzzle, forward);
+		break;
+	default:
+		// FIXME Error( "Bad ent->state->weapon" );
+		break;
 	}
 }
 
@@ -5102,7 +5101,7 @@ bool QuakeLogic::SpotTelefrag(const std::shared_ptr<Actor>& spot)
 {
 	for (ActorMap::const_iterator it = mActors.begin(); it != mActors.end(); ++it)
 	{
-		std::shared_ptr<PlayerActor> playerActor = 
+		std::shared_ptr<PlayerActor> playerActor =
 			std::dynamic_pointer_cast<PlayerActor>((*it).second);
 		if (playerActor)
 		{
@@ -5612,7 +5611,7 @@ void QuakeLogic::GetPlayerActors(std::vector<std::shared_ptr<PlayerActor>>& play
 {
 	for (auto const& actor : mActors)
 	{
-		std::shared_ptr<PlayerActor> playerActor = 
+		std::shared_ptr<PlayerActor> playerActor =
 			std::dynamic_pointer_cast<PlayerActor>(actor.second);
 		if (playerActor)
 			players.push_back(playerActor);

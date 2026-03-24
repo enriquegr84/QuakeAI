@@ -24,7 +24,8 @@
 #include <cereal/archives/binary.hpp>
 #include <fstream>
 
-#include <oneapi/tbb.h>
+#include <ppl.h>
+#include <ppltasks.h>
 
 #include <mutex>
 #include <concurrent_vector.h>
@@ -705,14 +706,14 @@ namespace AIAnalysis
 		template <class Archive>
 		void save(Archive& ar) const
 		{
-			ar(type, target, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput, 
+			ar(type, target, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput,
 				playerInput, otherPlayerInput, playerOutput, otherPlayerOutput, playerDecisionItems, playerGuessItems);
 		}
 
 		template <class Archive>
 		void load(Archive& ar)
 		{
-			ar(type, target, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput, 
+			ar(type, target, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput,
 				playerInput, otherPlayerInput, playerOutput, otherPlayerOutput, playerDecisionItems, playerGuessItems);
 		}
 	};
@@ -1040,8 +1041,9 @@ public:
 
 	std::map<ActorId, ActorId>& GetGameActors() { return mGameActors; }
 	std::map<ActorId, const AIAnalysis::ActorPickup*>& GetGameActorPickups() { return mGameActorPickups; }
-	const AIAnalysis::ActorPickup* GetGameActorPickup(ActorId actorId) { 
-		return mGameActorPickups.find(actorId) != mGameActorPickups.end() ? mGameActorPickups.at(actorId) : NULL; }
+	const AIAnalysis::ActorPickup* GetGameActorPickup(ActorId actorId) {
+		return mGameActorPickups.find(actorId) != mGameActorPickups.end() ? mGameActorPickups.at(actorId) : NULL;
+	}
 
 	const AIGame::Game& GetGame() { return mGame; }
 	void AddGameItem(const AIGame::Item& item) { mGame.states.back().items.push_back(item); }
@@ -1118,81 +1120,81 @@ protected:
 	void BuildExpandedPath(
 		std::shared_ptr<PathingGraph>& graph, unsigned int maxPathingClusters, PathingNode* clusterNodeStart,
 		const std::map<PathingCluster*, PathingArcVec>& clusterPaths, const std::map<PathingCluster*, float>& expandClusterPathWeights,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans);
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans);
 	void BuildExpandedActorPath(
 		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics);
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters,
+		Concurrency::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics);
 	void BuildExpandedActorPath(
 		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, float heuristicThreshold,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics);
-	void BuildActorPath(std::shared_ptr<PathingGraph>& graph, 
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters,
+		Concurrency::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics);
+	void BuildActorPath(std::shared_ptr<PathingGraph>& graph,
 		unsigned int actionType, const std::map<ActorId, float>& gameItems, const std::map<ActorId, float>& searchItems,
-		const PlayerData& player, PathingNode* clusterNodeStart, const PathingArcVec& clusterPathStart, float clusterPathOffset, 
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters);
+		const PlayerData& player, PathingNode* clusterNodeStart, const PathingArcVec& clusterPathStart, float clusterPathOffset,
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
+		Concurrency::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters);
 	bool BuildPath(
 		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
 	bool BuildLongPath(
 		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
 	bool BuildLongPath(
 		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans);
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans);
 	bool BuildLongestPath(
 		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
-		oneapi::tbb::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
+		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
 
 	void FindPathPlans(PathingNode* pStartNode, const std::map<ActorId, float>& searchItems,
 		std::map<PathingActorVec, float>& actorsPathPlans, unsigned int pathingType);
 
-	PathingNode* FindClosestNode(ActorId playerId, 
+	PathingNode* FindClosestNode(ActorId playerId,
 		std::shared_ptr<PathingGraph>& graph, float closestDistance, bool skipIsolated = true);
 
 	// AI decision making process
-	void Simulation(EvaluationType evaluation, const std::map<ActorId, float>& gameItems, 
+	void Simulation(EvaluationType evaluation, const std::map<ActorId, float>& gameItems,
 		PlayerData& playerData, const PathingArcVec& playerPathPlan, float playerPathOffset,
 		PlayerData& otherPlayerData, const PathingArcVec& otherPlayerPathPlan, float otherPlayerPathOffset);
 
 	void PerformDecisionMaking(const PlayerData& playerDataIn, const PlayerData& otherPlayerDataIn,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, oneapi::tbb::concurrent_unordered_map<unsigned long long, float>>& playerDecisions,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, oneapi::tbb::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponDecisions,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerDecisions,
+		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponDecisions,
 		WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode);
 	void PerformGuessingMaking(const PlayerData& playerDataIn, const PlayerData& otherPlayerDataIn,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, oneapi::tbb::concurrent_unordered_map<unsigned long long, float>>& playerGuessings,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, oneapi::tbb::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponGuessings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerGuessings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponGuessings,
 		WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode);
 
 	void PerformDecisionMaking(
 		const AIAnalysis::GameEvaluation& gameEvaluation, const PlayerData& playerDataIn, const PlayerData& otherPlayerDataIn,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings, 
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode);
 	void PerformGuessingMaking(
 		const AIAnalysis::GameEvaluation& gameEvaluation, const PlayerData& playerDataIn, const PlayerData& otherPlayerDataIn,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
-		const oneapi::tbb::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode);
 
 	// Analysis simulation
@@ -1232,9 +1234,9 @@ protected:
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
 
 	//players viewType
-	void OnAttach(GameViewType vtype, ActorId aid) 
-	{ 
-		mPlayers[vtype] = aid; 
+	void OnAttach(GameViewType vtype, ActorId aid)
+	{
+		mPlayers[vtype] = aid;
 		mPlayerEvaluations[aid] = ET_GUESSING;
 	}
 
@@ -1345,7 +1347,7 @@ private:
 	AIAnalysis::GameEvaluation mGameEvaluation;
 	AIAnalysis::GameDecision mGameDecision;
 	AIAnalysis::Simulation* mGameSimulation;
-	oneapi::tbb::concurrent_vector<AIAnalysis::GameDecision> mGameDecisions;
+	Concurrency::concurrent_vector<AIAnalysis::GameDecision> mGameDecisions;
 
 	std::mutex mMutex;
 	std::map<ActorId, unsigned int> mAIStates;
