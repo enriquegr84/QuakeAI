@@ -141,9 +141,15 @@ AIFinder::~AIFinder(void)
 void AIFinder::Destroy(void)
 {
 	// destroy all the AIPlanNode objects and clear the map
-	for (ActorToAIPlanNodeMap::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
-		for (AIPlanNodeVector::iterator itPlan = (*it).second.begin(); itPlan != (*it).second.end(); itPlan++)
-			delete (*itPlan);
+	Concurrency::parallel_for_each(mNodes.begin(), mNodes.end(), [&](auto& plan)
+	//for (ActorToAIPlanNodeMap::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+	{
+		Concurrency::parallel_for_each(plan.second.begin(), plan.second.end(), [&](auto& planNode)
+		//for (AIPlanNodeVector::iterator itPlan = (*it).second.begin(); itPlan != (*it).second.end(); itPlan++)
+		{
+			delete planNode;
+		});
+	});
 	mNodes.clear();
 
 	// clear the open set
@@ -165,7 +171,8 @@ void AIFinder::operator()(
 	while (!mOpenSet.empty())
 	{
 		// grab the most likely candidate
-		AIPlanNode* planNode = mOpenSet.front();
+		AIPlanNode* planNode;
+		mOpenSet.try_pop(planNode);
 
 		if (planNode->GetPathingActor())
 		{
@@ -188,24 +195,24 @@ void AIFinder::operator()(
 		}
 
 		// we're processing this node so remove it from the open set and add it to the closed set
-		mOpenSet.pop_front();
 		AddToClosedSet(planNode);
 
 		// get the neighboring actors
-		PathingActorMap neighbors = planNode->GetPathingActor() ?
+		const PathingActorMap& neighbors = planNode->GetPathingActor() ?
 			planNode->GetPathingActor()->GetTarget()->GetActors() : planNode->GetPathingNode()->GetActors();
 
 		// loop though all the neighboring actors and evaluate each one
-		for (auto it = neighbors.begin(); it != neighbors.end(); ++it)
+		Concurrency::parallel_for_each(neighbors.begin(), neighbors.end(), [&](auto& neighbor)
+		//for (auto it = neighbors.begin(); it != neighbors.end(); ++it)
 		{
-			PathingActor* pActorToEvaluate = it->second;
+			PathingActor* pActorToEvaluate = neighbor.second;
 			if (pActorToEvaluate->GetType() != pathingType)
-				continue;
+				return;
 
 			if (planNode->GetPathingActor())
 			{
 				if (planNode->FindActor(pActorToEvaluate->GetActor()))
-					continue;
+					return;
 
 				AIPlanNode* pPlanToCompare = mNodes[pActorToEvaluate->GetActor()].front();
 				float costForActorPlan = pPlanToCompare->GetWeight() + searchItems.at(pActorToEvaluate->GetActor());
@@ -214,12 +221,12 @@ void AIFinder::operator()(
 				float costForThisPlan = planNode->GetWeight() +
 					planNode->CalculatePathCost(planNode->GetPathingActor()->GetTarget(), pActorToEvaluate);
 				if (costForThisPlan > costForActorPlan)
-					continue;
+					return;
 
 				AddToOpenSet(planNode->GetPathingActor()->GetTarget(), pActorToEvaluate, planNode);
 			}
 			else AddToOpenSet(planNode->GetPathingNode(), pActorToEvaluate, planNode);
-		}
+		});
 	}
 }
 
@@ -235,7 +242,7 @@ void AIFinder::AddToOpenSet(PathingNode* pNode, PathingActor* pActor, AIPlanNode
 		mNodes[pNode->GetActorId()].push_back(pThisNode);
 
 	// now insert it into the priority queue
-	mOpenSet.push_back(pThisNode);
+	mOpenSet.push(pThisNode);
 }
 
 void AIFinder::AddToClosedSet(AIPlanNode* pNode)
@@ -2633,7 +2640,9 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		otherSearchItems[actor] = 0.f;
 	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
 
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
+	std::vector<std::pair<ActorId, unsigned int>> actionTypes
+		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP }, 
+		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP }  };
 
 	//cluster node offset
 	clusterNodeStart = playerDataOut.plan.node;
@@ -2650,71 +2659,62 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	{
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart, 
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart, 
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 	else
 	{
@@ -2727,71 +2727,62 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 
 	// 	adding pathing offset to clusters path
@@ -3182,7 +3173,9 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		otherSearchItems[actor] = 0.f;
 	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
 
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
+	std::vector<std::pair<ActorId, unsigned int>> actionTypes
+		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP },
+		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP } };
 
 	//cluster node offset
 	clusterNodeStart = playerDataOut.plan.node;
@@ -3199,71 +3192,62 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	{
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart, 
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart, 
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 	else
 	{
@@ -3276,71 +3260,62 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 
 	// 	adding pathing offset to clusters path
@@ -3790,7 +3765,9 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		otherSearchItems[actor] = 0.f;
 	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
 
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
+	std::vector<std::pair<ActorId, unsigned int>> actionTypes
+		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP },
+		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP } };
 
 	//cluster node offset
 	clusterNodeStart = playerDataOut.plan.node;
@@ -3807,71 +3784,62 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	{
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart, 
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart, 
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 	else
 	{
@@ -3884,71 +3852,62 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 
 	// 	adding pathing offset to clusters path
@@ -4722,7 +4681,9 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		otherSearchItems[actor] = 0.f;
 	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
 
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
+	std::vector<std::pair<ActorId, unsigned int>> actionTypes
+		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP },
+		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP } };
 
 	//we need to stop the simulation if an aware decision making has started
 	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
@@ -4743,71 +4704,62 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	{
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 	else
 	{
@@ -4820,71 +4772,62 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 
 	//we need to stop the simulation if an aware decision making has started
@@ -5187,7 +5130,9 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		otherSearchItems[actor] = 0.f;
 	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
 
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
+	std::vector<std::pair<ActorId, unsigned int>> actionTypes
+		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP },
+		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP } };
 
 	//we need to stop the simulation if an aware decision making has started
 	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
@@ -5208,71 +5153,62 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	{
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 	else
 	{
@@ -5285,71 +5221,62 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 
 	//we need to stop the simulation if an aware decision making has started
@@ -5661,7 +5588,9 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		otherSearchItems[actor] = 0.f;
 	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
 
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
+	std::vector<std::pair<ActorId, unsigned int>> actionTypes
+		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP },
+		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP } };
 
 	//cluster node offset
 	clusterNodeStart = playerDataOut.plan.node;
@@ -5678,71 +5607,62 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	{
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart, 
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart, 
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 	else
 	{
@@ -5755,71 +5675,62 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 		std::mutex mutex;
 
-		std::array<Concurrency::task<void>, 2> tasks =
+		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
+		//for (auto& actionType : actionTypes)
 		{
-			Concurrency::create_task([&]
+			if (actionType.first == playerDataIn.player)
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//player
-					BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-						playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-						clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-					mutex.lock();
-					clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-					actorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-			}),
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
+					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
+					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
 
-			Concurrency::create_task([&]
+				mutex.lock();
+				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
+
+				actorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+			else
 			{
-				Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-				//for (unsigned int actionType : actionTypes)
-				{
-					Concurrency::concurrent_unordered_map<unsigned long long,
-						std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-					Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-					Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-					//other player
-					BuildActorPath(mPathingGraph, actionType, gameItems, otherSearchItems,
-						otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-						localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-						localActorPathPlanClusters);
-
-					mutex.lock();
-					otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-					otherActorPathPlanClusterHeuristics.insert(
-						localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-					otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-					mutex.unlock();
-				});
+				Concurrency::concurrent_unordered_map<unsigned long long,
+					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
+				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
+				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
 
 				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);
-			})
-		};
+				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
+					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
+					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
+					localActorPathPlanClusters);
 
-		auto joinTask = when_all(begin(tasks), end(tasks));
-		// Wait for the tasks to finish.
-		joinTask.wait();
+				mutex.lock();
+				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
+
+				otherActorPathPlanClusterHeuristics.insert(
+					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
+				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
+				mutex.unlock();
+			}
+		});
+
+		Concurrency::parallel_invoke(
+			[&] {			
+				//player
+				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
+					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
+			[&] {
+				//other player
+				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+		);
 	}
 
 	// 	adding pathing offset to clusters path
@@ -7257,10 +7168,16 @@ void QuakeAIManager::RunAIFastDecision()
 		if (GameLogic::Get()->GetState() == BGS_RUNNING)
 		{
 			if (mPlayers.find(GV_AI) == mPlayers.end())
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_RESPONSIVE)
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			unsigned int time = Timer::GetRealTime();
 
@@ -7311,10 +7228,16 @@ void QuakeAIManager::RunAIGuessing()
 		if (GameLogic::Get()->GetState() == BGS_RUNNING)
 		{
 			if (mPlayers.find(GV_AI) == mPlayers.end())
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_GUESSING)
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			unsigned int time = Timer::GetRealTime();
 
@@ -7413,10 +7336,16 @@ void QuakeAIManager::RunAIAwareDecision()
 		if (GameLogic::Get()->GetState() == BGS_RUNNING)
 		{
 			if (mPlayers.find(GV_AI) == mPlayers.end())
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_AWARENESS)
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			unsigned int time = Timer::GetRealTime();
 
@@ -7475,10 +7404,16 @@ void QuakeAIManager::RunHumanFastDecision()
 		if (GameLogic::Get()->GetState() == BGS_RUNNING)
 		{
 			if (mPlayers.find(GV_HUMAN) == mPlayers.end())
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_RESPONSIVE)
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			unsigned int time = Timer::GetRealTime();
 
@@ -7532,10 +7467,16 @@ void QuakeAIManager::RunHumanGuessing()
 		if (GameLogic::Get()->GetState() == BGS_RUNNING)
 		{
 			if (mPlayers.find(GV_HUMAN) == mPlayers.end())
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_GUESSING)
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			unsigned int time = Timer::GetRealTime();
 
@@ -7633,10 +7574,16 @@ void QuakeAIManager::RunHumanAwareDecision()
 		if (GameLogic::Get()->GetState() == BGS_RUNNING)
 		{
 			if (mPlayers.find(GV_HUMAN) == mPlayers.end())
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_AWARENESS)
+			{
+				std::this_thread::yield();
 				continue;
+			}
 
 			unsigned int time = Timer::GetRealTime();
 
@@ -9190,6 +9137,8 @@ float QuakeAIManager::CalculatePlayerWeaponStatus(const PlayerData& playerData)
 
 void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<float, VisibilityData>& visibility)
 {
+	std::map<float, int> itemAmmo;
+
 	for (int weapon = 1; weapon <= MAX_WEAPONS; weapon++)
 	{
 		if (weapon != WP_GAUNTLET)
@@ -9204,7 +9153,7 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 				weaponAvailable = true;
 			}
 
-			std::map<float, int> itemAmmo;
+			itemAmmo.clear();
 			for (auto const& item : playerData.items)
 			{
 				const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(item.first);

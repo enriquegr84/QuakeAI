@@ -1,4 +1,4 @@
-//========================================================================
+﻿//========================================================================
 // Pathing.cpp : Implements a simple pathing system using A*
 //
 // Part of the GameEngine Application
@@ -40,6 +40,11 @@
 #include "Pathing.h"
 
 #include "Core/OS/OS.h"
+
+#include <ppl.h>
+
+#include <concurrent_vector.h>
+#include <concurrent_unordered_map.h>
 
 //--------------------------------------------------------------------------------------------------------
 // Cluster
@@ -269,37 +274,40 @@ void PathingNode::GetClusters(unsigned int pathingType,
 	unsigned int clusterLimit, std::map<PathingCluster*, PathingArcVec>& clusterPaths, 
 	std::multimap<float, PathingCluster*, std::greater<float>>& clusterPathWeights)
 {
-	std::multimap<float, PathingCluster*> clusterPathWeightsLimit;
-	std::map<PathingCluster*, PathingArcVec> clusterPathsLimit;
-	PathingClusterMap::const_iterator itCluster;
-	for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
+	Concurrency::concurrent_unordered_multimap<float, PathingCluster*> clusterPathWeightsLimit;
+	Concurrency::concurrent_unordered_map<PathingCluster*, PathingArcVec> clusterPathsLimit;
+
+	Concurrency::parallel_for_each(mClusters.begin(), mClusters.end(), [&](auto& cluster)
+	//for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
 	{
-		if ((*itCluster).second->GetType() != pathingType)
-			continue;
+		if (cluster.second->GetType() != pathingType)
+			return;
 
 		float clusterPathWeight = 0.f;
 		PathingNode* currentNode = this;
-		while (currentNode != (*itCluster).second->GetTarget())
+		while (currentNode != cluster.second->GetTarget())
 		{
-			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, (*itCluster).second->GetTarget());
+			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, cluster.second->GetTarget());
 			PathingArc* currentArc = currentNode->FindArc(currentCluster->GetNode());
 
-			clusterPathsLimit[(*itCluster).second].push_back(currentArc);
+			clusterPathsLimit[cluster.second].push_back(currentArc);
 			clusterPathWeight += currentArc->GetWeight();
 
 			currentNode = currentArc->GetNode();
 		}
-		clusterPathWeightsLimit.insert({ clusterPathWeight, (*itCluster).second });
-	}
+		clusterPathWeightsLimit.insert({ clusterPathWeight, cluster.second });
+	});
 
 	unsigned int clusterCount = 0;
-	for (auto const& clusterPathWeight : clusterPathWeightsLimit)
+	// Copy to std::multimap → automatically sorted by key
+	std::multimap<float, PathingCluster*> sortedClusterPathWeightsLimit(clusterPathWeightsLimit.begin(), clusterPathWeightsLimit.end());
+	for (auto const& sortedClusterPathWeight : sortedClusterPathWeightsLimit)
 	{
 		if (clusterLimit <= clusterCount)
 			return;
 
-		clusterPaths[clusterPathWeight.second] = clusterPathsLimit[clusterPathWeight.second];
-		clusterPathWeights.insert({ clusterPathWeight.first, clusterPathWeight.second });
+		clusterPaths[sortedClusterPathWeight.second] = clusterPathsLimit[sortedClusterPathWeight.second];
+		clusterPathWeights.insert({ sortedClusterPathWeight.first, sortedClusterPathWeight.second });
 
 		clusterCount++;
 	}
@@ -308,37 +316,40 @@ void PathingNode::GetClusters(unsigned int pathingType,
 void PathingNode::GetClusters(unsigned int pathingType, unsigned int clusterLimit, 
 	std::map<PathingCluster*, PathingArcVec>& clusterPaths, std::map<PathingCluster*, float>& clusterPathWeights)
 {
-	std::multimap<float, PathingCluster*> clusterPathWeightsLimit;
-	std::map<PathingCluster*, PathingArcVec> clusterPathsLimit;
-	PathingClusterMap::const_iterator itCluster;
-	for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
+	Concurrency::concurrent_unordered_multimap<float, PathingCluster*> clusterPathWeightsLimit;
+	Concurrency::concurrent_unordered_map<PathingCluster*, PathingArcVec> clusterPathsLimit;
+
+	Concurrency::parallel_for_each(mClusters.begin(), mClusters.end(), [&](auto& cluster)
+	//for (itCluster = mClusters.begin(); itCluster != mClusters.end(); itCluster++)
 	{
-		if ((*itCluster).second->GetType() != pathingType)
-			continue;
+		if (cluster.second->GetType() != pathingType)
+			return;
 
 		float clusterPathWeight = 0.f;
 		PathingNode* currentNode = this;
-		while (currentNode != (*itCluster).second->GetTarget())
+		while (currentNode != cluster.second->GetTarget())
 		{
-			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, (*itCluster).second->GetTarget());
+			PathingCluster* currentCluster = currentNode->FindCluster(pathingType, cluster.second->GetTarget());
 			PathingArc* currentArc = currentNode->FindArc(currentCluster->GetNode());
 
-			clusterPathsLimit[(*itCluster).second].push_back(currentArc);
+			clusterPathsLimit[cluster.second].push_back(currentArc);
 			clusterPathWeight += currentArc->GetWeight();
 
 			currentNode = currentArc->GetNode();
 		}
-		clusterPathWeightsLimit.insert({ clusterPathWeight, (*itCluster).second });
-	}
+		clusterPathWeightsLimit.insert({ clusterPathWeight, cluster.second });
+	});
 
 	unsigned int clusterCount = 0;
-	for (auto const& clusterPathWeight : clusterPathWeightsLimit)
+	// Copy to std::multimap → automatically sorted by key
+	std::multimap<float, PathingCluster*> sortedClusterPathWeightsLimit(clusterPathWeightsLimit.begin(), clusterPathWeightsLimit.end());
+	for (auto const& sortedClusterPathWeight : sortedClusterPathWeightsLimit)
 	{
 		if (clusterLimit <= clusterCount)
 			return;
 
-		clusterPaths[clusterPathWeight.second] = clusterPathsLimit[clusterPathWeight.second];
-		clusterPathWeights[clusterPathWeight.second] = clusterPathWeight.first;
+		clusterPaths[sortedClusterPathWeight.second] = clusterPathsLimit[sortedClusterPathWeight.second];
+		clusterPathWeights[sortedClusterPathWeight.second] = sortedClusterPathWeight.first;
 
 		clusterCount++;
 	}

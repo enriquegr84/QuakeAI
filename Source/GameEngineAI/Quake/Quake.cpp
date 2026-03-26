@@ -1989,32 +1989,32 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 			aiManager->SpawnActor(playerActor->GetId());
 
 		Concurrency::create_task([&]
-			{
-				//guessing decision making
-				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-				aiManager->RunAIGuessing();
-			});
+		{
+			//guessing decision making
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->RunAIGuessing();
+		});
 
 		Concurrency::create_task([&]
-			{
-				//guessing decision making
-				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-				aiManager->RunHumanGuessing();
-			});
+		{
+			//aware decision making
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->RunAIAwareDecision();
+		});
 
 		Concurrency::create_task([&]
-			{
-				//aware decision making
-				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-				aiManager->RunHumanAwareDecision();
-			});
+		{
+			//guessing decision making
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->RunHumanGuessing();
+		});
 
 		Concurrency::create_task([&]
-			{
-				//aware decision making
-				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-				aiManager->RunAIAwareDecision();
-			});
+		{
+			//aware decision making
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->RunHumanAwareDecision();
+		});
 
 		mGameAICombat = true;
 	}
@@ -2432,10 +2432,10 @@ void QuakeLogic::SaveAIGameDelegate(BaseEventDataPtr pEventData)
 		std::static_pointer_cast<EventDataSaveAIGame>(pEventData);
 
 	Concurrency::create_task([&]
-		{
-			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->SaveGameAnalysis();
-		});
+	{
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		aiManager->SaveGameAnalysis();
+	});
 }
 
 void QuakeLogic::SaveAllDelegate(BaseEventDataPtr pEventData)
@@ -4141,7 +4141,7 @@ void QuakeLogic::Damage(int damage, int dflags, int mod,
 	// do the damage
 	if (take)
 	{
-		//target->GetState().stats[STAT_HEALTH] -= take;
+		target->GetState().stats[STAT_HEALTH] -= take;
 
 		if (target->GetState().stats[STAT_HEALTH] <= 0)
 		{

@@ -28,15 +28,16 @@
 #include <ppltasks.h>
 
 #include <mutex>
+#include <concurrent_queue.h>
 #include <concurrent_vector.h>
 #include <concurrent_unordered_map.h>
 
 class Transform;
 class AIPlanNode;
 
-typedef std::list<AIPlanNode*> AIPlanNodeList;
-typedef std::vector<AIPlanNode*> AIPlanNodeVector;
-typedef std::map<ActorId, AIPlanNodeVector> ActorToAIPlanNodeMap;
+typedef Concurrency::concurrent_queue<AIPlanNode*> AIPlanNodeList;
+typedef Concurrency::concurrent_vector<AIPlanNode*> AIPlanNodeVector;
+typedef Concurrency::concurrent_unordered_map<ActorId, AIPlanNodeVector> ActorToAIPlanNodeMap;
 
 //
 // struct VisibilityData
