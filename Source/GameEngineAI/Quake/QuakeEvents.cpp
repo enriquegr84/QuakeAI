@@ -87,6 +87,8 @@ const BaseEventType EventDataShowMapNode::skEventType(0x591ea56d);
 
 const BaseEventType EventDataChangeAnalysisFrame::skEventType(0xd6a1d469);
 const BaseEventType EventDataShowGameSimulation::skEventType(0xe7dd903f);
+const BaseEventType EventDataShowAnalysisSimulation::skEventType(0x48faaf7);
+const BaseEventType EventDataShowAnalysisPrediction::skEventType(0x479cf054);
 const BaseEventType EventDataShowGameState::skEventType(0xdf8ca2);
 
 const BaseEventType EventDataShowPathing::skEventType(0x1af3f6ee);
@@ -103,6 +105,8 @@ const BaseEventType EventDataSimulateFalling::skEventType(0x7e26d090);
 const BaseEventType EventDataSimulateAIGame::skEventType(0x95308432);
 const BaseEventType EventDataAnalyzeAIGame::skEventType(0x11131e45);
 const BaseEventType EventDataShowAIGameAnalysis::skEventType(0xd3924190);
+const BaseEventType EventDataShowAISimulationAnalysis::skEventType(0x56e2afd0);
+const BaseEventType EventDataShowAIPredictionAnalysis::skEventType(0xb8a4eaa8);
 const BaseEventType EventDataShowAIGame::skEventType(0x29eaa0c5);
 const BaseEventType EventDataSaveAIGame::skEventType(0xdd5c01fb);
 

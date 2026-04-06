@@ -160,6 +160,9 @@
     <ClInclude Include="..\Quake\QuakeAIAnalyzerView.h">
       <Filter>Quake</Filter>
     </ClInclude>
+    <ClInclude Include="..\Quake\Graphics\ClusterNode.h">
+      <Filter>Quake\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Quake\Quake.cpp">
@@ -302,6 +305,9 @@
     </ClCompile>
     <ClCompile Include="..\Quake\QuakeAIAnalyzerView.cpp">
       <Filter>Quake</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\Graphics\ClusterNode.cpp">
+      <Filter>Quake\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

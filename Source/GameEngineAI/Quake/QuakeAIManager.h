@@ -1234,6 +1234,13 @@ protected:
 		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
 
+	bool SimulateClusterPathing(
+		const PlayerData& playerDataIn, PlayerData& playerDataOut,
+		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, 
+		const std::map<ActorId, float>& gameItems,
+		std::unordered_set<PathingNode*>& playerClusterPathings,
+		std::unordered_set<PathingNode*>& otherPlayerClusterPathings);
+
 	//players viewType
 	void OnAttach(GameViewType vtype, ActorId aid)
 	{

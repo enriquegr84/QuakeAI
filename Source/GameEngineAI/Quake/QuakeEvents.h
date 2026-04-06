@@ -2124,6 +2124,128 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
+// EventDataShowAnalysisSimulation - sent for showing ai analysis simulation
+//---------------------------------------------------------------------------------------------------------------------
+class EventDataShowAnalysisSimulation : public EventData
+{
+	unsigned short mPlayerIndex;
+	unsigned short mAnalysisFrame;
+
+public:
+	static const BaseEventType skEventType;
+
+	virtual const BaseEventType& GetEventType(void) const
+	{
+		return skEventType;
+	}
+
+	EventDataShowAnalysisSimulation(void)
+	{
+		mPlayerIndex = 0;
+		mAnalysisFrame = 0;
+	}
+
+	EventDataShowAnalysisSimulation(unsigned short player, unsigned short frame) : 
+		mPlayerIndex(player), mAnalysisFrame(frame)
+	{
+		//
+	}
+
+	virtual void Serialize(std::ostrstream& out) const
+	{
+		out << mAnalysisFrame << " ";
+		out << mPlayerIndex << " ";
+	}
+
+	virtual void Deserialize(std::istrstream& in)
+	{
+		in >> mAnalysisFrame;
+		in >> mPlayerIndex;
+	}
+
+	virtual BaseEventDataPtr Copy() const
+	{
+		return BaseEventDataPtr(new EventDataShowAnalysisSimulation(mPlayerIndex, mAnalysisFrame));
+	}
+
+	virtual const char* GetName(void) const
+	{
+		return "EventDataShowAnalysisSimulation";
+	}
+
+	unsigned short GetPlayer(void) const
+	{
+		return mPlayerIndex;
+	}
+
+	unsigned short GetAnalysisFrame(void) const
+	{
+		return mAnalysisFrame;
+	}
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventDataShowAnalysisPrediction - sent for showing ai analysis prediction
+//---------------------------------------------------------------------------------------------------------------------
+class EventDataShowAnalysisPrediction : public EventData
+{
+	unsigned short mPlayerIndex;
+	unsigned short mAnalysisFrame;
+
+public:
+	static const BaseEventType skEventType;
+
+	virtual const BaseEventType& GetEventType(void) const
+	{
+		return skEventType;
+	}
+
+	EventDataShowAnalysisPrediction(void)
+	{
+		mPlayerIndex = 0;
+		mAnalysisFrame = 0;
+	}
+
+	EventDataShowAnalysisPrediction(unsigned short player, unsigned short frame) :
+		mPlayerIndex(player), mAnalysisFrame(frame)
+	{
+		//
+	}
+
+	virtual void Serialize(std::ostrstream& out) const
+	{
+		out << mAnalysisFrame << " ";
+		out << mPlayerIndex << " ";
+	}
+
+	virtual void Deserialize(std::istrstream& in)
+	{
+		in >> mAnalysisFrame;
+		in >> mPlayerIndex;
+	}
+
+	virtual BaseEventDataPtr Copy() const
+	{
+		return BaseEventDataPtr(new EventDataShowAnalysisPrediction(mPlayerIndex, mAnalysisFrame));
+	}
+
+	virtual const char* GetName(void) const
+	{
+		return "EventDataShowAnalysisPrediction";
+	}
+
+	unsigned short GetPlayer(void) const
+	{
+		return mPlayerIndex;
+	}
+
+	unsigned short GetAnalysisFrame(void) const
+	{
+		return mAnalysisFrame;
+	}
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 // EventDataShowGameState - sent for showing ai game state
 //---------------------------------------------------------------------------------------------------------------------
 class EventDataShowGameState : public EventData
@@ -2700,6 +2822,246 @@ public:
 	virtual const char* GetName(void) const
 	{
 		return "EventDataShowAIGameAnalysis";
+	}
+
+	unsigned short GetGameFrame(void) const
+	{
+		return mGameFrame;
+	}
+
+	unsigned short GetAnalysisFrame(void) const
+	{
+		return mAnalysisFrame;
+	}
+
+	unsigned short GetPlayer(void) const
+	{
+		return mPlayerIndex;
+	}
+
+	const std::string& GetEvaluationCluster(void) const
+	{
+		return mEvaluationCluster;
+	}
+
+	const std::string& GetDecisionCluster(void) const
+	{
+		return mDecisionCluster;
+	}
+
+	const std::string& GetEvaluationFilter(void) const
+	{
+		return mEvaluationFilter;
+	}
+
+	const std::string& GetDecisionFilter(void) const
+	{
+		return mDecisionFilter;
+	}
+
+	unsigned short GetTab(void) const
+	{
+		return mTabIndex;
+	}
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventDataShowAISimulationAnalysis - show ai simulation analysis
+//---------------------------------------------------------------------------------------------------------------------
+class EventDataShowAISimulationAnalysis : public EventData
+{
+	unsigned short mGameFrame;
+	unsigned short mAnalysisFrame;
+	unsigned short mPlayerIndex;
+	unsigned short mTabIndex;
+	std::string mEvaluationCluster;
+	std::string mDecisionCluster;
+	std::string mEvaluationFilter;
+	std::string mDecisionFilter;
+
+public:
+	static const BaseEventType skEventType;
+
+	virtual const BaseEventType& GetEventType(void) const
+	{
+		return skEventType;
+	}
+
+	EventDataShowAISimulationAnalysis(void)
+	{
+		mGameFrame = 0;
+		mAnalysisFrame = 0;
+		mPlayerIndex = 1;
+		mTabIndex = 1;
+		mEvaluationCluster = -1;
+		mDecisionCluster = -1;
+		mEvaluationFilter = std::string();
+		mDecisionFilter = std::string();
+	}
+
+	EventDataShowAISimulationAnalysis(unsigned short gameFrame, unsigned short analysisFrame,
+		unsigned short playerIndex, const std::string& evaluationCluster, const std::string& decisionCluster,
+		const std::string& evaluationFilter, const std::string& decisionFilter, unsigned short tabIndex) :
+		mGameFrame(gameFrame), mAnalysisFrame(analysisFrame), mPlayerIndex(playerIndex),
+		mEvaluationCluster(evaluationCluster), mDecisionCluster(decisionCluster),
+		mEvaluationFilter(evaluationFilter), mDecisionFilter(decisionFilter), mTabIndex(tabIndex)
+	{
+		//
+	}
+
+	virtual void Serialize(std::ostrstream& out) const
+	{
+		out << mGameFrame << " ";
+		out << mAnalysisFrame << " ";
+		out << mPlayerIndex << " ";
+		out << mTabIndex << " ";
+		out << mEvaluationCluster << " ";
+		out << mDecisionCluster << " ";
+		out << mEvaluationFilter << " ";
+		out << mDecisionFilter << " ";
+	}
+
+	virtual void Deserialize(std::istrstream& in)
+	{
+		in >> mGameFrame;
+		in >> mAnalysisFrame;
+		in >> mPlayerIndex;
+		in >> mTabIndex;
+		in >> mEvaluationCluster;
+		in >> mDecisionCluster;
+		in >> mEvaluationFilter;
+		in >> mDecisionFilter;
+	}
+
+	virtual BaseEventDataPtr Copy() const
+	{
+		return BaseEventDataPtr(new EventDataShowAISimulationAnalysis(mGameFrame, mAnalysisFrame,
+			mPlayerIndex, mEvaluationCluster, mDecisionCluster, mEvaluationFilter, mDecisionFilter, mTabIndex));
+	}
+
+	virtual const char* GetName(void) const
+	{
+		return "EventDataShowAISimulationAnalysis";
+	}
+
+	unsigned short GetGameFrame(void) const
+	{
+		return mGameFrame;
+	}
+
+	unsigned short GetAnalysisFrame(void) const
+	{
+		return mAnalysisFrame;
+	}
+
+	unsigned short GetPlayer(void) const
+	{
+		return mPlayerIndex;
+	}
+
+	const std::string& GetEvaluationCluster(void) const
+	{
+		return mEvaluationCluster;
+	}
+
+	const std::string& GetDecisionCluster(void) const
+	{
+		return mDecisionCluster;
+	}
+
+	const std::string& GetEvaluationFilter(void) const
+	{
+		return mEvaluationFilter;
+	}
+
+	const std::string& GetDecisionFilter(void) const
+	{
+		return mDecisionFilter;
+	}
+
+	unsigned short GetTab(void) const
+	{
+		return mTabIndex;
+	}
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventDataShowAIPredictionAnalysis - show ai prediction analysis
+//---------------------------------------------------------------------------------------------------------------------
+class EventDataShowAIPredictionAnalysis : public EventData
+{
+	unsigned short mGameFrame;
+	unsigned short mAnalysisFrame;
+	unsigned short mPlayerIndex;
+	unsigned short mTabIndex;
+	std::string mEvaluationCluster;
+	std::string mDecisionCluster;
+	std::string mEvaluationFilter;
+	std::string mDecisionFilter;
+
+public:
+	static const BaseEventType skEventType;
+
+	virtual const BaseEventType& GetEventType(void) const
+	{
+		return skEventType;
+	}
+
+	EventDataShowAIPredictionAnalysis(void)
+	{
+		mGameFrame = 0;
+		mAnalysisFrame = 0;
+		mPlayerIndex = 1;
+		mTabIndex = 1;
+		mEvaluationCluster = -1;
+		mDecisionCluster = -1;
+		mEvaluationFilter = std::string();
+		mDecisionFilter = std::string();
+	}
+
+	EventDataShowAIPredictionAnalysis(unsigned short gameFrame, unsigned short analysisFrame,
+		unsigned short playerIndex, const std::string& evaluationCluster, const std::string& decisionCluster,
+		const std::string& evaluationFilter, const std::string& decisionFilter, unsigned short tabIndex) :
+		mGameFrame(gameFrame), mAnalysisFrame(analysisFrame), mPlayerIndex(playerIndex),
+		mEvaluationCluster(evaluationCluster), mDecisionCluster(decisionCluster),
+		mEvaluationFilter(evaluationFilter), mDecisionFilter(decisionFilter), mTabIndex(tabIndex)
+	{
+		//
+	}
+
+	virtual void Serialize(std::ostrstream& out) const
+	{
+		out << mGameFrame << " ";
+		out << mAnalysisFrame << " ";
+		out << mPlayerIndex << " ";
+		out << mTabIndex << " ";
+		out << mEvaluationCluster << " ";
+		out << mDecisionCluster << " ";
+		out << mEvaluationFilter << " ";
+		out << mDecisionFilter << " ";
+	}
+
+	virtual void Deserialize(std::istrstream& in)
+	{
+		in >> mGameFrame;
+		in >> mAnalysisFrame;
+		in >> mPlayerIndex;
+		in >> mTabIndex;
+		in >> mEvaluationCluster;
+		in >> mDecisionCluster;
+		in >> mEvaluationFilter;
+		in >> mDecisionFilter;
+	}
+
+	virtual BaseEventDataPtr Copy() const
+	{
+		return BaseEventDataPtr(new EventDataShowAIPredictionAnalysis(mGameFrame, mAnalysisFrame,
+			mPlayerIndex, mEvaluationCluster, mDecisionCluster, mEvaluationFilter, mDecisionFilter, mTabIndex));
+	}
+
+	virtual const char* GetName(void) const
+	{
+		return "EventDataShowAIPredictionAnalysis";
 	}
 
 	unsigned short GetGameFrame(void) const

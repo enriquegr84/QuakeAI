@@ -207,7 +207,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\;$(WindowsSDK_LibraryPath_x86)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gameengine.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gameengine.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libcmtd.lib, libconcrtd.lib</IgnoreSpecificDefaultLibraries>
       <Profile>true</Profile>
     </Link>
@@ -233,7 +233,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\;$(WindowsSDK_LibraryPath_x64)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gameengine.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12.lib;PhysX_64.lib;PhysXCooking_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXPvdSDK_static_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gameengine.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12_debug.lib;PhysX_64.lib;PhysXCooking_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXPvdSDK_static_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libcmtd.lib, libconcrtd.lib</IgnoreSpecificDefaultLibraries>
       <Profile>true</Profile>
     </Link>
@@ -258,7 +258,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\;$(WindowsSDK_LibraryPath_x86)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gameengine.lib;opengl32.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gameengine.lib;opengl32.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libcmtd.lib, libconcrtd.lib</IgnoreSpecificDefaultLibraries>
       <Profile>true</Profile>
     </Link>
@@ -283,7 +283,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\Lib\$(PlatformName)$(Configuration)\;$(WindowsSDK_LibraryPath_x64)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gameengine.lib;opengl32.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12.lib;PhysX_64.lib;PhysXCooking_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXPvdSDK_static_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gameengine.lib;opengl32.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libogg.lib;libvorbisfile.lib;libvorbis.lib;libvorbis_static.lib;tbb12_debug.lib;PhysX_64.lib;PhysXCooking_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXPvdSDK_static_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libcmtd.lib, libconcrtd.lib</IgnoreSpecificDefaultLibraries>
       <Profile>true</Profile>
     </Link>
@@ -425,6 +425,7 @@
     <ClInclude Include="..\Quake\Games\Forms\Menu\MenuSettings.h" />
     <ClInclude Include="..\Quake\Games\Forms\Menu\Online.h" />
     <ClInclude Include="..\Quake\Games\Subgames.h" />
+    <ClInclude Include="..\Quake\Graphics\ClusterNode.h" />
     <ClInclude Include="..\Quake\Graphics\GraphNode.h" />
     <ClInclude Include="..\Quake\Graphics\GUI\UIKeyChange.h" />
     <ClInclude Include="..\Quake\Graphics\GUI\UIVolumeChange.h" />
@@ -476,6 +477,7 @@
     <ClCompile Include="..\Quake\Games\Forms\Menu\MenuSettings.cpp" />
     <ClCompile Include="..\Quake\Games\Forms\Menu\Online.cpp" />
     <ClCompile Include="..\Quake\Games\Subgames.cpp" />
+    <ClCompile Include="..\Quake\Graphics\ClusterNode.cpp" />
     <ClCompile Include="..\Quake\Graphics\GraphNode.cpp" />
     <ClCompile Include="..\Quake\Graphics\GUI\UIKeyChange.cpp" />
     <ClCompile Include="..\Quake\Graphics\GUI\UIVolumeChange.cpp" />

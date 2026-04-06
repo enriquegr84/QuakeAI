@@ -2,7 +2,7 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#include "GraphNode.h"
+#include "ClusterNode.h"
 
 #include "../Quake.h"
 
@@ -17,67 +17,35 @@
 #include "Graphic/Scene/Scene.h"
 
 //! constructor
-GraphNode::GraphNode(const ActorId actorId, PVWUpdater* updater, 
-	const std::shared_ptr<Texture2>& texture, Vector3<float> size,
-	const std::shared_ptr<PathingGraph>& pathingGraph) : 
+ClusterNode::ClusterNode(const ActorId actorId, PVWUpdater* updater,
+	const std::shared_ptr<Texture2>& texture, Vector3<float> size) : 
 	Node(actorId, NT_MESH), mTexture(texture), mSize(size)
 {
 	mPVWUpdater = updater;
 
 	mRasterizerState = std::make_shared<RasterizerState>();
-
-	const ClusterMap& clusters = pathingGraph->GetClusters();
-	for (ClusterMap::const_iterator it = clusters.begin(); it != clusters.end(); ++it)
-	{
-		Cluster* cluster = (*it).second;
-
-		uint32_t r = Randomizer::Rand() % 256;
-		uint32_t g = Randomizer::Rand() % 256;
-		uint32_t b = Randomizer::Rand() % 256;
-		SColorF clr = SColor(40, r, g, b);
-		mColors[cluster->GetId()] = clr.ToArray();
-	}
+	mBlendState = std::make_shared<BlendState>();
+	mDepthStencilState = std::make_shared<DepthStencilState>();
 }
 
-GraphNode::~GraphNode()
+ClusterNode::~ClusterNode()
 {
-	for (auto const& visual : mVisuals)
-		mPVWUpdater->Unsubscribe(visual->GetEffect()->GetPVWMatrixConstant());
+	mPVWUpdater->Unsubscribe(mVisual->GetEffect()->GetPVWMatrixConstant());
 }
 
-void GraphNode::GenerateMesh(
-	const std::unordered_map<PathingNode*, float>& selectedNodes,
-	const std::shared_ptr<PathingGraph>& pathingGraph)
+void ClusterNode::GenerateMesh(const std::vector<std::pair<Vector3<float>, Vector4<float>>>& nodes)
 {
-	for (auto const& visual : mVisuals)
-		mPVWUpdater->Unsubscribe(visual->GetEffect()->GetPVWMatrixConstant());
-	mVisuals.clear();
-	mBlendStates.clear();
-	mDepthStencilStates.clear();
-
 	VertexFormat vformat;
 	vformat.Bind(VA_POSITION, DF_R32G32B32_FLOAT, 0);
 	vformat.Bind(VA_TEXCOORD, DF_R32G32_FLOAT, 0);
 	vformat.Bind(VA_COLOR, DF_R32G32B32A32_FLOAT, 0);
 
-	PathingNodeVec transparentNodes, solidNodes;
-	const PathingNodeMap& pathingNodes = pathingGraph->GetNodes();
-	for (PathingNodeMap::const_iterator it = pathingNodes.begin(); it != pathingNodes.end(); ++it)
-	{
-		PathingNode* node = (*it).second;
-
-		if (selectedNodes.find(node) != selectedNodes.end())
-			solidNodes.push_back(node);
-		else
-			transparentNodes.push_back(node);
-	}
-
 	mMesh = std::make_shared<NormalMesh>();
-	if (!transparentNodes.empty())
+	if (!nodes.empty())
 	{
 		BaseMeshBuffer* meshBuffer = new MeshBuffer(vformat, 
-			24 * (unsigned int)transparentNodes.size(), 
-			12 * (unsigned int)transparentNodes.size(), sizeof(unsigned int));
+			24 * (unsigned int)nodes.size(), 
+			12 * (unsigned int)nodes.size(), sizeof(unsigned int));
 		mMesh->AddMeshBuffer(meshBuffer);
 
 		std::shared_ptr<Material> material = std::make_shared<Material>();
@@ -98,31 +66,12 @@ void GraphNode::GenerateMesh(
 			meshBuffer->GetMaterial() = material;
 			meshBuffer->GetMaterial()->SetTexture(0, mTexture);
 		}
-		GenerateGeometry(meshBuffer, transparentNodes);
-	}
-
-	if (!solidNodes.empty())
-	{
-		BaseMeshBuffer* meshBuffer = new MeshBuffer(vformat, 
-			24 * (unsigned int)solidNodes.size(), 
-			12 * (unsigned int)solidNodes.size(), sizeof(unsigned int));
-		mMesh->AddMeshBuffer(meshBuffer);
-
-		std::shared_ptr<Material> material = std::make_shared<Material>();
-		for (unsigned int i = 0; i < GetMaterialCount(); ++i)
-		{
-			meshBuffer->GetMaterial() = material;
-			meshBuffer->GetMaterial()->SetTexture(0, mTexture);
-		}
-		GenerateGeometry(meshBuffer, solidNodes);
+		GenerateGeometry(meshBuffer, nodes);
 	}
 
 	for (unsigned int mb = 0; mb < mMesh->GetMeshBufferCount(); mb++)
 	{
 		std::shared_ptr<BaseMeshBuffer> meshBuffer = mMesh->GetMeshBuffer(mb);
-
-		mBlendStates.push_back(std::make_shared<BlendState>());
-		mDepthStencilStates.push_back(std::make_shared<DepthStencilState>());
 
 		std::vector<std::string> path;
 #if defined(_OPENGL_)
@@ -144,122 +93,14 @@ void GraphNode::GenerateMesh(
 			ProgramFactory::Get()->CreateFromProgram(extra->GetProgram()),
 			meshBuffer->GetMaterial()->GetTexture(TT_DIFFUSE),
 			SamplerState::MIN_L_MAG_L_MIP_P, SamplerState::WRAP, SamplerState::WRAP);
-		std::shared_ptr<Visual> visual = std::make_shared<Visual>(
-			meshBuffer->GetVertice(), meshBuffer->GetIndice(), effect);
-		visual->UpdateModelBound();
-		mVisuals.push_back(visual);
+		mVisual = std::make_shared<Visual>(meshBuffer->GetVertice(), meshBuffer->GetIndice(), effect);
+		mVisual->UpdateModelBound();
+
 		mPVWUpdater->Subscribe(mWorldTransform, effect->GetPVWMatrixConstant());
 	}
 }
 
-void GraphNode::GenerateMesh(
-	const std::map<unsigned short, unsigned short>& selectedClusters,
-	const std::shared_ptr<PathingGraph>& pathingGraph)
-{
-	for (auto const& visual : mVisuals)
-		mPVWUpdater->Unsubscribe(visual->GetEffect()->GetPVWMatrixConstant());
-	mVisuals.clear();
-	mBlendStates.clear();
-	mDepthStencilStates.clear();
-
-	VertexFormat vformat;
-	vformat.Bind(VA_POSITION, DF_R32G32B32_FLOAT, 0);
-	vformat.Bind(VA_TEXCOORD, DF_R32G32_FLOAT, 0);
-	vformat.Bind(VA_COLOR, DF_R32G32B32A32_FLOAT, 0);
-
-	PathingNodeVec transparentNodes, solidNodes;
-	const PathingNodeMap& pathingNodes = pathingGraph->GetNodes();
-	for (PathingNodeMap::const_iterator it = pathingNodes.begin(); it != pathingNodes.end(); ++it)
-	{
-		PathingNode* node = (*it).second;
-
-		if (selectedClusters.find(node->GetCluster()) == selectedClusters.end())
-			solidNodes.push_back(node);
-		else
-			transparentNodes.push_back(node);
-	}
-
-	mMesh = std::make_shared<NormalMesh>();
-	if (!transparentNodes.empty())
-	{
-		BaseMeshBuffer* meshBuffer = new MeshBuffer(vformat, 
-			24 * (unsigned int)transparentNodes.size(), 
-			12 * (unsigned int)transparentNodes.size(), sizeof(unsigned int));
-		mMesh->AddMeshBuffer(meshBuffer);
-
-		std::shared_ptr<Material> material = std::make_shared<Material>();
-		material->mType = MaterialType::MT_TRANSPARENT;
-		material->mBlendTarget.enable = true;
-		material->mBlendTarget.srcColor = BlendState::BM_SRC_ALPHA;
-		material->mBlendTarget.dstColor = BlendState::BM_INV_SRC_ALPHA;
-		material->mBlendTarget.srcAlpha = BlendState::BM_SRC_ALPHA;
-		material->mBlendTarget.dstAlpha = BlendState::BM_INV_SRC_ALPHA;
-
-		material->mDepthBuffer = true;
-		material->mDepthMask = DepthStencilState::MASK_ALL;
-
-		material->mFillMode = RasterizerState::FILL_SOLID;
-		material->mCullMode = RasterizerState::CULL_NONE;
-		for (unsigned int i = 0; i < GetMaterialCount(); ++i)
-		{
-			meshBuffer->GetMaterial() = material;
-			meshBuffer->GetMaterial()->SetTexture(0, mTexture);
-		}
-		GenerateGeometry(meshBuffer, transparentNodes);
-	}
-
-	if (!solidNodes.empty())
-	{
-		BaseMeshBuffer* meshBuffer = new MeshBuffer(vformat, 
-			24 * (unsigned int)solidNodes.size(), 
-			12 * (unsigned int)solidNodes.size(), sizeof(unsigned int));
-		mMesh->AddMeshBuffer(meshBuffer);
-
-		std::shared_ptr<Material> material = std::make_shared<Material>();
-		for (unsigned int i = 0; i < GetMaterialCount(); ++i)
-		{
-			meshBuffer->GetMaterial() = material;
-			meshBuffer->GetMaterial()->SetTexture(0, mTexture);
-		}
-		GenerateGeometry(meshBuffer, solidNodes);
-	}
-
-	for (unsigned int mb = 0; mb < mMesh->GetMeshBufferCount(); mb++)
-	{
-		std::shared_ptr<BaseMeshBuffer> meshBuffer = mMesh->GetMeshBuffer(mb);
-
-		mBlendStates.push_back(std::make_shared<BlendState>());
-		mDepthStencilStates.push_back(std::make_shared<DepthStencilState>());
-
-		std::vector<std::string> path;
-#if defined(_OPENGL_)
-		path.push_back("Effects/Texture2ColorEffectVS.glsl");
-		path.push_back("Effects/Texture2ColorEffectPS.glsl");
-#else
-		path.push_back("Effects/Texture2ColorEffectVS.hlsl");
-		path.push_back("Effects/Texture2ColorEffectPS.hlsl");
-#endif
-		std::shared_ptr<ResHandle> resHandle =
-			ResCache::Get()->GetHandle(&BaseResource(ToWideString(path.front())));
-
-		const std::shared_ptr<ShaderResourceExtraData>& extra =
-			std::static_pointer_cast<ShaderResourceExtraData>(resHandle->GetExtra());
-		if (!extra->GetProgram())
-			extra->GetProgram() = ProgramFactory::Get()->CreateFromFiles(path.front(), path.back(), "");
-
-		std::shared_ptr<Texture2Effect> effect = std::make_shared<Texture2Effect>(
-			ProgramFactory::Get()->CreateFromProgram(extra->GetProgram()),
-			meshBuffer->GetMaterial()->GetTexture(TT_DIFFUSE),
-			SamplerState::MIN_L_MAG_L_MIP_P, SamplerState::WRAP, SamplerState::WRAP);
-		std::shared_ptr<Visual> visual = std::make_shared<Visual>(
-			meshBuffer->GetVertice(), meshBuffer->GetIndice(), effect);
-		visual->UpdateModelBound();
-		mVisuals.push_back(visual);
-		mPVWUpdater->Subscribe(mWorldTransform, effect->GetPVWMatrixConstant());
-	}
-}
-
-void GraphNode::GenerateGeometry(BaseMeshBuffer* meshBuffer, const PathingNodeVec& nodes)
+void ClusterNode::GenerateGeometry(BaseMeshBuffer* meshBuffer, const std::vector<std::pair<Vector3<float>, Vector4<float>>>& nodes)
 {
 	LogAssert(!nodes.empty(), "Nodes can't be empty");
 
@@ -356,15 +197,15 @@ void GraphNode::GenerateGeometry(BaseMeshBuffer* meshBuffer, const PathingNodeVe
 	{
 		for (unsigned int vtx = 0; vtx < 24; vtx++, v++)
 		{
-			vertex[v].position = vertex[vtx].position + nodes[n]->GetPosition();
-			vertex[v].color = mColors[nodes[n]->GetCluster()];
+			vertex[v].position = vertex[vtx].position + nodes[n].first;
 			vertex[v].tcoord = vertex[vtx].tcoord;
+			vertex[v].color = nodes[n].second;
 		}
 	}
 	for (unsigned int vtx = 0; vtx < 24; vtx++, v++)
 	{
-		vertex[vtx].position += nodes[0]->GetPosition();
-		vertex[vtx].color = mColors[nodes[0]->GetCluster()];
+		vertex[vtx].position += nodes[0].first;
+		vertex[vtx].color = nodes[0].second;
 	}
 
 	// fill indices
@@ -377,7 +218,7 @@ void GraphNode::GenerateGeometry(BaseMeshBuffer* meshBuffer, const PathingNodeVe
 }
 
 //! pre render method
-bool GraphNode::PreRender(Scene* pScene)
+bool ClusterNode::PreRender(Scene* pScene)
 {
 	if (IsVisible())
 	{
@@ -416,7 +257,7 @@ bool GraphNode::PreRender(Scene* pScene)
 }
 
 //! renders the node.
-bool GraphNode::Render(Scene* pScene)
+bool ClusterNode::Render(Scene* pScene)
 {
 	if (!mMesh || !Renderer::Get())
 		return false;
@@ -427,22 +268,23 @@ bool GraphNode::Render(Scene* pScene)
 	for (unsigned int i = 0; i < GetVisualCount(); ++i)
 	{
 		// only render transparent buffer if this is the transparent render pass
-		// and solid only in solid pass
 		bool transparent = (mMesh->GetMeshBuffer(i)->GetMaterial()->IsTransparent());
 		if (transparent == isTransparentPass)
 		{
-			if (mMesh->GetMeshBuffer(i)->GetMaterial()->Update(mBlendStates[i]))
-				Renderer::Get()->Unbind(mBlendStates[i]);
-			if (mMesh->GetMeshBuffer(i)->GetMaterial()->Update(mDepthStencilStates[i]))
-				Renderer::Get()->Unbind(mDepthStencilStates[i]);
-			if (mMesh->GetMeshBuffer(i)->GetMaterial()->Update(mRasterizerState))
+			if (GetMaterial(i)->Update(mBlendState))
+				Renderer::Get()->Unbind(mBlendState);
+			if (GetMaterial(i)->Update(mDepthStencilState))
+				Renderer::Get()->Unbind(mDepthStencilState);
+			if (GetMaterial(i)->Update(mRasterizerState))
 				Renderer::Get()->Unbind(mRasterizerState);
 
-			Renderer::Get()->SetBlendState(mBlendStates[i]);
-			Renderer::Get()->SetDepthStencilState(mDepthStencilStates[i]);
+			Renderer::Get()->SetBlendState(mBlendState);
+			Renderer::Get()->SetDepthStencilState(mDepthStencilState);
 			Renderer::Get()->SetRasterizerState(mRasterizerState);
 
-			Renderer::Get()->Draw(mVisuals[i]);
+			Renderer* renderer = Renderer::Get();
+			renderer->Update(mVisual->GetVertexBuffer());
+			renderer->Draw(mVisual);
 
 			Renderer::Get()->SetDefaultBlendState();
 			Renderer::Get()->SetDefaultDepthStencilState();
@@ -454,7 +296,7 @@ bool GraphNode::Render(Scene* pScene)
 }
 
 //! returns the axis aligned bounding box of this node
-BoundingBox<float>& GraphNode::GetBoundingBox()
+BoundingBox<float>& ClusterNode::GetBoundingBox()
 {
 	return mMesh ? mMesh->GetBoundingBox() : BoundingBox<float>();
 }
@@ -464,18 +306,15 @@ BoundingBox<float>& GraphNode::GetBoundingBox()
 //! This function is needed for inserting the node into the scene hierarchy 
 //! at an optimal position for minimizing renderstate changes, but can also 
 //! be used to directly modify the visual of a scene node.
-std::shared_ptr<Visual> const& GraphNode::GetVisual(unsigned int i)
+std::shared_ptr<Visual> const& ClusterNode::GetVisual(unsigned int i)
 {
-	if (i >= mVisuals.size())
-		return nullptr;
-
-	return mVisuals[i];
+	return mVisual;
 }
 
 //! return amount of visuals of this scene node.
-size_t GraphNode::GetVisualCount() const
+size_t ClusterNode::GetVisualCount() const
 {
-	return mVisuals.size();
+	return 1;
 }
 
 //! returns the material based on the zero based index i. To get the amount
@@ -483,7 +322,7 @@ size_t GraphNode::GetVisualCount() const
 //! This function is needed for inserting the node into the scene hirachy on a
 //! optimal position for minimizing renderstate changes, but can also be used
 //! to directly modify the material of a scene node.
-std::shared_ptr<Material> const& GraphNode::GetMaterial(unsigned int i)
+std::shared_ptr<Material> const& ClusterNode::GetMaterial(unsigned int i)
 {
 	if (mMesh->GetMeshBuffer(i))
 		return mMesh->GetMeshBuffer(i)->GetMaterial();
@@ -492,7 +331,7 @@ std::shared_ptr<Material> const& GraphNode::GetMaterial(unsigned int i)
 }
 
 //! returns amount of materials used by this scene node.
-size_t GraphNode::GetMaterialCount() const
+size_t ClusterNode::GetMaterialCount() const
 {
 	return mMesh->GetMeshBufferCount();
 }
@@ -500,7 +339,7 @@ size_t GraphNode::GetMaterialCount() const
 //! Sets the texture of the specified layer in all materials of this scene node to the new texture.
 /** \param textureLayer Layer of texture to be set. Must be a value smaller than MATERIAL_MAX_TEXTURES.
 \param texture New texture to be used. */
-void GraphNode::SetMaterialTexture(unsigned int textureLayer, std::shared_ptr<Texture2> texture)
+void ClusterNode::SetMaterialTexture(unsigned int textureLayer, std::shared_ptr<Texture2> texture)
 {
 	if (textureLayer >= MATERIAL_MAX_TEXTURES)
 		return;
@@ -523,7 +362,7 @@ void GraphNode::SetMaterialTexture(unsigned int textureLayer, std::shared_ptr<Te
 
 //! Sets the material type of all materials in this scene node to a new material type.
 /** \param newType New type of material to be set. */
-void GraphNode::SetMaterialType(MaterialType newType)
+void ClusterNode::SetMaterialType(MaterialType newType)
 {
 	for (unsigned int i = 0; i<GetMaterialCount(); ++i)
 		GetMaterial(i)->mType = newType;

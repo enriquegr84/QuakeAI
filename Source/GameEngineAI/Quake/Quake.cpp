@@ -606,6 +606,112 @@ void QuakeLogic::OnUpdate(float time, float deltaMs)
 	UpdateGameAI(deltaMs);
 }
 
+void QuakeLogic::UpdateGameAIState()
+{
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+	std::map<ActorId, ActorId>& gameActors = aiManager->GetGameActors();
+
+	for (AIGame::Player player : mGameAIState.players)
+	{
+		std::shared_ptr<PlayerActor> pPlayerActor(
+			std::dynamic_pointer_cast<PlayerActor>(GetActor(player.id).lock()));
+		if (pPlayerActor)
+		{
+			Matrix4x4<float> yawRotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), player.yaw));
+
+			Transform playerTransform;
+			playerTransform.SetRotation(yawRotation);
+			playerTransform.SetTranslation(player.position.x, player.position.y, player.position.z);
+			std::shared_ptr<PhysicComponent> pPhysicComponent(
+				pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+			if (pPhysicComponent)
+				pPhysicComponent->SetTransform(playerTransform);
+
+			pPlayerActor->GetState().stats[STAT_HEALTH] = player.health;
+			pPlayerActor->GetState().stats[STAT_ARMOR] = player.armor;
+			pPlayerActor->GetState().persistant[STAT_SCORE] = player.score;
+			pPlayerActor->GetState().stats[STAT_WEAPONS] = 0;
+			for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+				pPlayerActor->GetState().ammo[wp] = 0;
+
+			for (AIGame::Weapon weapon : player.weapons)
+			{
+				pPlayerActor->GetState().stats[STAT_WEAPONS] |= (1 << weapon.id);
+				pPlayerActor->GetState().ammo[weapon.id] = weapon.ammo;
+			}
+
+			pPlayerActor->ChangeWeapon((WeaponType)player.weapon);
+		}
+	}
+
+	for (AIGame::Projectile projectile : mGameAIState.projectiles)
+	{
+		Matrix4x4<float> yawRotation = Rotation<4, float>(
+			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), projectile.yaw));
+
+		Transform transform;
+		transform.SetRotation(yawRotation);
+		transform.SetTranslation(projectile.position.x, projectile.position.y, projectile.position.z);
+
+		std::shared_ptr<Actor> projectileActor;
+		std::weak_ptr<Actor> gameActor;
+		if (gameActors.find(projectile.id) != gameActors.end())
+			gameActor = GetActor(gameActors[projectile.id]);
+		if (gameActor.expired())
+		{
+			switch (projectile.code)
+			{
+				case 1:
+					projectileActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &transform);
+					projectileActor->RemoveComponent(PlasmaFire::Name);
+					gameActors[projectile.id] = projectileActor->GetId();
+					break;
+				case 2:
+					projectileActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &transform);
+					projectileActor->RemoveComponent(RocketFire::Name);
+					gameActors[projectile.id] = projectileActor->GetId();
+					break;
+				case 3:
+					projectileActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &transform);
+					projectileActor->RemoveComponent(GrenadeFire::Name);
+					gameActors[projectile.id] = projectileActor->GetId();
+					break;
+			}
+		}
+		else
+		{
+			std::shared_ptr<PhysicComponent> pPhysicComponent(
+				gameActor.lock()->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+			if (pPhysicComponent)
+				pPhysicComponent->SetTransform(transform);
+		}
+	}
+
+	//Remove lost projectiles
+	for (auto it = gameActors.begin(); it != gameActors.end(); )
+	{
+		std::weak_ptr<Actor> gameActor = GetActor((*it).second);
+		if (!gameActor.expired() && gameActor.lock()->GetType() == "Fire")
+		{
+			bool removeProjectile = true;
+			for (AIGame::Projectile projectile : mGameAIState.projectiles)
+				if ((*it).first == projectile.id)
+					removeProjectile = false;
+
+			if (removeProjectile)
+			{
+				std::shared_ptr<EventDataRequestDestroyActor>
+					pRequestDestroyActorEvent(new EventDataRequestDestroyActor((*it).second));
+				EventManager::Get()->QueueEvent(pRequestDestroyActorEvent);
+				it = gameActors.erase(it);
+			}
+			else ++it;
+		}
+		else ++it;
+	}
+}
+
 void QuakeLogic::UpdateGameAISimulation(unsigned short frame)
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
@@ -707,112 +813,6 @@ void QuakeLogic::UpdateGameAISimulation(unsigned short frame)
 			if (pPhysicComponent)
 				pPhysicComponent->SetTransform(playerTransform);
 		}
-	}
-}
-
-void QuakeLogic::UpdateGameAIState()
-{
-	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-	std::map<ActorId, ActorId>& gameActors = aiManager->GetGameActors();
-
-	for (AIGame::Player player : mGameAIState.players)
-	{
-		std::shared_ptr<PlayerActor> pPlayerActor(
-			std::dynamic_pointer_cast<PlayerActor>(GetActor(player.id).lock()));
-		if (pPlayerActor)
-		{
-			Matrix4x4<float> yawRotation = Rotation<4, float>(
-				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), player.yaw));
-
-			Transform playerTransform;
-			playerTransform.SetRotation(yawRotation);
-			playerTransform.SetTranslation(player.position.x, player.position.y, player.position.z);
-			std::shared_ptr<PhysicComponent> pPhysicComponent(
-				pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-			if (pPhysicComponent)
-				pPhysicComponent->SetTransform(playerTransform);
-
-			pPlayerActor->GetState().stats[STAT_HEALTH] = player.health;
-			pPlayerActor->GetState().stats[STAT_ARMOR] = player.armor;
-			pPlayerActor->GetState().persistant[STAT_SCORE] = player.score;
-			pPlayerActor->GetState().stats[STAT_WEAPONS] = 0;
-			for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
-				pPlayerActor->GetState().ammo[wp] = 0;
-
-			for (AIGame::Weapon weapon : player.weapons)
-			{
-				pPlayerActor->GetState().stats[STAT_WEAPONS] |= (1 << weapon.id);
-				pPlayerActor->GetState().ammo[weapon.id] = weapon.ammo;
-			}
-
-			pPlayerActor->ChangeWeapon((WeaponType)player.weapon);
-		}
-	}
-
-	for (AIGame::Projectile projectile : mGameAIState.projectiles)
-	{
-		Matrix4x4<float> yawRotation = Rotation<4, float>(
-			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), projectile.yaw));
-
-		Transform transform;
-		transform.SetRotation(yawRotation);
-		transform.SetTranslation(projectile.position.x, projectile.position.y, projectile.position.z);
-
-		std::shared_ptr<Actor> projectileActor;
-		std::weak_ptr<Actor> gameActor;
-		if (gameActors.find(projectile.id) != gameActors.end())
-			gameActor = GetActor(gameActors[projectile.id]);
-		if (gameActor.expired())
-		{
-			switch (projectile.code)
-			{
-			case 1:
-				projectileActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &transform);
-				projectileActor->RemoveComponent(PlasmaFire::Name);
-				gameActors[projectile.id] = projectileActor->GetId();
-				break;
-			case 2:
-				projectileActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &transform);
-				projectileActor->RemoveComponent(RocketFire::Name);
-				gameActors[projectile.id] = projectileActor->GetId();
-				break;
-			case 3:
-				projectileActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &transform);
-				projectileActor->RemoveComponent(GrenadeFire::Name);
-				gameActors[projectile.id] = projectileActor->GetId();
-				break;
-			}
-		}
-		else
-		{
-			std::shared_ptr<PhysicComponent> pPhysicComponent(
-				gameActor.lock()->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-			if (pPhysicComponent)
-				pPhysicComponent->SetTransform(transform);
-		}
-	}
-
-	//Remove lost projectiles
-	for (auto it = gameActors.begin(); it != gameActors.end(); )
-	{
-		std::weak_ptr<Actor> gameActor = GetActor((*it).second);
-		if (!gameActor.expired() && gameActor.lock()->GetType() == "Fire")
-		{
-			bool removeProjectile = true;
-			for (AIGame::Projectile projectile : mGameAIState.projectiles)
-				if ((*it).first == projectile.id)
-					removeProjectile = false;
-
-			if (removeProjectile)
-			{
-				std::shared_ptr<EventDataRequestDestroyActor>
-					pRequestDestroyActorEvent(new EventDataRequestDestroyActor((*it).second));
-				EventManager::Get()->QueueEvent(pRequestDestroyActorEvent);
-				it = gameActors.erase(it);
-			}
-			else ++it;
-		}
-		else ++it;
 	}
 }
 
@@ -2109,7 +2109,7 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 	AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
-	if (gameAnalysis.decisions.size() < analysisFrame)
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
 		return;
 
 	GameViewType viewType = playerIndex - 1 ? GV_AI : GV_HUMAN;
@@ -2195,8 +2195,7 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 	}
 }
 
-void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex, unsigned short analysisFrame,
-	unsigned short playerIndex, const std::string& decisionCluster, const std::string& evaluationCluster)
+void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
 	AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetGameEvaluation();
@@ -2362,6 +2361,142 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex, unsigned short an
 	}
 }
 
+void QuakeLogic::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsigned short analysisFrame)
+{
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+	AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
+		return;
+
+	GameViewType viewType = playerIndex - 1 ? GV_AI : GV_HUMAN;
+	std::vector<AIAnalysis::GameDecision>::iterator itGameDecision = gameAnalysis.decisions.begin() + analysisFrame;
+	for (; itGameDecision != gameAnalysis.decisions.begin(); itGameDecision--)
+		if ((*itGameDecision).evaluation.target == viewType)
+			break;
+
+	AIAnalysis::GameDecision gameDecision = (*itGameDecision);
+	if (gameDecision.evaluation.target != viewType)
+		return;
+
+	PlayerData playerData, otherPlayerData;
+	PlayerData playerSimulation, otherPlayerSimulation;
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData, playerSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
+
+	std::shared_ptr<PlayerActor> pPlayerActor(
+		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
+	if (pPlayerActor)
+	{
+		PathingNode* pathingNode = playerData.plan.node;
+
+		Transform playerTransform;
+		playerTransform.SetTranslation(pathingNode->GetPosition());
+		std::shared_ptr<PhysicComponent> pPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		if (pPhysicComponent)
+			pPhysicComponent->SetTransform(playerTransform);
+
+		pPlayerActor->GetState().stats[STAT_HEALTH] = playerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = playerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = playerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = playerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = playerData.ammo[wp];
+
+		pPlayerActor->ChangeWeapon(playerData.weapon);
+	}
+
+	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerData.player).lock());
+	if (pPlayerActor)
+	{
+		PathingNode* pathingNode = otherPlayerData.plan.node;
+
+		Transform playerTransform;
+		playerTransform.SetTranslation(pathingNode->GetPosition());
+		std::shared_ptr<PhysicComponent> pPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		if (pPhysicComponent)
+			pPhysicComponent->SetTransform(playerTransform);
+
+		pPlayerActor->GetState().stats[STAT_HEALTH] = otherPlayerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = otherPlayerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = otherPlayerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = otherPlayerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = otherPlayerData.ammo[wp];
+
+		pPlayerActor->ChangeWeapon(otherPlayerData.weapon);
+	}
+}
+
+void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsigned short analysisFrame)
+{
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+	AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
+		return;
+
+	GameViewType viewType = playerIndex - 1 ? GV_AI : GV_HUMAN;
+	std::vector<AIAnalysis::GameDecision>::iterator itGameDecision = gameAnalysis.decisions.begin() + analysisFrame;
+	for (; itGameDecision != gameAnalysis.decisions.begin(); itGameDecision--)
+		if ((*itGameDecision).evaluation.target == viewType)
+			break;
+
+	AIAnalysis::GameDecision gameDecision = (*itGameDecision);
+	if (gameDecision.evaluation.target != viewType)
+		return;
+
+	PlayerData playerData, otherPlayerData;
+	PlayerData playerSimulation, otherPlayerSimulation;
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData, playerSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
+
+	std::shared_ptr<PlayerActor> pPlayerActor(
+		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
+	if (pPlayerActor)
+	{
+		PathingNode* pathingNode = playerData.plan.node;
+
+		Transform playerTransform;
+		playerTransform.SetTranslation(pathingNode->GetPosition());
+		std::shared_ptr<PhysicComponent> pPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		if (pPhysicComponent)
+			pPhysicComponent->SetTransform(playerTransform);
+
+		pPlayerActor->GetState().stats[STAT_HEALTH] = playerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = playerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = playerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = playerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = playerData.ammo[wp];
+
+		pPlayerActor->ChangeWeapon(playerData.weapon);
+	}
+
+	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerData.player).lock());
+	if (pPlayerActor)
+	{
+		PathingNode* pathingNode = otherPlayerData.plan.node;
+
+		Transform playerTransform;
+		playerTransform.SetTranslation(pathingNode->GetPosition());
+		std::shared_ptr<PhysicComponent> pPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		if (pPhysicComponent)
+			pPhysicComponent->SetTransform(playerTransform);
+
+		pPlayerActor->GetState().stats[STAT_HEALTH] = otherPlayerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = otherPlayerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = otherPlayerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = otherPlayerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = otherPlayerData.ammo[wp];
+
+		pPlayerActor->ChangeWeapon(otherPlayerData.weapon);
+	}
+}
+
 void QuakeLogic::ShowAIGameAnalysisDelegate(BaseEventDataPtr pEventData)
 {
 	std::shared_ptr<EventDataShowAIGameAnalysis> pCastEventData =
@@ -2394,9 +2529,38 @@ void QuakeLogic::ShowAIGameAnalysisDelegate(BaseEventDataPtr pEventData)
 
 		mGameAIState = AIGame::GameState();
 		mGameAISimulation = true;
-		UpdateGameAIAnalysis(pCastEventData->GetTab(), pCastEventData->GetAnalysisFrame(),
-			pCastEventData->GetPlayer(), pCastEventData->GetDecisionCluster(), pCastEventData->GetEvaluationCluster());
+		UpdateGameAIAnalysis(pCastEventData->GetTab());
 	}
+
+	RemovePhysicsDelegates();
+}
+
+void QuakeLogic::ShowAISimulationAnalysisDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAISimulationAnalysis> pCastEventData =
+		std::static_pointer_cast<EventDataShowAISimulationAnalysis>(pEventData);
+
+	GameApplication::Get()->SetEditorRunning(true);
+
+	//Remove remaining actors
+	DestroyAIGameActors();
+
+	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+
+	RemovePhysicsDelegates();
+}
+
+void QuakeLogic::ShowAIPredictionAnalysisDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAIPredictionAnalysis> pCastEventData =
+		std::static_pointer_cast<EventDataShowAIPredictionAnalysis>(pEventData);
+
+	GameApplication::Get()->SetEditorRunning(true);
+
+	//Remove remaining actors
+	DestroyAIGameActors();
+
+	UpdateGameAIAnalysisPrediction(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
 
 	RemovePhysicsDelegates();
 }
@@ -2468,6 +2632,22 @@ void QuakeLogic::ShowGameSimulationDelegate(BaseEventDataPtr pEventData)
 		}
 	}
 	else UpdateGameAISimulation(pCastEventData->GetFrame());
+}
+
+void QuakeLogic::ShowAnalysisSimulationDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAnalysisSimulation> pCastEventData =
+		std::static_pointer_cast<EventDataShowAnalysisSimulation>(pEventData);
+
+	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+}
+
+void QuakeLogic::ShowAnalysisPredictionDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAnalysisPrediction> pCastEventData =
+		std::static_pointer_cast<EventDataShowAnalysisPrediction>(pEventData);
+	
+	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
 }
 
 void QuakeLogic::ShowGameStateDelegate(BaseEventDataPtr pEventData)
@@ -2808,6 +2988,12 @@ void QuakeLogic::RegisterAllDelegates(void)
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeLogic::ShowAIGameAnalysisDelegate),
 		EventDataShowAIGameAnalysis::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeLogic::ShowAISimulationAnalysisDelegate),
+		EventDataShowAISimulationAnalysis::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeLogic::ShowAIPredictionAnalysisDelegate),
+		EventDataShowAIPredictionAnalysis::skEventType);
 
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeLogic::SaveAllDelegate),
@@ -2819,6 +3005,12 @@ void QuakeLogic::RegisterAllDelegates(void)
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeLogic::ShowGameSimulationDelegate),
 		EventDataShowGameSimulation::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeLogic::ShowAnalysisSimulationDelegate),
+		EventDataShowAnalysisSimulation::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeLogic::ShowAnalysisPredictionDelegate),
+		EventDataShowAnalysisPrediction::skEventType);
 
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeLogic::FireWeaponDelegate),
@@ -2930,6 +3122,12 @@ void QuakeLogic::RemoveAllDelegates(void)
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeLogic::ShowAIGameAnalysisDelegate),
 		EventDataShowAIGameAnalysis::skEventType);
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeLogic::ShowAISimulationAnalysisDelegate),
+		EventDataShowAISimulationAnalysis::skEventType);
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeLogic::ShowAIPredictionAnalysisDelegate),
+		EventDataShowAIPredictionAnalysis::skEventType);
 
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeLogic::SaveAllDelegate),
@@ -2941,6 +3139,12 @@ void QuakeLogic::RemoveAllDelegates(void)
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeLogic::ShowGameSimulationDelegate),
 		EventDataShowGameSimulation::skEventType);
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeLogic::ShowAnalysisSimulationDelegate),
+		EventDataShowAnalysisSimulation::skEventType);
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeLogic::ShowAnalysisPredictionDelegate),
+		EventDataShowAnalysisPrediction::skEventType);
 
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeLogic::FireWeaponDelegate),

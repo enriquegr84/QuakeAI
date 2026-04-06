@@ -71,8 +71,9 @@
 
 #include "Game/View/HumanView.h"
 
-#include "Graphics/GraphNode.h"
 #include "Graphics/PathNode.h"
+#include "Graphics/GraphNode.h"
+#include "Graphics/ClusterNode.h"
 
 #include "Game/Actor/Actor.h"
 #include "Game/Actor/RenderComponent.h"
@@ -2519,6 +2520,40 @@ void QuakeAIAnalyzerView::ShowGameSimulationDelegate(BaseEventDataPtr pEventData
 	}
 }
 
+void QuakeAIAnalyzerView::ShowAnalysisSimulationDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAnalysisSimulation> pCastEventData =
+		std::static_pointer_cast<EventDataShowAnalysisSimulation>(pEventData);
+
+	const std::shared_ptr<UIForm>& form = std::static_pointer_cast<UIForm>(mUI->GetForm());
+	const std::shared_ptr<BaseUIElement>& searchElement =
+		std::static_pointer_cast<BaseUIElement>(form->GetElementFromId(form->GetField("te_search")));
+	searchElement->SetText(std::to_wstring(pCastEventData->GetAnalysisFrame()).c_str());
+
+	std::shared_ptr<BaseUIScrollBar>& scrollbar =
+		std::static_pointer_cast<BaseUIScrollBar>(form->GetElementFromId(form->GetField("scrbar")));
+	scrollbar->SetPosition(pCastEventData->GetAnalysisFrame());
+
+	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+}
+
+void QuakeAIAnalyzerView::ShowAnalysisPredictionDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAnalysisPrediction> pCastEventData =
+		std::static_pointer_cast<EventDataShowAnalysisPrediction>(pEventData);
+
+	const std::shared_ptr<UIForm>& form = std::static_pointer_cast<UIForm>(mUI->GetForm());
+	const std::shared_ptr<BaseUIElement>& searchElement =
+		std::static_pointer_cast<BaseUIElement>(form->GetElementFromId(form->GetField("te_search")));
+	searchElement->SetText(std::to_wstring(pCastEventData->GetAnalysisFrame()).c_str());
+
+	std::shared_ptr<BaseUIScrollBar>& scrollbar =
+		std::static_pointer_cast<BaseUIScrollBar>(form->GetElementFromId(form->GetField("scrbar")));
+	scrollbar->SetPosition(pCastEventData->GetAnalysisFrame());
+
+	UpdateGameAIAnalysisPrediction(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+}
+
 void QuakeAIAnalyzerView::ShowGameStateDelegate(BaseEventDataPtr pEventData)
 {
 	std::shared_ptr<EventDataShowGameState> pCastEventData =
@@ -2611,6 +2646,48 @@ void QuakeAIAnalyzerView::ShowAIGameAnalysisDelegate(BaseEventDataPtr pEventData
 
 	ShowAIGameAnalysis(pCastEventData->GetTab(), pCastEventData->GetGameFrame(), pCastEventData->GetAnalysisFrame(), 
 		pCastEventData->GetPlayer(), pCastEventData->GetDecisionCluster(), pCastEventData->GetEvaluationCluster(), 
+		pCastEventData->GetDecisionFilter(), pCastEventData->GetEvaluationFilter());
+
+	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+	for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+	{
+		std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+		if (pAiView)
+			pAiView->SetEnabled(false);
+	}
+}
+
+void QuakeAIAnalyzerView::ShowAISimulationAnalysisDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAISimulationAnalysis> pCastEventData =
+		std::static_pointer_cast<EventDataShowAISimulationAnalysis>(pEventData);
+
+	UpdateGameAIAnalysis(pCastEventData->GetTab(), pCastEventData->GetAnalysisFrame());
+	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+
+	ShowAISimulationAnalysis(pCastEventData->GetTab(), pCastEventData->GetGameFrame(), pCastEventData->GetAnalysisFrame(),
+		pCastEventData->GetPlayer(), pCastEventData->GetDecisionCluster(), pCastEventData->GetEvaluationCluster(),
+		pCastEventData->GetDecisionFilter(), pCastEventData->GetEvaluationFilter());
+
+	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+	for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+	{
+		std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+		if (pAiView)
+			pAiView->SetEnabled(false);
+	}
+}
+
+void QuakeAIAnalyzerView::ShowAIPredictionAnalysisDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataShowAIPredictionAnalysis> pCastEventData =
+		std::static_pointer_cast<EventDataShowAIPredictionAnalysis>(pEventData);
+
+	UpdateGameAIAnalysis(pCastEventData->GetTab(), pCastEventData->GetAnalysisFrame());
+	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+
+	ShowAIPredictionAnalysis(pCastEventData->GetTab(), pCastEventData->GetGameFrame(), pCastEventData->GetAnalysisFrame(),
+		pCastEventData->GetPlayer(), pCastEventData->GetDecisionCluster(), pCastEventData->GetEvaluationCluster(),
 		pCastEventData->GetDecisionFilter(), pCastEventData->GetEvaluationFilter());
 
 	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
@@ -2716,6 +2793,12 @@ void QuakeAIAnalyzerView::RegisterAllDelegates(void)
 		MakeDelegate(this, &QuakeAIAnalyzerView::ShowGameSimulationDelegate),
 		EventDataShowGameSimulation::skEventType);
 	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAnalysisSimulationDelegate),
+		EventDataShowAnalysisSimulation::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAnalysisPredictionDelegate),
+		EventDataShowAnalysisPrediction::skEventType);
+	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIAnalyzerView::ShowGameStateDelegate),
 		EventDataShowGameState::skEventType);
 
@@ -2732,6 +2815,12 @@ void QuakeAIAnalyzerView::RegisterAllDelegates(void)
 	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAIGameAnalysisDelegate),
 		EventDataShowAIGameAnalysis::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAISimulationAnalysisDelegate),
+		EventDataShowAISimulationAnalysis::skEventType);
+	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAIPredictionAnalysisDelegate),
+		EventDataShowAIPredictionAnalysis::skEventType);
 }
 
 void QuakeAIAnalyzerView::RemoveAllDelegates(void)
@@ -2808,6 +2897,12 @@ void QuakeAIAnalyzerView::RemoveAllDelegates(void)
 		MakeDelegate(this, &QuakeAIAnalyzerView::ShowGameSimulationDelegate),
 		EventDataShowGameSimulation::skEventType);
 	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAnalysisSimulationDelegate),
+		EventDataShowAnalysisSimulation::skEventType);
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAnalysisPredictionDelegate),
+		EventDataShowAnalysisPrediction::skEventType);
+	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeAIAnalyzerView::ShowGameStateDelegate),
 		EventDataShowGameState::skEventType);
 
@@ -2824,6 +2919,12 @@ void QuakeAIAnalyzerView::RemoveAllDelegates(void)
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAIGameAnalysisDelegate),
 		EventDataShowAIGameAnalysis::skEventType);
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAISimulationAnalysisDelegate),
+		EventDataShowAISimulationAnalysis::skEventType);
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeAIAnalyzerView::ShowAIPredictionAnalysisDelegate),
+		EventDataShowAIPredictionAnalysis::skEventType);
 }
 
 void QuakeAIAnalyzerView::OpenConsole(float scale, const wchar_t* line)
@@ -3201,7 +3302,7 @@ void QuakeAIAnalyzerView::AnalyzeAIGame(unsigned short tabIndex,
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 	AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
-	if (gameAnalysis.decisions.size() < analysisFrame)
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
 		return;
 
 	GameViewType viewType = playerIndex - 1 ? GV_AI : GV_HUMAN;
@@ -3233,7 +3334,10 @@ void QuakeAIAnalyzerView::AnalyzeAIGame(unsigned short tabIndex,
 
 	if (tabIndex == 1)
 	{
-		form += "button_exit[2,10.5;2.5,0.75;btn_simulate;Watch]"
+		std::string showOptions = "Combat,Simulation,Prediction";
+		form += "]"
+			"dropdown[1,9.5;4,0.75;dd_show_options;" + showOptions + ";1]"
+			"button_exit[1,10.5;4,0.75;btn_show_option;Show]"
 			"container_end[]";
 
 		PathingNode* pathNode =
@@ -4163,7 +4267,7 @@ void QuakeAIAnalyzerView::ShowAIGameAnalysis(unsigned short tabIndex,
 	if (mGameAISimulation)
 	{
 		const AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
-		if (gameAnalysis.decisions.size() < analysisFrame)
+		if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
 			return;
 
 		const AIAnalysis::GameDecision gameDecision = gameAnalysis.decisions[analysisFrame];
@@ -4249,6 +4353,122 @@ void QuakeAIAnalyzerView::ShowAIGameAnalysis(unsigned short tabIndex,
 	else
 	{
 		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("SHOW_SIMULATION");
+		formUI.reset(new UIForm(mUI.get(), -1, rectangle, formSrc, textDst, formPr, false));
+		formUI->SetParent(mUI->GetRootUIElement());
+		formUI->OnInit();
+	}
+}
+
+void QuakeAIAnalyzerView::ShowAISimulationAnalysis(unsigned short tabIndex,
+	unsigned short gameFrame, unsigned short analysisFrame, unsigned short playerIndex,
+	const std::string& decisionCluster, const std::string& evaluationCluster,
+	const std::string& decisionFilter, const std::string& evaluationFilter)
+{
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+
+	const AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
+		return;
+
+	const AIAnalysis::GameDecision gameDecision = gameAnalysis.decisions[analysisFrame];
+	mStats.gameTime = gameDecision.time;
+
+	std::string form = 
+		"form_version[3]size[18,2]position[0.5,0.9]field[1,0.75;1.75,0.75;te_search;;" + std::to_string(analysisFrame) +
+		"]field_close_on_enter[te_search;false]container[2.75,0.75]"
+		"image_button[0,0;0.75,0.75;art/quake/textures/search.png;btn_mp_search;]"
+		"tooltip[btn_mp_search;Search]container_end[]"
+		"scrollbaroptions[max=" + std::to_string(gameAnalysis.decisions.size() - 1) + ";smallstep=1]"
+		"scrollbar[14,1.5;10,0.75;horizontal;scrbar;0"
+		"]button_exit[15,0.75;1.5,0.8;btn_back;Back]";
+
+	/* Create menu */
+	/* Note: FormSource and AIAnalysisSimulationFormHandler are deleted by FormMenu */
+	std::string formPr;
+	std::shared_ptr<FormSource> formSrc = std::make_shared<FormSource>(form);
+	std::shared_ptr<AIAnalysisSimulationFormHandler> textDst =
+		std::make_shared<AIAnalysisSimulationFormHandler>("SHOW_ANALYSIS_SIMULATION");
+	textDst->mGameFrame = gameFrame;
+	textDst->mAnalysisFrame = analysisFrame;
+	textDst->mPlayerIndex = playerIndex;
+	textDst->mDecisionCluster = decisionCluster;
+	textDst->mEvaluationCluster = evaluationCluster;
+	textDst->mDecisionFilter = decisionFilter;
+	textDst->mEvaluationFilter = evaluationFilter;
+	textDst->mTabIndex = tabIndex;
+
+	RectangleShape<2, int> rectangle;
+	rectangle.mCenter = Vector2<int>{ 50, 50 };
+	rectangle.mExtent = Vector2<int>{ 100, 100 };
+
+	if (mUI->mFormName == "SHOW_ANALYSIS_SIMULATION")
+	{
+		std::shared_ptr<BaseUIForm>& formUI = mUI->GetForm();
+		formUI->SetFormPrepend(formPr);
+		formUI->SetFormSource(formSrc);
+		formUI->SetTextDestination(textDst);
+	}
+	else
+	{
+		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("SHOW_ANALYSIS_SIMULATION");
+		formUI.reset(new UIForm(mUI.get(), -1, rectangle, formSrc, textDst, formPr, false));
+		formUI->SetParent(mUI->GetRootUIElement());
+		formUI->OnInit();
+	}
+}
+
+void QuakeAIAnalyzerView::ShowAIPredictionAnalysis(unsigned short tabIndex,
+	unsigned short gameFrame, unsigned short analysisFrame, unsigned short playerIndex,
+	const std::string& decisionCluster, const std::string& evaluationCluster,
+	const std::string& decisionFilter, const std::string& evaluationFilter)
+{
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+
+	const AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
+		return;
+
+	const AIAnalysis::GameDecision gameDecision = gameAnalysis.decisions[analysisFrame];
+	mStats.gameTime = gameDecision.time;
+
+	std::string form =
+		"form_version[3]size[18,2]position[0.5,0.9]field[1,0.75;1.75,0.75;te_search;;" + std::to_string(analysisFrame) +
+		"]field_close_on_enter[te_search;false]container[2.75,0.75]"
+		"image_button[0,0;0.75,0.75;art/quake/textures/search.png;btn_mp_search;]"
+		"tooltip[btn_mp_search;Search]container_end[]"
+		"scrollbaroptions[max=" + std::to_string(gameAnalysis.decisions.size() - 1) + ";smallstep=1]"
+		"scrollbar[14,1.5;10,0.75;horizontal;scrbar;0"
+		"]button_exit[15,0.75;1.5,0.8;btn_back;Back]";
+
+	/* Create menu */
+	/* Note: FormSource and AIAnalysisPredictionFormHandler are deleted by FormMenu */
+	std::string formPr;
+	std::shared_ptr<FormSource> formSrc = std::make_shared<FormSource>(form);
+	std::shared_ptr<AIAnalysisPredictionFormHandler> textDst =
+		std::make_shared<AIAnalysisPredictionFormHandler>("SHOW_ANALYSIS_PREDICTION");
+	textDst->mGameFrame = gameFrame;
+	textDst->mAnalysisFrame = analysisFrame;
+	textDst->mPlayerIndex = playerIndex;
+	textDst->mDecisionCluster = decisionCluster;
+	textDst->mEvaluationCluster = evaluationCluster;
+	textDst->mDecisionFilter = decisionFilter;
+	textDst->mEvaluationFilter = evaluationFilter;
+	textDst->mTabIndex = tabIndex;
+
+	RectangleShape<2, int> rectangle;
+	rectangle.mCenter = Vector2<int>{ 50, 50 };
+	rectangle.mExtent = Vector2<int>{ 100, 100 };
+
+	if (mUI->mFormName == "SHOW_ANALYSIS_PREDICTION")
+	{
+		std::shared_ptr<BaseUIForm>& formUI = mUI->GetForm();
+		formUI->SetFormPrepend(formPr);
+		formUI->SetFormSource(formSrc);
+		formUI->SetTextDestination(textDst);
+	}
+	else
+	{
+		std::shared_ptr<BaseUIForm>& formUI = mUI->UpdateForm("SHOW_ANALYSIS_PREDICTION");
 		formUI.reset(new UIForm(mUI.get(), -1, rectangle, formSrc, textDst, formPr, false));
 		formUI->SetParent(mUI->GetRootUIElement());
 		formUI->OnInit();
@@ -4427,7 +4647,6 @@ void QuakeAIAnalyzerView::UpdateSound(float dTime)
 	mSoundMaker->mPlayerStepSound = mEnvironment->GetNodeManager()->Get(node).soundFootstep;
 	*/
 }
-
 
 void QuakeAIAnalyzerView::UpdateGameAISimulation(unsigned short frame)
 {
@@ -4661,6 +4880,446 @@ void QuakeAIAnalyzerView::UpdateGameAISimulation(unsigned short frame)
 	}
 }
 
+void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsigned short analysisFrame)
+{
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
+		return;
+
+	GameViewType viewType = playerIndex - 1 ? GV_AI : GV_HUMAN;
+	std::vector<AIAnalysis::GameDecision>::iterator itGameDecision = gameAnalysis.decisions.begin() + analysisFrame;
+	for (; itGameDecision != gameAnalysis.decisions.begin(); itGameDecision--)
+		if ((*itGameDecision).evaluation.target == viewType)
+			break;
+
+	AIAnalysis::GameDecision gameDecision = (*itGameDecision);
+	if (gameDecision.evaluation.target != viewType)
+		return;
+
+	PlayerData playerData, otherPlayerData, playerGuessData, otherPlayerGuessData;
+	PlayerData playerSimulation, otherPlayerSimulation, playerGuessSimulation, otherPlayerGuessSimulation;
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData, playerSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerGuessInput, playerGuessData, playerGuessSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput, otherPlayerGuessData, otherPlayerGuessSimulation);
+
+	unsigned int time = Timer::GetRealTime();
+
+	std::map<ActorId, float> gameItems;
+	std::unordered_set<PathingNode*> playerClusterPathings, otherPlayerClusterPathings;
+	if (gameDecision.evaluation.type == ET_GUESSING)
+	{
+		// update guessing items
+		gameItems = gameDecision.evaluation.playerGuessItems;
+
+		//simulation guessing
+		bool success = aiManager->SimulateClusterPathing(playerGuessData, playerGuessSimulation,
+			otherPlayerGuessData, otherPlayerGuessSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		if (success)
+		{
+			// update decision items
+			gameItems = gameDecision.evaluation.playerDecisionItems;
+
+			//simulation guessing decision
+			success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
+				otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+			if (success)
+			{
+				unsigned int time2 = Timer::GetRealTime();
+				printf("\n guessing cluster total elapsed time %u", time2 - time);
+			}
+		}
+	}
+	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
+	{
+		// update guessing items
+		gameItems = gameDecision.evaluation.playerGuessItems;
+
+		//simulation guessing
+		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
+			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		if (success)
+		{
+			unsigned int time2 = Timer::GetRealTime();
+			printf("\n close guessing cluster total elapsed time %u", time2 - time);
+		}
+	}
+	else if (gameDecision.evaluation.type == ET_AWARENESS)
+	{
+		// update decision items
+		gameItems = gameDecision.evaluation.playerDecisionItems;
+
+		//simulation decision
+		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
+			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		if (success)
+		{
+			unsigned int time2 = Timer::GetRealTime();
+			printf("\n awareness cluster total elapsed time %u", time2 - time);
+		}
+	}
+
+	SColorF playerColor, otherPlayerColor;
+	std::vector<std::pair<Vector3<float>, Vector4<float>>> nodes;
+	if (viewType == GV_AI)
+	{
+		playerColor = SColor(70, 255, 0, 0);
+		otherPlayerColor = SColor(70, 0, 0, 255);
+	}
+	else
+	{
+		playerColor = SColor(70, 0, 0, 255);
+		otherPlayerColor = SColor(70, 255, 0, 0);
+	}
+	for (auto const& playerClusterPathingNode : playerClusterPathings)
+		nodes.push_back({ playerClusterPathingNode->GetPosition(), playerColor.ToArray()});
+	for (auto const& otherPlayerClusterPathingNode : otherPlayerClusterPathings)
+		nodes.push_back({ otherPlayerClusterPathingNode->GetPosition(), otherPlayerColor.ToArray()});
+	if (nodes.empty())
+		return;
+
+	if (!mClusterNode)
+	{
+		std::shared_ptr<ResHandle>& resHandle =
+			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
+		if (resHandle)
+		{
+			const std::shared_ptr<ImageResourceExtraData>& extra =
+				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
+			extra->GetImage()->AutogenerateMipmaps();
+
+			Vector3<float> size = Vector3<float>{ 12.f, 12.f, 26.f };
+			mClusterNode = std::make_shared<ClusterNode>(GameLogic::Get()->GetNewActorID(),
+				&mScene->GetPVWUpdater(), extra->GetImage(), size);
+			mScene->AddSceneNode(mClusterNode->GetId(), mClusterNode);
+		}
+	}
+
+	if (mClusterNode)
+	{
+		mClusterNode->SetVisible(true);
+		mClusterNode->GenerateMesh(nodes);
+	}
+
+	std::vector<Vector3<float>> pathNodes;
+	pathNodes.push_back(playerData.plan.node->GetPosition());
+	for (auto const& arc : playerData.plan.path)
+	{
+		PathingTransition* transition = arc->GetTransition();
+		if (transition)
+			for (auto const& position : transition->GetPositions())
+				pathNodes.push_back(position);
+	}
+	pathNodes.push_back(otherPlayerData.plan.node->GetPosition());
+	for (auto const& arc : otherPlayerData.plan.path)
+	{
+		PathingTransition* transition = arc->GetTransition();
+		if (transition)
+			for (auto const& position : transition->GetPositions())
+				pathNodes.push_back(position);
+	}
+
+	if (!mPathNode)
+	{
+		std::shared_ptr<ResHandle>& resHandle =
+			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
+		if (resHandle)
+		{
+			const std::shared_ptr<ImageResourceExtraData>& extra =
+				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
+			extra->GetImage()->AutogenerateMipmaps();
+
+			Vector3<float> size{ 2.5f, 2.5f, 2.5f };
+			mPathNode = std::make_shared<PathNode>(GameLogic::Get()->GetNewActorID(),
+				&mScene->GetPVWUpdater(), extra->GetImage(), size);
+			mScene->AddSceneNode(mPathNode->GetId(), mPathNode);
+		}
+	}
+
+	if (mPathNode)
+	{
+		mPathNode->SetVisible(true);
+		mPathNode->GenerateMesh(pathNodes);
+	}
+
+	for (auto const& item : gameItems)
+	{
+		std::shared_ptr<Node> pItemNode = mScene->GetSceneNode(item.first);
+		pItemNode->SetVisible(item.second <= 0);
+	}
+
+	std::shared_ptr<Node> pPlayerNode = mScene->GetSceneNode(playerData.player);
+	if (pPlayerNode)
+	{
+		PathingNode* pathingNode = playerData.plan.node;
+		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
+		Normalize(direction);
+
+		Matrix4x4<float> yawRotation = Rotation<4, float>(
+			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+		pPlayerNode->GetRelativeTransform().SetRotation(yawRotation);
+		pPlayerNode->UpdateAbsoluteTransform();
+
+		std::shared_ptr<PlayerActor> pPlayerActor(
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(playerData.player).lock()));
+		std::shared_ptr<TransformComponent> pTransformComponent(
+			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		if (pTransformComponent)
+		{
+			// update node rotation matrix
+			Matrix4x4<float> rollRotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
+			pTransformComponent->SetRotation(yawRotation * rollRotation);
+		}
+	}
+
+	pPlayerNode = mScene->GetSceneNode(otherPlayerData.player);
+	if (pPlayerNode)
+	{
+		PathingNode* pathingNode = otherPlayerData.plan.node;
+		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
+		Normalize(direction);
+
+		Matrix4x4<float> yawRotation = Rotation<4, float>(
+			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+		pPlayerNode->GetRelativeTransform().SetRotation(yawRotation);
+		pPlayerNode->UpdateAbsoluteTransform();
+
+		std::shared_ptr<PlayerActor> pPlayerActor(
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(otherPlayerData.player).lock()));
+		std::shared_ptr<TransformComponent> pTransformComponent(
+			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		if (pTransformComponent)
+		{
+			// update node rotation matrix
+			Matrix4x4<float> rollRotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
+			pTransformComponent->SetRotation(yawRotation * rollRotation);
+		}
+	}
+}
+
+void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsigned short analysisFrame)
+{
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
+		return;
+
+	GameViewType viewType = playerIndex - 1 ? GV_AI : GV_HUMAN;
+	std::vector<AIAnalysis::GameDecision>::iterator itGameDecision = gameAnalysis.decisions.begin() + analysisFrame;
+	for (; itGameDecision != gameAnalysis.decisions.begin(); itGameDecision--)
+		if ((*itGameDecision).evaluation.target == viewType)
+			break;
+
+	AIAnalysis::GameDecision gameDecision = (*itGameDecision);
+	if (gameDecision.evaluation.target != viewType)
+		return;
+
+	PlayerData playerData, otherPlayerData, playerGuessData, otherPlayerGuessData;
+	PlayerData playerSimulation, otherPlayerSimulation, playerGuessSimulation, otherPlayerGuessSimulation;
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData, playerSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerGuessInput, playerGuessData, playerGuessSimulation);
+	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput, otherPlayerGuessData, otherPlayerGuessSimulation);
+
+	unsigned int time = Timer::GetRealTime();
+
+	std::map<ActorId, float> gameItems;
+	std::unordered_set<PathingNode*> playerClusterPathings, otherPlayerClusterPathings;
+	if (gameDecision.evaluation.type == ET_GUESSING)
+	{
+		// update guessing items
+		gameItems = gameDecision.evaluation.playerGuessItems;
+
+		//simulation guessing
+		bool success = aiManager->SimulateClusterPathing(playerGuessData, playerGuessSimulation,
+			otherPlayerGuessData, otherPlayerGuessSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		if (success)
+		{
+			// update decision items
+			gameItems = gameDecision.evaluation.playerDecisionItems;
+
+			//simulation guessing decision
+			success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
+				otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+			if (success)
+			{
+				unsigned int time2 = Timer::GetRealTime();
+				printf("\n guessing cluster total elapsed time %u", time2 - time);
+			}
+		}
+	}
+	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
+	{
+		// update guessing items
+		gameItems = gameDecision.evaluation.playerGuessItems;
+
+		//simulation guessing
+		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
+			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		if (success)
+		{
+			unsigned int time2 = Timer::GetRealTime();
+			printf("\n close guessing cluster total elapsed time %u", time2 - time);
+		}
+	}
+	else if (gameDecision.evaluation.type == ET_AWARENESS)
+	{
+		// update decision items
+		gameItems = gameDecision.evaluation.playerDecisionItems;
+
+		//simulation decision
+		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
+			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		if (success)
+		{
+			unsigned int time2 = Timer::GetRealTime();
+			printf("\n awareness cluster total elapsed time %u", time2 - time);
+		}
+	}
+
+	SColorF playerColor, otherPlayerColor;
+	std::vector<std::pair<Vector3<float>, Vector4<float>>> nodes;
+	if (viewType == GV_AI)
+	{
+		playerColor = SColor(70, 255, 0, 0);
+		otherPlayerColor = SColor(70, 0, 0, 255);
+	}
+	else
+	{
+		playerColor = SColor(70, 0, 0, 255);
+		otherPlayerColor = SColor(70, 255, 0, 0);
+	}
+	for (auto const& playerClusterPathingNode : playerClusterPathings)
+		nodes.push_back({ playerClusterPathingNode->GetPosition(), playerColor.ToArray() });
+	for (auto const& otherPlayerClusterPathingNode : otherPlayerClusterPathings)
+		nodes.push_back({ otherPlayerClusterPathingNode->GetPosition(), otherPlayerColor.ToArray() });
+	if (nodes.empty())
+		return;
+
+	if (!mClusterNode)
+	{
+		std::shared_ptr<ResHandle>& resHandle =
+			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
+		if (resHandle)
+		{
+			const std::shared_ptr<ImageResourceExtraData>& extra =
+				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
+			extra->GetImage()->AutogenerateMipmaps();
+
+			Vector3<float> size = Vector3<float>{ 12.f, 12.f, 26.f };
+			mClusterNode = std::make_shared<ClusterNode>(GameLogic::Get()->GetNewActorID(),
+				&mScene->GetPVWUpdater(), extra->GetImage(), size);
+			mScene->AddSceneNode(mClusterNode->GetId(), mClusterNode);
+		}
+	}
+
+	if (mClusterNode)
+	{
+		mClusterNode->SetVisible(true);
+		mClusterNode->GenerateMesh(nodes);
+	}
+
+	std::vector<Vector3<float>> pathNodes;
+	pathNodes.push_back(playerData.plan.node->GetPosition());
+	for (auto const& arc : playerData.plan.path)
+	{
+		PathingTransition* transition = arc->GetTransition();
+		if (transition)
+			for (auto const& position : transition->GetPositions())
+				pathNodes.push_back(position);
+	}
+	pathNodes.push_back(otherPlayerData.plan.node->GetPosition());
+	for (auto const& arc : otherPlayerData.plan.path)
+	{
+		PathingTransition* transition = arc->GetTransition();
+		if (transition)
+			for (auto const& position : transition->GetPositions())
+				pathNodes.push_back(position);
+	}
+
+	if (!mPathNode)
+	{
+		std::shared_ptr<ResHandle>& resHandle =
+			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
+		if (resHandle)
+		{
+			const std::shared_ptr<ImageResourceExtraData>& extra =
+				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
+			extra->GetImage()->AutogenerateMipmaps();
+
+			Vector3<float> size{ 2.5f, 2.5f, 2.5f };
+			mPathNode = std::make_shared<PathNode>(GameLogic::Get()->GetNewActorID(),
+				&mScene->GetPVWUpdater(), extra->GetImage(), size);
+			mScene->AddSceneNode(mPathNode->GetId(), mPathNode);
+		}
+	}
+
+	if (mPathNode)
+	{
+		mPathNode->SetVisible(true);
+		mPathNode->GenerateMesh(pathNodes);
+	}
+
+	for (auto const& item : gameItems)
+	{
+		std::shared_ptr<Node> pItemNode = mScene->GetSceneNode(item.first);
+		pItemNode->SetVisible(item.second <= 0);
+	}
+
+	std::shared_ptr<Node> pPlayerNode = mScene->GetSceneNode(playerData.player);
+	if (pPlayerNode)
+	{
+		PathingNode* pathingNode = playerData.plan.node;
+		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
+		Normalize(direction);
+
+		Matrix4x4<float> yawRotation = Rotation<4, float>(
+			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+		pPlayerNode->GetRelativeTransform().SetRotation(yawRotation);
+		pPlayerNode->UpdateAbsoluteTransform();
+
+		std::shared_ptr<PlayerActor> pPlayerActor(
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(playerData.player).lock()));
+		std::shared_ptr<TransformComponent> pTransformComponent(
+			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		if (pTransformComponent)
+		{
+			// update node rotation matrix
+			Matrix4x4<float> rollRotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
+			pTransformComponent->SetRotation(yawRotation * rollRotation);
+		}
+	}
+
+	pPlayerNode = mScene->GetSceneNode(otherPlayerData.player);
+	if (pPlayerNode)
+	{
+		PathingNode* pathingNode = otherPlayerData.plan.node;
+		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
+		Normalize(direction);
+
+		Matrix4x4<float> yawRotation = Rotation<4, float>(
+			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+		pPlayerNode->GetRelativeTransform().SetRotation(yawRotation);
+		pPlayerNode->UpdateAbsoluteTransform();
+
+		std::shared_ptr<PlayerActor> pPlayerActor(
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(otherPlayerData.player).lock()));
+		std::shared_ptr<TransformComponent> pTransformComponent(
+			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		if (pTransformComponent)
+		{
+			// update node rotation matrix
+			Matrix4x4<float> rollRotation = Rotation<4, float>(
+				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
+			pTransformComponent->SetRotation(yawRotation * rollRotation);
+		}
+	}
+}
+
 void QuakeAIAnalyzerView::UpdateGameAIState()
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
@@ -4707,12 +5366,11 @@ void QuakeAIAnalyzerView::UpdateGameAIState()
 	}
 }
 
-
 void QuakeAIAnalyzerView::UpdateGameAIAnalysis(unsigned short tabIndex, unsigned short analysisFrame)
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 	const AIAnalysis::GameAnalysis& gameAnalysis = aiManager->GetGameAnalysis();
-	if (gameAnalysis.decisions.size() < analysisFrame)
+	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
 		return;
 
 	const AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetGameEvaluation();

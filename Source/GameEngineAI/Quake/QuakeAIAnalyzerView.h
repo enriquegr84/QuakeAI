@@ -57,6 +57,7 @@
 class BaseEventManager;
 class SoundProcess;
 
+class ClusterNode;
 class GraphNode;
 class PathNode;
 
@@ -347,6 +348,108 @@ struct AIGameSimulationFormHandler : public TextDestination
 	std::string mEvaluationFilter = std::string();
 };
 
+struct AIAnalysisSimulationFormHandler : public TextDestination
+{
+	AIAnalysisSimulationFormHandler(const std::string& formName)
+	{
+		mFormName = formName;
+	}
+
+	void GotText(const StringMap& fields)
+	{
+		if (mFormName == "SHOW_ANALYSIS_SIMULATION")
+		{
+			if (fields.find("btn_mp_search") != fields.end() && fields.find("te_search") != fields.end())
+			{
+				mSimulationFrame = atoi(fields.at("te_search").c_str());
+				BaseEventManager::Get()->TriggerEvent(
+					std::make_shared<EventDataShowAnalysisSimulation>(mPlayerIndex, mSimulationFrame));
+				return;
+			}
+			if (fields.find("scrbar") != fields.end())
+			{
+				std::string row = fields.at("scrbar");
+				if (row.rfind("CHG:") != std::string::npos)
+				{
+					std::string content = Trim(row.substr(row.rfind("CHG:") + 4));
+					mSimulationFrame = atoi(content.c_str());
+					EventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataShowAnalysisSimulation>(mPlayerIndex, mSimulationFrame));
+					return;
+				}
+			}
+			if (fields.find("btn_back") != fields.end())
+			{
+				BaseEventManager::Get()->TriggerEvent(
+					std::make_shared<EventDataAnalyzeAIGame>(mGameFrame, mAnalysisFrame, mPlayerIndex,
+						mEvaluationCluster, mDecisionCluster, mEvaluationFilter, mDecisionFilter, mTabIndex));
+				return;
+			}
+		}
+	}
+
+	unsigned short mGameFrame = 0;
+	unsigned short mAnalysisFrame = 0;
+	unsigned short mSimulationFrame = 0;
+	unsigned short mPlayerIndex = 1;
+	unsigned short mTabIndex = 1;
+	std::string mDecisionCluster = std::string();
+	std::string mEvaluationCluster = std::string();
+	std::string mDecisionFilter = std::string();
+	std::string mEvaluationFilter = std::string();
+};
+
+struct AIAnalysisPredictionFormHandler : public TextDestination
+{
+	AIAnalysisPredictionFormHandler(const std::string& formName)
+	{
+		mFormName = formName;
+	}
+
+	void GotText(const StringMap& fields)
+	{
+		if (mFormName == "SHOW_ANALYSIS_PREDICTION")
+		{
+			if (fields.find("btn_mp_search") != fields.end() && fields.find("te_search") != fields.end())
+			{
+				mSimulationFrame = atoi(fields.at("te_search").c_str());
+				BaseEventManager::Get()->TriggerEvent(
+					std::make_shared<EventDataShowAnalysisPrediction>(mPlayerIndex, mSimulationFrame));
+				return;
+			}
+			if (fields.find("scrbar") != fields.end())
+			{
+				std::string row = fields.at("scrbar");
+				if (row.rfind("CHG:") != std::string::npos)
+				{
+					std::string content = Trim(row.substr(row.rfind("CHG:") + 4));
+					mSimulationFrame = atoi(content.c_str());
+					EventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataShowAnalysisPrediction>(mPlayerIndex, mSimulationFrame));
+					return;
+				}
+			}
+			if (fields.find("btn_back") != fields.end())
+			{
+				BaseEventManager::Get()->TriggerEvent(
+					std::make_shared<EventDataAnalyzeAIGame>(mGameFrame, mAnalysisFrame, mPlayerIndex,
+						mEvaluationCluster, mDecisionCluster, mEvaluationFilter, mDecisionFilter, mTabIndex));
+				return;
+			}
+		}
+	}
+
+	unsigned short mGameFrame = 0;
+	unsigned short mAnalysisFrame = 0;
+	unsigned short mSimulationFrame = 0;
+	unsigned short mPlayerIndex = 1;
+	unsigned short mTabIndex = 1;
+	std::string mDecisionCluster = std::string();
+	std::string mEvaluationCluster = std::string();
+	std::string mDecisionFilter = std::string();
+	std::string mEvaluationFilter = std::string();
+};
+
 struct AIAnalysisFormHandler : public TextDestination
 {
 	AIAnalysisFormHandler(const std::string& formName)
@@ -460,13 +563,40 @@ struct AIAnalysisFormHandler : public TextDestination
 					return;
 				}
 			}
-			if (fields.find("btn_simulate") != fields.end())
+
+			if (fields.find("dd_show_options") != fields.end())
 			{
-				BaseEventManager::Get()->TriggerEvent(
-					std::make_shared<EventDataShowAIGameAnalysis>(mGameFrame, mAnalysisFrame, 
-						mPlayerIndex, mEvaluationCluster[mTabIndex - 1], mDecisionCluster[mTabIndex - 1],
-						mEvaluationFilter[mTabIndex - 1], mDecisionFilter[mTabIndex - 1], mTabIndex));
-				return;
+				std::string row = fields.at("dd_show_options");
+				std::string content = Trim(row);
+				mShowOption = atoi(content.c_str());
+			}
+
+			if (fields.find("btn_show_option") != fields.end())
+			{
+				if (mShowOption == 1)
+				{
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataShowAIGameAnalysis>(mGameFrame, mAnalysisFrame,
+							mPlayerIndex, mEvaluationCluster[mTabIndex - 1], mDecisionCluster[mTabIndex - 1],
+							mEvaluationFilter[mTabIndex - 1], mDecisionFilter[mTabIndex - 1], mTabIndex));
+					return;
+				}
+				else if (mShowOption == 2)
+				{
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataShowAISimulationAnalysis>(mGameFrame, mAnalysisFrame,
+							mPlayerIndex, mEvaluationCluster[mTabIndex - 1], mDecisionCluster[mTabIndex - 1],
+							mEvaluationFilter[mTabIndex - 1], mDecisionFilter[mTabIndex - 1], mTabIndex));
+					return;
+				}
+				else if (mShowOption == 3)
+				{
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataShowAIPredictionAnalysis>(mGameFrame, mAnalysisFrame,
+							mPlayerIndex, mEvaluationCluster[mTabIndex - 1], mDecisionCluster[mTabIndex - 1],
+							mEvaluationFilter[mTabIndex - 1], mDecisionFilter[mTabIndex - 1], mTabIndex));
+					return;
+				}
 			}
 		}
 	}
@@ -475,6 +605,7 @@ struct AIAnalysisFormHandler : public TextDestination
 	unsigned short mAnalysisFrame = 0;
 	unsigned short mPlayerIndex = 1;
 	unsigned short mTabIndex = 1;
+	unsigned short mShowOption = 1;
 
 	std::vector<std::string> mDecisionCluster = { std::string(), std::string(), std::string(), std::string(), std::string() };
 	std::vector<std::string> mEvaluationCluster = { std::string(), std::string(), std::string(), std::string(), std::string() };
@@ -676,6 +807,8 @@ public:
 
 	void ChangeAnalysisFrameDelegate(BaseEventDataPtr pEventData);
 	void ShowGameSimulationDelegate(BaseEventDataPtr pEventData);
+	void ShowAnalysisSimulationDelegate(BaseEventDataPtr pEventData);
+	void ShowAnalysisPredictionDelegate(BaseEventDataPtr pEventData);
 	void ShowGameStateDelegate(BaseEventDataPtr pEventData);
 
 	void SimulateAIGameDelegate(BaseEventDataPtr pEventData);
@@ -683,6 +816,8 @@ public:
 
 	void ShowAIGameDelegate(BaseEventDataPtr pEventData);
 	void ShowAIGameAnalysisDelegate(BaseEventDataPtr pEventData);
+	void ShowAISimulationAnalysisDelegate(BaseEventDataPtr pEventData);
+	void ShowAIPredictionAnalysisDelegate(BaseEventDataPtr pEventData);
 
 protected:
 
@@ -768,6 +903,8 @@ protected:
 	void UpdateGameAIAnalysis(unsigned short tabIndex, unsigned short analysisFrame);
 
 	void UpdateGameAISimulation(unsigned short frame);
+	void UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsigned short analysisFrame);
+	void UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsigned short analysisFrame);
 	void UpdateGameAIState();
 
 	bool  mShowUI;					// If true, it renders the UI control text
@@ -790,6 +927,14 @@ private:
 
 	void ShowAIGame(const AIGame::Game& game);
 	void ShowAIGameAnalysis(unsigned short tabIndex, 
+		unsigned short gameFrame, unsigned short analysisFrame, unsigned short playerIndex,
+		const std::string& decisionCluster, const std::string& evaluationCluster,
+		const std::string& decisionFilter, const std::string& evaluationFilter);
+	void ShowAISimulationAnalysis(unsigned short tabIndex,
+		unsigned short gameFrame, unsigned short analysisFrame, unsigned short playerIndex,
+		const std::string& decisionCluster, const std::string& evaluationCluster,
+		const std::string& decisionFilter, const std::string& evaluationFilter);
+	void ShowAIPredictionAnalysis(unsigned short tabIndex,
 		unsigned short gameFrame, unsigned short analysisFrame, unsigned short playerIndex,
 		const std::string& decisionCluster, const std::string& evaluationCluster,
 		const std::string& decisionFilter, const std::string& evaluationFilter);
@@ -877,6 +1022,9 @@ private:
 
 	AIAnalysis::PlayerInput mPlayerInput;
 	AIAnalysis::PlayerInput mOtherPlayerInput;
+
+	std::shared_ptr<PathNode> mPathNode;
+	std::shared_ptr<ClusterNode> mClusterNode;
 
 	// Sounds
 	float mRemoveSoundsCheckTimer = 0.0f;

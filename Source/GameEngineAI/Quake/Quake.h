@@ -381,12 +381,16 @@ public:
 	void SimulateAIGameDelegate(BaseEventDataPtr pEventData);
 	void AnalyzeAIGameDelegate(BaseEventDataPtr pEventData);
 	void ShowAIGameAnalysisDelegate(BaseEventDataPtr pEventData);
+	void ShowAISimulationAnalysisDelegate(BaseEventDataPtr pEventData);
+	void ShowAIPredictionAnalysisDelegate(BaseEventDataPtr pEventData);
 	void ShowAIGameDelegate(BaseEventDataPtr pEventData);
 	void SaveAIGameDelegate(BaseEventDataPtr pEventData);
 
 	void SaveAllDelegate(BaseEventDataPtr pEventData);
 
 	void ShowGameSimulationDelegate(BaseEventDataPtr pEventData);
+	void ShowAnalysisSimulationDelegate(BaseEventDataPtr pEventData);
+	void ShowAnalysisPredictionDelegate(BaseEventDataPtr pEventData);
 	void ShowGameStateDelegate(BaseEventDataPtr pEventData);
 
 	void SplashDamageDelegate(BaseEventDataPtr pEventData);
@@ -448,11 +452,12 @@ protected:
 	void DestroyAIGameActors();
 
 	void UpdateGameAIState();
-	void UpdateGameAI(float deltaMs);
-	void UpdateGameAIAnalysis(
-		unsigned short tabIndex, unsigned short analysisFrame, unsigned short playerIndex, 
-		const std::string& decisionCluster, const std::string& evaluationCluster);
 	void UpdateGameAISimulation(unsigned short frame);
+
+	void UpdateGameAI(float deltaMs);
+	void UpdateGameAIAnalysis(unsigned short tabIndex);
+	void UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsigned short analysisFrame);
+	void UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsigned short analysisFrame);
 
 	virtual bool LoadGameDelegate(tinyxml2::XMLElement* pRoot);
 

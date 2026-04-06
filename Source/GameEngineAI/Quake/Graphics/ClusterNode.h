@@ -2,23 +2,22 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#ifndef GRAPHNODE_H
-#define GRAPHNODE_H
+#ifndef CLUSTERNODE_H
+#define CLUSTERNODE_H
 
 #include "AI/Pathing.h"
 
 #include "Graphic/Scene/Hierarchy/Node.h"
 
-class GraphNode : public Node
+class ClusterNode : public Node
 {
 public:
 
 	//! constructor
-	GraphNode(const ActorId actorId, PVWUpdater* updater, 
-		const std::shared_ptr<Texture2>& texture, Vector3<float> size, 
-		const std::shared_ptr<PathingGraph>& pathingGraph);
+	ClusterNode(const ActorId actorId, PVWUpdater* updater,
+		const std::shared_ptr<Texture2>& texture, Vector3<float> size);
 
-	virtual ~GraphNode();
+	virtual ~ClusterNode();
 
 	//! Render events
 	virtual bool PreRender(Scene *pScene);
@@ -60,26 +59,18 @@ public:
 	/** \param newType New type of material to be set. */
 	virtual void SetMaterialType(MaterialType newType);
 
-	void GenerateMesh(
-		const std::map<unsigned short, unsigned short>& selectedClusters, 
-		const std::shared_ptr<PathingGraph>& pathingGraph);
-	void GenerateMesh(
-		const std::unordered_map<PathingNode*, float>& selectedNodes,
-		const std::shared_ptr<PathingGraph>& pathingGraph);
-
-	Vector4<float> GetClusterColor(unsigned int cluster) { return mColors[cluster]; }
+	void GenerateMesh(const std::vector<std::pair<Vector3<float>, Vector4<float>>>& nodes);
 
 private:
 
-	void GenerateGeometry(BaseMeshBuffer* meshBuffer, const PathingNodeVec& nodes);
+	void GenerateGeometry(BaseMeshBuffer* meshBuffer, const std::vector<std::pair<Vector3<float>, Vector4<float>>>& nodes);
 
-	std::vector<std::shared_ptr<BlendState>> mBlendStates;
-	std::vector<std::shared_ptr<DepthStencilState>> mDepthStencilStates;
+	std::shared_ptr<BlendState> mBlendState;
+	std::shared_ptr<DepthStencilState> mDepthStencilState;
 	std::shared_ptr<RasterizerState> mRasterizerState;
 
-	std::vector<std::shared_ptr<Visual>> mVisuals;
+	std::shared_ptr<Visual> mVisual;
 
-	std::map<unsigned int, Vector4<float>> mColors;
 	std::shared_ptr<Texture2> mTexture;
 	std::shared_ptr<BaseMesh> mMesh;
 	Vector3<float> mSize;
