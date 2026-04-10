@@ -1104,7 +1104,13 @@ bool QuakeAIView::CanUpdateActionPlan(const PlayerData& player)
 		for (auto& pathingArc : mCurrentPlayerData.plan.path)
 		{
 			if (currentPathWeight + pathingArc->GetWeight() > 0.3f)
+			{
+				std::stringstream pathInfo;
+				pathInfo << "\n CAN UPDATE player " << player.player << " frame " << aiManager->GetFrame() <<
+					" to new plan the current path weight is long enough " << currentPathWeight + pathingArc->GetWeight();
+				aiManager->PrintInfo(pathInfo.str());
 				break;
+			}
 		
 			currentPathWeight += pathingArc->GetWeight();
 			if (pathingArc->GetNode()->GetActorId() != INVALID_ACTOR_ID)

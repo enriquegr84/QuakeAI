@@ -2787,6 +2787,7 @@ void QuakeAIEditorView::SimulateExploringDelegate(BaseEventDataPtr pEventData)
 		playerPlan.node = pStartNode;
 		delete pathPlan;
 	}
+	printf("\n player plan weight %f", playerPlan.weight);
 
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);

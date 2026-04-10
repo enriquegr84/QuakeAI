@@ -24,7 +24,7 @@
 #include "QuakeApp.h"
 #include "Quake.h"
 
-#define MAX_DAMAGE 300
+#define MAX_DAMAGE 600
 
 #define GROUND_DISTANCE 16.f
 #define FLOATING_DISTANCE 32.f
@@ -194,6 +194,9 @@ void AIFinder::operator()(
 				actorsPathPlans[planNode->GetPathingActors()] = planNode->GetWeight();
 		}
 
+		// lets put a threshold to the added search margin weight
+		float weightMargin = 1.f;
+
 		// we're processing this node so remove it from the open set and add it to the closed set
 		AddToClosedSet(planNode);
 
@@ -215,7 +218,7 @@ void AIFinder::operator()(
 					return;
 
 				AIPlanNode* pPlanToCompare = mNodes[pActorToEvaluate->GetActor()].front();
-				float costForActorPlan = pPlanToCompare->GetWeight() + searchItems.at(pActorToEvaluate->GetActor());
+				float costForActorPlan = pPlanToCompare->GetWeight() + weightMargin * searchItems.at(pActorToEvaluate->GetActor());
 
 				// figure out the cost for this route through the node
 				float costForThisPlan = planNode->GetWeight() +
@@ -228,6 +231,53 @@ void AIFinder::operator()(
 			else AddToOpenSet(planNode->GetPathingNode(), pActorToEvaluate, planNode);
 		});
 	}
+	/*
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	aiManager->PrintInfo("\n actors");
+	for (auto planActor : mNodes)
+	{
+		aiManager->PrintInfo("\n new plan \n");
+		for (auto planNode : planActor.second)
+		{
+			for (auto planNodeActor : planNode->GetActors())
+			{
+				std::shared_ptr<Actor> pItemActor(
+					GameLogic::Get()->GetActor(planNodeActor.first).lock());
+				if (pItemActor->GetType() == "Weapon")
+				{
+					std::shared_ptr<WeaponPickup> pWeaponPickup =
+						pItemActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+					aiManager->PrintInfo(" weapon " + std::to_string(pWeaponPickup->GetCode()));
+				}
+				else if (pItemActor->GetType() == "Ammo")
+				{
+					std::shared_ptr<AmmoPickup> pAmmoPickup =
+						pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
+					aiManager->PrintInfo(" ammo " + std::to_string(pAmmoPickup->GetCode()));
+				}
+				else if (pItemActor->GetType() == "Armor")
+				{
+					std::shared_ptr<ArmorPickup> pArmorPickup =
+						pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
+					aiManager->PrintInfo(" armor " + std::to_string(pArmorPickup->GetCode()));
+				}
+				else if (pItemActor->GetType() == "Health")
+				{
+					std::shared_ptr<HealthPickup> pHealthPickup =
+						pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
+					aiManager->PrintInfo(" health " + std::to_string(pHealthPickup->GetCode()));
+				}
+				else 
+				{ 
+					aiManager->PrintInfo(" other " + std::to_string(planNodeActor.first)); 
+				}
+				aiManager->PrintInfo(" weight " + std::to_string(planNodeActor.second));
+			}
+			aiManager->PrintInfo(" node " + 
+				std::to_string(planNode->GetPathingNode()->GetId()) + " weight " + std::to_string(planNode->GetWeight()) + "\n");
+		}
+	}
+	*/
 }
 
 void AIFinder::AddToOpenSet(PathingNode* pNode, PathingActor* pActor, AIPlanNode* pPrevNode)
@@ -659,7 +709,7 @@ void QuakeAIManager::SaveGraph(const std::string& path, std::shared_ptr<PathingG
 //
 //    Loads the graph information
 //
-void QuakeAIManager::LoadGraph(const std::wstring& path)
+void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 {
 	//set data
 	AIMap::Graph data;
@@ -713,10 +763,10 @@ void QuakeAIManager::LoadGraph(const std::wstring& path)
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
 			int arcNode = arc.nodeid;
-			float weight = arc.weight;
+			float arcWeight = arc.weight * weightConversion;
 			if (mLastArcId < arcId) mLastArcId = arcId;
 
-			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], weight);
+			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], arcWeight);
 			pathNode->AddArc(pathArc);
 
 			std::vector<float> weights;
@@ -728,7 +778,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path)
 			}
 			for (float weight : arc.weights)
 			{
-				weights.push_back(weight);
+				weights.push_back(weight * weightConversion);
 			}
 			for (AIMap::Vec3 position : arc.positions)
 			{
@@ -797,7 +847,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path)
 //
 //    Loads graph information
 //
-void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<PathingGraph>& graph)
+void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<PathingGraph>& graph, float weightConversion)
 {
 	//set data
 	AIMap::Graph data;
@@ -848,10 +898,10 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
 			int arcNode = arc.nodeid;
-			float weight = arc.weight;
+			float arcWeight = arc.weight * weightConversion;
 			if (mLastArcId < arcId) mLastArcId = arcId;
 
-			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], weight);
+			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], arcWeight);
 			pathNode->AddArc(pathArc);
 
 			std::vector<float> weights;
@@ -863,7 +913,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 			}
 			for (float weight : arc.weights)
 			{
-				weights.push_back(weight);
+				weights.push_back(weight * weightConversion);
 			}
 			for (AIMap::Vec3 position : arc.positions)
 			{
@@ -920,10 +970,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 	for (AIMap::GraphCluster cluster : data.clusters)
 	{
 		for (auto const& clusterVisible : cluster.visibles)
-		{
-			clusterGraph[cluster.id]->AddVisibleCluster(
-				clusterVisible.first, pathingGraph[clusterVisible.second]);
-		}
+			clusterGraph[cluster.id]->AddVisibleCluster(clusterVisible.first, pathingGraph[clusterVisible.second]);
 	}
 }
 
@@ -932,7 +979,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 //
 //    Loads basic pathing information
 //
-void QuakeAIManager::LoadPathingMap(const std::wstring& path)
+void QuakeAIManager::LoadPathingMap(const std::wstring& path, float weightConversion)
 {
 	//set data
 	AIMap::Graph data;
@@ -978,10 +1025,10 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path)
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
 			int arcNode = arc.nodeid;
-			float weight = arc.weight;
+			float arcWeight = arc.weight * weightConversion;
 			if (mLastArcId < arcId) mLastArcId = arcId;
 
-			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], weight);
+			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], arcWeight);
 			pathNode->AddArc(pathArc);
 
 			std::vector<float> weights;
@@ -993,7 +1040,7 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path)
 			}
 			for (float weight : arc.weights)
 			{
-				weights.push_back(weight);
+				weights.push_back(weight * weightConversion);
 			}
 			for (AIMap::Vec3 position : arc.positions)
 			{
@@ -1027,7 +1074,7 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path)
 //
 //    Loads basic pathing information
 //
-void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<PathingGraph>& graph)
+void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<PathingGraph>& graph, float weightConversion)
 {
 	//set data
 	AIMap::Graph data;
@@ -1071,10 +1118,10 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<Pa
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
 			int arcNode = arc.nodeid;
-			float weight = arc.weight;
+			float arcWeight = arc.weight * weightConversion;
 			if (mLastArcId < arcId) mLastArcId = arcId;
 
-			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], weight);
+			PathingArc* pathArc = new PathingArc(arcId, arcType, pathingGraph[arcNode], arcWeight);
 			pathNode->AddArc(pathArc);
 
 			std::vector<float> weights;
@@ -1086,7 +1133,7 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<Pa
 			}
 			for (float weight : arc.weights)
 			{
-				weights.push_back(weight);
+				weights.push_back(weight * weightConversion);
 			}
 			for (AIMap::Vec3 position : arc.positions)
 			{
@@ -2060,8 +2107,10 @@ void QuakeAIManager::BuildActorPath(std::shared_ptr<PathingGraph>& graph,
 	Concurrency::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics,
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters)
 {
+	// find the best path using an A* search algorithm
+	AIFinder aiFinder;
 	std::map<PathingActorVec, float> actorsPathPlans;
-	FindPathPlans(clusterNodeStart, searchItems, actorsPathPlans, actionType);
+	aiFinder(clusterNodeStart, searchItems, actorsPathPlans, actionType);
 
 	unsigned short actorIndex = 0;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorWeights;
@@ -2155,7 +2204,11 @@ void QuakeAIManager::BuildActorPath(std::shared_ptr<PathingGraph>& graph,
 				if (takeItems)
 				{
 					PickupItems(playerData, actors, gameItems);
-					float nodeHeuristic = CalculateHeuristicItems(playerData);
+
+					//heuristic from picked up items
+					float nodeHeuristic = 0.f;
+					for (auto const& item : playerData.items)
+						nodeHeuristic += CalculateHeuristicItem(playerData, item.first, playerData.itemWeight.at(item.first));
 					if (nodeHeuristic >= 0.03f)
 					{
 						mutex.lock();
@@ -2185,7 +2238,11 @@ void QuakeAIManager::BuildActorPath(std::shared_ptr<PathingGraph>& graph,
 			if (takeItems)
 			{
 				PickupItems(playerData, actors, gameItems);
-				float nodeHeuristic = CalculateHeuristicItems(playerData);
+
+				//heuristic from picked up items
+				float nodeHeuristic = 0.f;
+				for (auto const& item : playerData.items)
+					nodeHeuristic += CalculateHeuristicItem(playerData, item.first, playerData.itemWeight.at(item.first));
 				if (nodeHeuristic >= 0.03f)
 				{
 					mutex.lock();
@@ -2573,7 +2630,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	}
 
 	unsigned int diffTime = Timer::GetRealTime() - time;
-	diffTime += 240; //lets add estimation of guessing simulation
+	diffTime += 200; //lets add estimation of guessing simulation
 
 	playerDataOut.valid = true;
 	otherPlayerDataOut.valid = true;
@@ -4614,7 +4671,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	}
 
 	unsigned int diffTime = Timer::GetRealTime() - time;
-	diffTime += 240; //lets add estimation of guessing simulation
+	diffTime += 200; //lets add estimation of guessing simulation
 
 	playerDataOut.valid = true;
 	otherPlayerDataOut.valid = true;
@@ -6246,7 +6303,7 @@ bool QuakeAIManager::IsCloseAIGuessing()
 		aiNode = aiArc->GetNode();
 	}
 	// threshold to accept close guessing players
-	if (aiWeight < 0.8f)
+	if (aiWeight < 1.6f)
 		return true;
 
 	pathingCluster = aiGuessNode->FindCluster(AT_JUMP, aiNode->GetCluster());
@@ -6259,7 +6316,7 @@ bool QuakeAIManager::IsCloseAIGuessing()
 		aiGuessNode = aiGuessArc->GetNode();
 	}
 	// threshold to accept close guessing players
-	if (aiGuessWeight < 0.8f)
+	if (aiGuessWeight < 1.6f)
 		return true;
 
 	return false;
@@ -6305,7 +6362,7 @@ bool QuakeAIManager::IsCloseHumanGuessing()
 		playerNode = playerArc->GetNode();
 	}
 	// threshold to accept close guessing players
-	if (playerWeight < 0.8f)
+	if (playerWeight < 1.6f)
 		return true;
 
 	pathingCluster = playerGuessNode->FindCluster(AT_JUMP, playerNode->GetCluster());
@@ -6318,7 +6375,7 @@ bool QuakeAIManager::IsCloseHumanGuessing()
 		playerGuessNode = playerGuessArc->GetNode();
 	}
 	// threshold to accept close guessing players
-	if (playerGuessWeight < 0.8f)
+	if (playerGuessWeight < 1.6f)
 		return true;
 
 	return false;
@@ -6353,7 +6410,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
 	PlayerView aiSimulation = aiView;
-	aiSimulation.data.planWeight = 0.3f;
+	aiSimulation.data.planWeight = 0.24f;
 	aiSimulation.data.planWeight += aiPathWeightOffset;
 	aiSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiSimulation);
@@ -6586,7 +6643,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
 	PlayerView aiDecisionSimulation = aiView;
-	aiDecisionSimulation.data.planWeight = 0.4f;
+	aiDecisionSimulation.data.planWeight = 0.3f;
 	aiDecisionSimulation.data.planWeight += aiPathWeightOffset;
 	aiDecisionSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiDecisionSimulation);
@@ -6755,7 +6812,7 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
 	PlayerView aiDecisionSimulation = aiView;
-	aiDecisionSimulation.data.planWeight = 0.3f;
+	aiDecisionSimulation.data.planWeight = 0.24f;
 	aiDecisionSimulation.data.planWeight += aiPathWeightOffset;
 	aiDecisionSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiDecisionSimulation);
@@ -6882,7 +6939,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
 	PlayerView playerSimulation = playerView;
-	playerSimulation.data.planWeight = 0.3f;
+	playerSimulation.data.planWeight = 0.24f;
 	playerSimulation.data.planWeight += playerPathWeightOffset;
 	playerSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerSimulation);
@@ -7114,7 +7171,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
 	PlayerView playerDecisionSimulation = playerView;
-	playerDecisionSimulation.data.planWeight = 0.4f;
+	playerDecisionSimulation.data.planWeight = 0.3f;
 	playerDecisionSimulation.data.planWeight += playerPathWeightOffset;
 	playerDecisionSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerDecisionSimulation);
@@ -7283,7 +7340,7 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
 	PlayerView playerDecisionSimulation = playerView;
-	playerDecisionSimulation.data.planWeight = 0.3f;
+	playerDecisionSimulation.data.planWeight = 0.24f;
 	playerDecisionSimulation.data.planWeight += playerPathWeightOffset;
 	playerDecisionSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerDecisionSimulation);
@@ -7610,7 +7667,8 @@ void QuakeAIManager::RunAIAwareDecision()
 			}
 
 			//after complete execution we run guessing decision making
-			mPlayerEvaluations[mPlayers.at(GV_AI)] = ET_GUESSING;
+			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) == ET_CLOSEGUESSING)
+				mPlayerEvaluations[mPlayers.at(GV_AI)] = ET_GUESSING;
 
 			SetEnable(true);
 		}
@@ -7848,7 +7906,8 @@ void QuakeAIManager::RunHumanAwareDecision()
 			}
 
 			//after complete execution we run guessing decision making
-			mPlayerEvaluations[mPlayers.at(GV_HUMAN)] = ET_GUESSING;
+			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) == ET_CLOSEGUESSING)
+				mPlayerEvaluations[mPlayers.at(GV_HUMAN)] = ET_GUESSING;
 
 			SetEnable(true);
 		}
@@ -8329,7 +8388,7 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 					//ammo
 					searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-					searchItem.second = 0.8f;
+					searchItem.second *= 0.8f;
 
 					if (searchItem.second > 0.1f)
 						searchItem.second = searchItem.second < 0.6f ? searchItem.second : 0.6f; //threshold based on item importance
@@ -8578,7 +8637,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 {
 	float score = 0.f;
 	float heuristic = 0.f;
-	float maxWeight = 6.0f;
+	float maxWeight = 10.0f;
 	float weight = 0.f;
 	int maxAmmo = 0;
 	int ammo = 0;
@@ -8838,22 +8897,10 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 	return heuristic;
 }
 
-
-float QuakeAIManager::CalculateHeuristicItems(const PlayerData& playerData)
-{
-	float heuristic = 0.f;
-
-	//heuristic from picked up items
-	for (auto const& item : playerData.items)
-		heuristic += CalculateHeuristicItem(playerData, item.first, playerData.itemWeight.at(item.first));
-
-	return heuristic;
-}
-
 float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 {
 	float score = 0.f;
-	float maxWeight = 6.0f;
+	float maxWeight = 10.0f;
 	float weight = 0.f;
 	int maxAmmo = 0;
 	int ammo = 0;
@@ -9825,7 +9872,7 @@ void QuakeAIManager::CalculateVisibility(
 				}
 				totalWeight += currentWeight;
 				// set timelimit; any time further is likely to be unrealistic simulation
-				if (totalWeight > 3.f)
+				if (totalWeight > 6.f)
 					return;
 			}
 
@@ -9891,7 +9938,7 @@ void QuakeAIManager::CalculateVisibility(
 
 				totalWeight += currentWeight;
 				// set timelimit; any time further is likely to be unrealistic simulation
-				if (totalWeight > 3.f)
+				if (totalWeight > 6.f)
 					return;
 			}
 
@@ -12544,14 +12591,6 @@ void QuakeAIManager::PickupItems(PlayerData& playerData,
 	}
 }
 
-void QuakeAIManager::FindPathPlans(PathingNode* pStartNode, const std::map<ActorId, 
-	float>& searchItems, std::map<PathingActorVec, float>& actorsPathPlans,unsigned int pathingType)
-{
-	// find the best path using an A* search algorithm
-	AIFinder aiFinder;
-	aiFinder(pStartNode, searchItems, actorsPathPlans, pathingType);
-}
-
 PathingNode* QuakeAIManager::FindClosestNode(ActorId playerId, 
 	std::shared_ptr<PathingGraph>& graph, float closestDistance, bool skipIsolated)
 {
@@ -13336,7 +13375,7 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 		UpdatePlayerView(pPlayerActor->GetId(), playerView, playerView.data.planWeight);
 
 		//aware decision making
-		bool runDecisionMaking = false;
+		bool runAwareDecision = false;
 
 		std::shared_ptr<TransformComponent> pPlayerTransformComponent(
 			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
@@ -13409,9 +13448,8 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 							UpdatePlayerGuessPlan(pPlayerActor,
 								gameAIViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
 
-
 							//if players can see each other, then we run aware decision making
-							runDecisionMaking = true;
+							runAwareDecision = true;
 						}
 						else
 						{
@@ -13489,8 +13527,10 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 			UpdatePlayerGuessView(pPlayerActor->GetId(), playerGuessView, isPlayerGuessUpdated);
 		}
 
-		if (runDecisionMaking)
+		if (runAwareDecision)
 			mPlayerEvaluations[pPlayerActor->GetId()] = ET_AWARENESS;
+		else if (mPlayerEvaluations.at(pPlayerActor->GetId()) == ET_AWARENESS)
+			mPlayerEvaluations[pPlayerActor->GetId()] = ET_CLOSEGUESSING;
 	}
 
 	mUpdateTimeMs += deltaMs;

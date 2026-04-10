@@ -91,8 +91,8 @@ void KMeans::Run(std::vector<Point> & points)
 		}
 	}
 
-	printf("Clusters initialized = %u \n", (unsigned int)mClusters.size());
-	printf("Running K-Means Clustering..\n");
+	printf("\nClusters initialized = %u", (unsigned int)mClusters.size());
+	printf("\nRunning K-Means Clustering..\n");
 
 	int iter = 1;
 	while (true)

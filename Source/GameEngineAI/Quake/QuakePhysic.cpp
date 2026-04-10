@@ -303,7 +303,6 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 				//printf("\n physx player %u falling %f %f %f elpased %f", actorController.first, velocity[0], velocity[1], velocity[2], subDeltaTime);
 			}
 
-
 			PxControllerFilters filters;
 			controller->move(velocity, 0.001f, subDeltaTime, filters);
 			UpdatePlayerState(playerId, controller, subDeltaTime, substep != substeps);

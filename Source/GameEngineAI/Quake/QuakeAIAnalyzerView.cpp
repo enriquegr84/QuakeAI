@@ -2618,6 +2618,12 @@ void QuakeAIAnalyzerView::AnalyzeAIGameDelegate(BaseEventDataPtr pEventData)
 		if (pAiView)
 			pAiView->SetEnabled(false);
 	}
+
+	if (mClusterNode)
+		mClusterNode->SetVisible(false);
+
+	if (mPathNode)
+		mPathNode->SetVisible(false);
 }
 
 void QuakeAIAnalyzerView::ShowAIGameAnalysisDelegate(BaseEventDataPtr pEventData)
@@ -2684,7 +2690,7 @@ void QuakeAIAnalyzerView::ShowAIPredictionAnalysisDelegate(BaseEventDataPtr pEve
 		std::static_pointer_cast<EventDataShowAIPredictionAnalysis>(pEventData);
 
 	UpdateGameAIAnalysis(pCastEventData->GetTab(), pCastEventData->GetAnalysisFrame());
-	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+	UpdateGameAIAnalysisPrediction(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
 
 	ShowAIPredictionAnalysis(pCastEventData->GetTab(), pCastEventData->GetGameFrame(), pCastEventData->GetAnalysisFrame(),
 		pCastEventData->GetPlayer(), pCastEventData->GetDecisionCluster(), pCastEventData->GetEvaluationCluster(),

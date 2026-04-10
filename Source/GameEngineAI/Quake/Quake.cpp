@@ -1939,11 +1939,13 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 
 	if (!mGameAICombat)
 	{
+		//physics simulations run at 60fps, but the game runs as avarage at 35fps, so we need to adjust the weights
+		float weightConversion = 60.f / 35.f;
+
 		std::string levelPath = "ai/quake/" +
 			Settings::Get()->Get("selected_world") + "/map.bin";
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-		aiManager->LoadGraph(
-			ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()));
+		aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), weightConversion);
 
 		std::map<ActorId, const AIAnalysis::ActorPickup*>& gameActorPickups = aiManager->GetGameActorPickups();
 		for (auto const& actor : mActors)
@@ -2035,8 +2037,11 @@ void QuakeLogic::AnalyzeAIGameDelegate(BaseEventDataPtr pEventData)
 
 		if (!aiManager->GetPathingGraph())
 		{
+			//physics simulations run at 60fps, but the game runs as avarage at 35fps, so we need to adjust the weights 
+			float weightConversion = 60.f / 35.f;
+
 			std::string levelPath = "ai/quake/" + Settings::Get()->Get("selected_world") + "/map.bin";
-			aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()));
+			aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), weightConversion);
 
 			std::map<ActorId, const AIAnalysis::ActorPickup*>& gameActorPickups = aiManager->GetGameActorPickups();
 			for (auto const& actor : mActors)

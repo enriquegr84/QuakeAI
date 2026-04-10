@@ -1014,16 +1014,16 @@ public:
 	QuakeAIManager();
 	~QuakeAIManager();
 
-	void LoadPathingMap(const std::wstring& path);
-	void LoadPathingMap(const std::wstring& path, std::shared_ptr<PathingGraph>& graph);
+	void LoadPathingMap(const std::wstring& path, float weightConversion = 1.0f);
+	void LoadPathingMap(const std::wstring& path, std::shared_ptr<PathingGraph>& graph, float weightConversion = 1.0f);
 
 	void UpdateMap(std::shared_ptr<PathingGraph>& graph, ActorId playerId);
 	void UpdateMap(ActorId playerId);
 
 	virtual void SaveGraph(const std::string& path);
 	virtual void SaveGraph(const std::string& path, std::shared_ptr<PathingGraph>& graph);
-	virtual void LoadGraph(const std::wstring& path);
-	virtual void LoadGraph(const std::wstring& path, std::shared_ptr<PathingGraph>& graph);
+	virtual void LoadGraph(const std::wstring& path, float weightConversion = 1.0f);
+	virtual void LoadGraph(const std::wstring& path, std::shared_ptr<PathingGraph>& graph, float weightConversion = 1.0f);
 
 	void CreatePathingJump(ActorId playerId, NodePlan& pathPlan, std::shared_ptr<PathingGraph>& graph);
 	void CreatePathingFall(ActorId playerId, NodePlan& pathPlan, std::shared_ptr<PathingGraph>& graph);
@@ -1102,7 +1102,6 @@ protected:
 	float CalculatePlayerStatus(const PlayerData& playerData);
 	float CalculatePlayerWeaponStatus(const PlayerData& playerData);
 	float CalculateBestHeuristicItem(const PlayerData& playerData);
-	float CalculateHeuristicItems(const PlayerData& playerData);
 	float CalculateHeuristicItem(const PlayerData& playerData, ActorId item, float itemWeight);
 	void CalculateWeightItems(const PlayerData& playerData, std::map<ActorId, float>& searchItems);
 	void CalculateHeuristic(EvaluationType evaluation, PlayerData& playerData, PlayerData& otherPlayerData);
@@ -1162,9 +1161,6 @@ protected:
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
-
-	void FindPathPlans(PathingNode* pStartNode, const std::map<ActorId, float>& searchItems,
-		std::map<PathingActorVec, float>& actorsPathPlans, unsigned int pathingType);
 
 	PathingNode* FindClosestNode(ActorId playerId,
 		std::shared_ptr<PathingGraph>& graph, float closestDistance, bool skipIsolated = true);
