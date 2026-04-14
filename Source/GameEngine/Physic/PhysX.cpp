@@ -1963,8 +1963,26 @@ void ContactReportCallback::onTrigger(PxTriggerPair* pairs, PxU32 nPairs)
 			PxRigidActor const* const body1 = !(pairs[i].flags & PxTriggerPairFlag::eREMOVED_SHAPE_OTHER) ?
 				static_cast<PxRigidActor const*>(pairs[i].otherShape->getActor()) : nullptr;
 
-			// this is a new contact, which wasn't in our list before.  send an event to the game.
-			mPhysX->SendTriggerPairAddEvent(pairs[i]);
+			if (body0 == nullptr || body1 == nullptr)
+			{
+				// collision is ending between some object(s) that don't have actors. 
+				// we don't send events for that.
+				return;
+			}
+
+			// always create the pair in a predictable order
+			bool const swapped = body0 > body1;
+
+			PxRigidActor const* const sortedBodyA = swapped ? body1 : body0;
+			PxRigidActor const* const sortedBodyB = swapped ? body0 : body1;
+
+			CollisionPair const thisPair = std::make_pair(sortedBodyA, sortedBodyB);
+			if (mTriggerCollisionPairs.find(thisPair) == mTriggerCollisionPairs.end())
+			{
+				// this is a new contact, which wasn't in our list before, send an event to the game.
+				mPhysX->SendTriggerPairAddEvent(pairs[i]);
+				mTriggerCollisionPairs.insert(thisPair);
+			}
 		}
 	}
 	else if (pairs->status & PxPairFlag::eNOTIFY_TOUCH_LOST)
@@ -1977,8 +1995,32 @@ void ContactReportCallback::onTrigger(PxTriggerPair* pairs, PxU32 nPairs)
 			PxRigidActor const* const body1 = !(pairs[i].flags & PxTriggerPairFlag::eREMOVED_SHAPE_OTHER) ?
 				static_cast<PxRigidActor const*>(pairs[i].otherShape->getActor()) : nullptr;
 
-			// this is a new contact, which wasn't in our list before.  send an event to the game.
-			mPhysX->SendTriggerPairRemoveEvent(body0, body1);
+			if (body0 == nullptr || body1 == nullptr)
+			{
+				// collision is ending between some object(s) that don't have actors. 
+				// we don't send events for that.
+				return;
+			}
+
+			// always create the pair in a predictable order
+			bool const swapped = body0 > body1;
+
+			PxRigidActor const* const sortedBodyA = swapped ? body1 : body0;
+			PxRigidActor const* const sortedBodyB = swapped ? body0 : body1;
+
+			CollisionPair const thisPair = std::make_pair(sortedBodyA, sortedBodyB);
+			if (mTriggerCollisionPairs.find(thisPair) == mTriggerCollisionPairs.end())
+			{
+				// this is a new contact, which wasn't in our list before, send an event to the game.
+				mPhysX->SendTriggerPairAddEvent(pairs[i]);
+				mTriggerCollisionPairs.insert(thisPair);
+			}
+			else
+			{
+				// this is a new contact, which wasn't in our list before. send an event to the game.
+				mPhysX->SendTriggerPairRemoveEvent(body0, body1);
+				mTriggerCollisionPairs.erase(thisPair);
+			}
 		}
 	}
 }

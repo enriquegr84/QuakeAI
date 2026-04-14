@@ -4381,7 +4381,7 @@ void QuakeAIEditorView::ShowMap(const std::map<unsigned short, unsigned short>& 
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=3.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,7;9.25,5.75;graph_arcs;#4bdd42,Map Arcs,,,,,";
+		"table[0.25,7;9.25,4.75;graph_arcs;#4bdd42,Map Arcs,,,,,";
 	/*
 	for (auto node : mMap->GetNodes())
 	{
@@ -4483,7 +4483,7 @@ void QuakeAIEditorView::ShowMap(PathingNode* pNode)
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=3.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,7;9.25,5.75;graph_arcs;#4bdd42,Map Arcs,,,,,";
+		"table[0.25,7;9.25,4.75;graph_arcs;#4bdd42,Map Arcs,,,,,";
 	for (auto const& arc : pNode->GetArcs())
 	{
 		PathingArc* pArc = arc.second;
@@ -4651,7 +4651,7 @@ void QuakeAIEditorView::EditPathingMap(const std::map<unsigned short, unsigned s
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=3.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,7;9.25,5.25;graph_arcs;#4bdd42,Pathing Arcs,,,,,";
+		"table[0.25,7;9.25,4.75;graph_arcs;#4bdd42,Pathing Arcs,,,,,";
 	/*
 	for (auto node : mPathingMap->GetNodes())
 	{
@@ -4754,7 +4754,7 @@ void QuakeAIEditorView::EditPathingMap(PathingNode* pNode)
 		"text,align=inline,width=3.25;"
 		"text,align=inline,width=3.25]"
 		"tableoptions[background=#00000000;border=false]"
-		"table[0.25,7;9.25,5.25;graph_arcs;#4bdd42,Pathing Arcs,,,,,";
+		"table[0.25,7;9.25,4.75;graph_arcs;#4bdd42,Pathing Arcs,,,,,";
 	for (auto const& arc : pNode->GetArcs())
 	{
 		PathingArc* pArc = arc.second;

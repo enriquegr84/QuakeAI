@@ -3786,7 +3786,7 @@ void QuakeLogic::LoadActors(BspLoader& bspLoader)
 										pPhysicComponent->GetDensity(), pPhysicComponent->GetMaterial());
 
 #if defined(PHYSX) && defined(_WIN64)
-									//trigger push in physx is unreliable we detect it manually
+									//trigger push contact in physx is reported too late, we rather detect it manually
 									if (className == "trigger_push")
 										gamePhysics->SetCollisionFlags(pActor->GetId(), false);
 #endif

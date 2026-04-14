@@ -71,6 +71,17 @@ public:
 	void onAdvance(const PxRigidBody* const*, const PxTransform*, const PxU32) {}
 	void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nPairs);
 
+protected:
+
+	//	data used to store which collision pair (bodies that are touching) need
+	//   Collision events sent.  When a new pair of touching bodies are detected,
+	//   they are added to mCollisionPairs and an event is sent.
+	//   When the pair is no longer detected, they are removed and another event
+	//   is sent.
+	typedef std::pair<PxRigidActor const*, PxRigidActor const*> CollisionPair;
+	typedef std::set<CollisionPair> CollisionPairs;
+	CollisionPairs mTriggerCollisionPairs;
+
 
 private:
 

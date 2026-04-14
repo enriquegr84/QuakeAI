@@ -6442,8 +6442,11 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
+	// exclude items which are guessed to be taken by the ai player
+	for (auto const& aiGuessItem : aiView.data.items)
+		gameItems[aiGuessItem.first] = aiGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the human player
 	for (auto const& humanGuessItem : playerGuessView.items)
 		if (gameItems.at(humanGuessItem.first) == 0.f)
 			gameItems[humanGuessItem.first] = humanGuessItem.second;
@@ -6560,8 +6563,11 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
+	// exclude items which are guessed to be taken by the ai player
+	for (auto const& aiGuessItem : aiView.data.items)
+		gameItems[aiGuessItem.first] = aiGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the human player
 	for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
 		if (gameItems.at(humanGuessItem.first) == 0.f)
 			gameItems[humanGuessItem.first] = humanGuessItem.second;
@@ -6684,6 +6690,9 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerGuessView.items;
+	// exclude items which are guessed to be taken
+	for (auto const& guessItem : playerGuessView.data.items)
+		gameItems[guessItem.first] = guessItem.second;
 
 	// update the items which are guessed to be taken
 	for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
@@ -6698,8 +6707,11 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	gameItems = aiView.gameItems;
+	// exclude items which are guessed to be taken by the ai player
+	for (auto const& aiGuessItem : aiView.data.items)
+		gameItems[aiGuessItem.first] = aiGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the human player
 	for (auto const& humanGuessItem : playerGuessView.items)
 		if (gameItems.at(humanGuessItem.first) == 0.f)
 			gameItems[humanGuessItem.first] = humanGuessItem.second;
@@ -6851,8 +6863,11 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
+	// exclude items which are guessed to be taken by the ai player
+	for (auto const& aiGuessItem : aiView.data.items)
+		gameItems[aiGuessItem.first] = aiGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the human player
 	for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
 		if (gameItems.at(humanGuessItem.first) == 0.f)
 			gameItems[humanGuessItem.first] = humanGuessItem.second;
@@ -6971,8 +6986,11 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
+	// exclude items which are guessed to be taken by the human player
+	for (auto const& humanGuessItem : playerView.data.items)
+		gameItems[humanGuessItem.first] = humanGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the ai player
 	for (auto const& aiGuessItem : aiGuessView.items)
 		if (gameItems.at(aiGuessItem.first) == 0.f)
 			gameItems[aiGuessItem.first] = aiGuessItem.second;
@@ -7088,8 +7106,11 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
+	// exclude items which are guessed to be taken by the human player
+	for (auto const& humanGuessItem : playerView.data.items)
+		gameItems[humanGuessItem.first] = humanGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the ai player
 	for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
 		if (gameItems.at(aiGuessItem.first) == 0.f)
 			gameItems[aiGuessItem.first] = aiGuessItem.second;
@@ -7212,6 +7233,9 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiGuessView.items;
+	// exclude items which are guessed to be taken
+	for (auto const& guessItem : aiGuessView.data.items)
+		gameItems[guessItem.first] = guessItem.second;
 
 	// update the items which are guessed to be taken
 	for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
@@ -7226,8 +7250,11 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	gameItems = playerView.gameItems;
+	// exclude items which are guessed to be taken by the human player
+	for (auto const& humanGuessItem : playerView.data.items)
+		gameItems[humanGuessItem.first] = humanGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the ai player
 	for (auto const& aiGuessItem : aiGuessView.items)
 		if (gameItems.at(aiGuessItem.first) == 0.f)
 			gameItems[aiGuessItem.first] = aiGuessItem.second;
@@ -7379,8 +7406,11 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
+	// exclude items which are guessed to be taken by the human player
+	for (auto const& humanGuessItem : playerView.data.items)
+		gameItems[humanGuessItem.first] = humanGuessItem.second;
 
-	// update the items which are guessed to be taken
+	// update the items which are guessed to be taken by the ai player
 	for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
 		if (gameItems.at(aiGuessItem.first) == 0.f)
 			gameItems[aiGuessItem.first] = aiGuessItem.second;
@@ -9951,14 +9981,14 @@ void QuakeAIManager::CalculateVisibility(
 	for (auto& visibility : playerVisibility)
 		totalVisibleWeight += visibility.second.moveTime;
 
-	if (totalVisibleWeight < 1.5f)
+	if (totalVisibleWeight < 3.f)
 	{
 		//we need to add visible time if the total visible move time is short
 		if (currentNode->IsVisibleNode(otherCurrentNode))
 			/*if (RayCollisionDetection(currentNode->GetPosition(), otherCurrentNode->GetPosition()) == NULL)*/
 		{
 			float currentWeight = 0.5f;
-			totalVisibleWeight = totalVisibleWeight < 0.75f ? 2.f : 1.f;
+			totalVisibleWeight = totalVisibleWeight < 1.5f ? 2.f : 1.f;
 			if (visibilityIt != playerVisibility.end())
 			{
 				float minimumVisibleWeight = playerVisibleTime < otherPlayerVisibleTime ? playerVisibleTime : otherPlayerVisibleTime;

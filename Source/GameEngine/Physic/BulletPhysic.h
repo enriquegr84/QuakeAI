@@ -199,7 +199,7 @@ protected:
 
 	// data used to store which collision pair (bodies that are touching) need
 	//   Collision events sent.  When a new pair of touching bodies are detected,
-	//   they are added to m_previousTickCollisionPairs and an event is sent.
+	//   they are added to mPreviousTickCollisionPairs and an event is sent.
 	//   When the pair is no longer detected, they are removed and another event
 	//   is sent.
 	typedef std::pair<btRigidBody const*, btRigidBody const*> CollisionPair;

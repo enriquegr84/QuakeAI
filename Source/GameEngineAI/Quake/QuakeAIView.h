@@ -61,7 +61,7 @@ public:
 	const PlayerData& GetActionPlayer() { return mCurrentPlayerData; }
 
 	void SetEnabled(bool enabled) { mEnabled = enabled; }
-	bool GetEnabled() const { return mEnabled; }
+	bool IsEnabled() const { return mEnabled; }
 
 	BehaviorType GetBehavior() { return mBehavior; }
 	void SetBehavior(BehaviorType behavior) { mBehavior = behavior; }

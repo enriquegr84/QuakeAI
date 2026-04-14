@@ -260,10 +260,21 @@ void QuakePhysX::OnUpdate(float const deltaSeconds)
 	float fixedDeltaSeconds = 1.f / 60.f;
 	float subDeltaTime = fixedDeltaSeconds / substeps;
 
+	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
 	for (auto& actorController : mActorIdToController)
 	{
 		ActorId playerId = actorController.first;
 		PxController* const controller = actorController.second;
+
+		bool isEnabled = true;
+		for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+		{
+			std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+			if (pAiView && pAiView->GetActorId() == playerId)
+				isEnabled = pAiView->IsEnabled();
+		}
+		if (!isEnabled)
+			continue;
 
 		// update physics player at fixed delta time steps for more consistent behavior
 		PxVec3 velocity = PxVec3(PxZero);

@@ -326,14 +326,7 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 			{
 				pPlayerActor->GetAction().actionType = ACTION_STAND;
 				if (mMouseLButtonDown)
-				{
-					QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-					std::vector<std::shared_ptr<PlayerActor>> updatePlayers;
-					game->GetPlayerActors(updatePlayers);
-					for (std::shared_ptr<PlayerActor> updatePlayer : updatePlayers)
-						updatePlayer->GetState().moveType = PM_DEAD;
-					//pPlayerActor->GetAction().actionType |= ACTION_ATTACK;
-				}
+					pPlayerActor->GetAction().actionType |= ACTION_ATTACK;
 				if (mWheelRollDown)
 					pPlayerActor->PreviousWeapon();
 				if (mWheelRollUp)

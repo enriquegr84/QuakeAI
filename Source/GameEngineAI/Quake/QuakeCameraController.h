@@ -62,7 +62,7 @@ public:
     }
 
 	//! Gets whether or not the affector is currently enabled.
-	bool GetEnabled() const { return mEnabled; }
+	bool IsEnabled() const { return mEnabled; }
 
 	void OnUpdate(unsigned int timeMs, unsigned long deltaMs);
 

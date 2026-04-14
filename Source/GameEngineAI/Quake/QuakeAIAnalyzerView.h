@@ -563,14 +563,20 @@ struct AIAnalysisFormHandler : public TextDestination
 					return;
 				}
 			}
-
+			if (fields.find("btn_simulate") != fields.end())
+			{
+				BaseEventManager::Get()->TriggerEvent(
+					std::make_shared<EventDataShowAIGameAnalysis>(mGameFrame, mAnalysisFrame,
+						mPlayerIndex, mEvaluationCluster[mTabIndex - 1], mDecisionCluster[mTabIndex - 1],
+						mEvaluationFilter[mTabIndex - 1], mDecisionFilter[mTabIndex - 1], mTabIndex));
+				return;
+			}
 			if (fields.find("dd_show_options") != fields.end())
 			{
 				std::string row = fields.at("dd_show_options");
 				std::string content = Trim(row);
 				mShowOption = atoi(content.c_str());
 			}
-
 			if (fields.find("btn_show_option") != fields.end())
 			{
 				if (mShowOption == 1)

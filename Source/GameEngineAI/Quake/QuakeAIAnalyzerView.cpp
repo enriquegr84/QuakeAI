@@ -5133,99 +5133,20 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 	unsigned int time = Timer::GetRealTime();
 
 	std::map<ActorId, float> gameItems;
-	std::unordered_set<PathingNode*> playerClusterPathings, otherPlayerClusterPathings;
 	if (gameDecision.evaluation.type == ET_GUESSING)
 	{
 		// update guessing items
 		gameItems = gameDecision.evaluation.playerGuessItems;
-
-		//simulation guessing
-		bool success = aiManager->SimulateClusterPathing(playerGuessData, playerGuessSimulation,
-			otherPlayerGuessData, otherPlayerGuessSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
-		if (success)
-		{
-			// update decision items
-			gameItems = gameDecision.evaluation.playerDecisionItems;
-
-			//simulation guessing decision
-			success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
-				otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
-			if (success)
-			{
-				unsigned int time2 = Timer::GetRealTime();
-				printf("\n guessing cluster total elapsed time %u", time2 - time);
-			}
-		}
 	}
 	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
 	{
 		// update guessing items
 		gameItems = gameDecision.evaluation.playerGuessItems;
-
-		//simulation guessing
-		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
-			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
-		if (success)
-		{
-			unsigned int time2 = Timer::GetRealTime();
-			printf("\n close guessing cluster total elapsed time %u", time2 - time);
-		}
 	}
 	else if (gameDecision.evaluation.type == ET_AWARENESS)
 	{
 		// update decision items
 		gameItems = gameDecision.evaluation.playerDecisionItems;
-
-		//simulation decision
-		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
-			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
-		if (success)
-		{
-			unsigned int time2 = Timer::GetRealTime();
-			printf("\n awareness cluster total elapsed time %u", time2 - time);
-		}
-	}
-
-	SColorF playerColor, otherPlayerColor;
-	std::vector<std::pair<Vector3<float>, Vector4<float>>> nodes;
-	if (viewType == GV_AI)
-	{
-		playerColor = SColor(70, 255, 0, 0);
-		otherPlayerColor = SColor(70, 0, 0, 255);
-	}
-	else
-	{
-		playerColor = SColor(70, 0, 0, 255);
-		otherPlayerColor = SColor(70, 255, 0, 0);
-	}
-	for (auto const& playerClusterPathingNode : playerClusterPathings)
-		nodes.push_back({ playerClusterPathingNode->GetPosition(), playerColor.ToArray() });
-	for (auto const& otherPlayerClusterPathingNode : otherPlayerClusterPathings)
-		nodes.push_back({ otherPlayerClusterPathingNode->GetPosition(), otherPlayerColor.ToArray() });
-	if (nodes.empty())
-		return;
-
-	if (!mClusterNode)
-	{
-		std::shared_ptr<ResHandle>& resHandle =
-			ResCache::Get()->GetHandle(&BaseResource(L"art/stones.jpg"));
-		if (resHandle)
-		{
-			const std::shared_ptr<ImageResourceExtraData>& extra =
-				std::static_pointer_cast<ImageResourceExtraData>(resHandle->GetExtra());
-			extra->GetImage()->AutogenerateMipmaps();
-
-			Vector3<float> size = Vector3<float>{ 12.f, 12.f, 26.f };
-			mClusterNode = std::make_shared<ClusterNode>(GameLogic::Get()->GetNewActorID(),
-				&mScene->GetPVWUpdater(), extra->GetImage(), size);
-			mScene->AddSceneNode(mClusterNode->GetId(), mClusterNode);
-		}
-	}
-
-	if (mClusterNode)
-	{
-		mClusterNode->SetVisible(true);
-		mClusterNode->GenerateMesh(nodes);
 	}
 
 	std::vector<Vector3<float>> pathNodes;
