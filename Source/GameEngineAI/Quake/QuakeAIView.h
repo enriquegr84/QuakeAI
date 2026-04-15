@@ -111,6 +111,7 @@ protected:
 	Vector3<float> mGravity;
 
 	unsigned long mRespawnTimeMs;
+	float mReactionTime;
 
 	GameViewId mViewId;
 	ActorId mPlayerId;

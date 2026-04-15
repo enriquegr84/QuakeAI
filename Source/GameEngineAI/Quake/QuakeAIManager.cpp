@@ -6442,14 +6442,26 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
-	// exclude items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiView.data.items)
-		gameItems[aiGuessItem.first] = aiGuessItem.second;
+	if (aiView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerGuessView.items)
-		if (gameItems.at(humanGuessItem.first) == 0.f)
-			gameItems[humanGuessItem.first] = humanGuessItem.second;
+		// update the items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerGuessView.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
 	gameDecision.evaluation.playerDecisionItems = gameItems;
@@ -6563,14 +6575,26 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
-	// exclude items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiView.data.items)
-		gameItems[aiGuessItem.first] = aiGuessItem.second;
+	if (aiView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
-		if (gameItems.at(humanGuessItem.first) == 0.f)
-			gameItems[humanGuessItem.first] = humanGuessItem.second;
+		// update the items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerDecisionItems = gameItems;
 
@@ -6690,31 +6714,59 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerGuessView.items;
-	// exclude items which are guessed to be taken
-	for (auto const& guessItem : playerGuessView.data.items)
-		gameItems[guessItem.first] = guessItem.second;
+	if (playerGuessView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken
+		for (auto const& guessItem : playerGuessView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
+			if (itemPickup)
+				if (!playerGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[guessItem.first] = guessItem.second;
+		}
 
-	// update the items which are guessed to be taken
-	for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
-		if (gameItems.at(humanGuessItem.first) == 0.f)
-			gameItems[humanGuessItem.first] = humanGuessItem.second;
-	for (auto const& aiGuessItem : playerGuessView.guessItems[mPlayers[GV_AI]])
-		if (gameItems.at(aiGuessItem.first) == 0.f)
-			gameItems[aiGuessItem.first] = aiGuessItem.second;
+		// update the items which are guessed to be taken
+		for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!playerGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
+		for (auto const& aiGuessItem : playerGuessView.guessItems[mPlayers[GV_AI]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!playerGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
 
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	gameItems = aiView.gameItems;
-	// exclude items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiView.data.items)
-		gameItems[aiGuessItem.first] = aiGuessItem.second;
+	if (aiView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerGuessView.items)
-		if (gameItems.at(humanGuessItem.first) == 0.f)
-			gameItems[humanGuessItem.first] = humanGuessItem.second;
+		// update the items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerGuessView.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerDecisionItems = gameItems;
 
@@ -6863,14 +6915,26 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
-	// exclude items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiView.data.items)
-		gameItems[aiGuessItem.first] = aiGuessItem.second;
+	if (aiView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
-		if (gameItems.at(humanGuessItem.first) == 0.f)
-			gameItems[humanGuessItem.first] = humanGuessItem.second;
+		// update the items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
 	gameDecision.evaluation.playerDecisionItems = gameItems;
@@ -6986,14 +7050,26 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
-	// exclude items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerView.data.items)
-		gameItems[humanGuessItem.first] = humanGuessItem.second;
+	if (playerView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiGuessView.items)
-		if (gameItems.at(aiGuessItem.first) == 0.f)
-			gameItems[aiGuessItem.first] = aiGuessItem.second;
+		// update the items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiGuessView.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
 	gameDecision.evaluation.playerDecisionItems = gameItems;
@@ -7106,14 +7182,26 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
-	// exclude items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerView.data.items)
-		gameItems[humanGuessItem.first] = humanGuessItem.second;
+	if (playerView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
-		if (gameItems.at(aiGuessItem.first) == 0.f)
-			gameItems[aiGuessItem.first] = aiGuessItem.second;
+		// update the items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerDecisionItems = gameItems;
 
@@ -7233,31 +7321,59 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiGuessView.items;
-	// exclude items which are guessed to be taken
-	for (auto const& guessItem : aiGuessView.data.items)
-		gameItems[guessItem.first] = guessItem.second;
+	if (aiGuessView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken
+		for (auto const& guessItem : aiGuessView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
+			if (itemPickup)
+				if (!aiGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[guessItem.first] = guessItem.second;
+		}
 
-	// update the items which are guessed to be taken
-	for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
-		if (gameItems.at(aiGuessItem.first) == 0.f)
-			gameItems[aiGuessItem.first] = aiGuessItem.second;
-	for (auto const& humanGuessItem : aiGuessView.guessItems[mPlayers[GV_HUMAN]])
-		if (gameItems.at(humanGuessItem.first) == 0.f)
-			gameItems[humanGuessItem.first] = humanGuessItem.second;
+		// update the items which are guessed to be taken
+		for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!aiGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
+		for (auto const& humanGuessItem : aiGuessView.guessItems[mPlayers[GV_HUMAN]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!aiGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
 
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	gameItems = playerView.gameItems;
-	// exclude items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerView.data.items)
-		gameItems[humanGuessItem.first] = humanGuessItem.second;
+	if (playerView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiGuessView.items)
-		if (gameItems.at(aiGuessItem.first) == 0.f)
-			gameItems[aiGuessItem.first] = aiGuessItem.second;
+		// update the items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiGuessView.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerDecisionItems = gameItems;
 
@@ -7406,14 +7522,26 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
-	// exclude items which are guessed to be taken by the human player
-	for (auto const& humanGuessItem : playerView.data.items)
-		gameItems[humanGuessItem.first] = humanGuessItem.second;
+	if (playerView.data.plan.node)
+	{
+		// exclude items which are guessed to be taken by the human player
+		for (auto const& humanGuessItem : playerView.data.items)
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
+		}
 
-	// update the items which are guessed to be taken by the ai player
-	for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
-		if (gameItems.at(aiGuessItem.first) == 0.f)
-			gameItems[aiGuessItem.first] = aiGuessItem.second;
+		// update the items which are guessed to be taken by the ai player
+		for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
+			if (itemPickup)
+				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
+		}
+	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
 	gameDecision.evaluation.playerDecisionItems = gameItems;
@@ -13057,8 +13185,8 @@ bool QuakeAIManager::CheckPlayerGuessItems(PathingNode* playerNode, PlayerGuessV
 		if (playerGuessView.data.items[playerGuessView.data.plan.node->GetActorId()] > 0.f)
 			return resetGuessItem;
 
-		std::shared_ptr<Actor> pItemActor
-		(GameLogic::Get()->GetActor(playerGuessView.data.plan.node->GetActorId()).lock());
+		std::shared_ptr<Actor> pItemActor(
+			GameLogic::Get()->GetActor(playerGuessView.data.plan.node->GetActorId()).lock());
 		std::shared_ptr<TransformComponent> pItemTransform(
 			pItemActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 		PathingNode* itemNode = mPathingGraph->FindClosestNode(pItemTransform->GetTransform().GetTranslation(), false);
@@ -13117,8 +13245,8 @@ bool QuakeAIManager::CheckPlayerGuessItems(PathingNode* playerNode, PlayerGuessV
 		if (playerGuessView.guessPlayers[playerId].items[playerGuessView.data.plan.node->GetActorId()] > 0.f)
 			return resetGuessItem;
 
-		std::shared_ptr<Actor> pItemActor(GameLogic::Get()->GetActor(
-			playerGuessView.data.plan.node->GetActorId()).lock());
+		std::shared_ptr<Actor> pItemActor(
+			GameLogic::Get()->GetActor(playerGuessView.data.plan.node->GetActorId()).lock());
 		std::shared_ptr<TransformComponent> pItemTransform(
 			pItemActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 		PathingNode* itemNode =

@@ -41,6 +41,7 @@ QuakeAIView::QuakeAIView() : BaseGameView(), mBehavior(BT_STAND), mEnabled(true)
 	mStationaryPosition = Vector3<float>::Zero();
 
 	mRespawnTimeMs = 0;
+	mReactionTime = 0.f;
 
 	mGravity = Settings::Get()->GetVector3("default_gravity");
 
@@ -1744,7 +1745,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						
 						//neutral position
 						mPitchTarget = 0;
-						if (!pPlayerActor->IsChangingWeapon() && mCurrentPlayerData.target != INVALID_ACTOR_ID)
+						if (mCurrentPlayerData.target != INVALID_ACTOR_ID)
 						{
 							std::shared_ptr<PlayerActor> pPlayerTarget(
 								std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(mCurrentPlayerData.target).lock()));
@@ -1786,6 +1787,8 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 								if (closestCollisionId == pPlayerTarget->GetId())
 								{
+									mReactionTime += deltaMs / 1000.f;
+
 									if (pPlayerActor->GetState().weapon == WP_ROCKET_LAUNCHER)
 									{
 										PlayerView playerView;
@@ -1809,7 +1812,6 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 										gamePhysics->ConvexSweep(
 											mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
 										
-										closestCollision = targetPos;
 										for (unsigned int i = 0; i < collisionActors.size(); i++)
 										{
 											if (collisionActors[i] != pPlayerActor->GetId() && 
@@ -1833,7 +1835,6 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 										gamePhysics->ConvexSweep(
 											mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
 
-										closestCollision = targetPos;
 										for (unsigned int i = 0; i < collisionActors.size(); i++)
 										{
 											if (collisionActors[i] != pPlayerActor->GetId() && 
@@ -1844,36 +1845,56 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 											}
 										}
 									}
-								}
 
-								if (closestCollisionId == pPlayerTarget->GetId())
-								{
-									Vector3<float> direction = closestCollision.value() - playerPos;
+									Vector3<float> direction = targetPos - playerPos;
 									float scale = Length(direction);
 									Normalize(direction);
 
-									mYaw = mYawSmooth = atan2(direction[AXIS_Z], direction[AXIS_X]) * (float)GE_C_RAD_TO_DEG;
+									mYaw = atan2(direction[AXIS_Z], direction[AXIS_X]) * (float)GE_C_RAD_TO_DEG;
 									mPitchTarget = -asin(direction[AXIS_Y]) * (float)GE_C_RAD_TO_DEG;
 
 									mPitchTarget = std::max(-85.f, std::min(85.f, mPitchTarget));
 									mPitch = 90 * ((mPitchTarget + 85.f) / 170.f) - 45.f;
 
+									if (abs(mYawSmooth - mYaw) < 30.f)
+									{
+										mYawSmooth = mYaw;
+										mYawSmoothTime = 0.f;
+									}
+									if (mYaw != mYawSmooth)
+									{
+										//avoid shooting while rotating
+										closestCollisionId = INVALID_ACTOR_ID;
+
+										//smoothing rotation
+										if (mYaw > mYawSmooth)
+											mYawSmooth += 10.f;
+										else
+											mYawSmooth -= 10.f;
+									}
 									yawRotation = Rotation<4, float>(
-										AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYaw * (float)GE_C_DEG_TO_RAD));
+										AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYawSmooth * (float)GE_C_DEG_TO_RAD));
 									pitchRotation = Rotation<4, float>(
 										AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), mPitch * (float)GE_C_DEG_TO_RAD));
 									mAbsoluteTransform.SetRotation(yawRotation * pitchRotation);
 
-									pPlayerActor->GetAction().actionType |= ACTION_ATTACK;
+									if (closestCollisionId == pPlayerTarget->GetId())
+									{
+										if (!pPlayerActor->IsChangingWeapon() && mReactionTime >= 0.3f)
+										{
+											pPlayerActor->GetAction().actionType |= ACTION_ATTACK;
 
-									std::stringstream weaponInfo;
-									weaponInfo << "\n FIRING WEAPON frame " << 
-										aiManager->GetFrame() << " player " << mPlayerId << 
-										" current weapon " << pPlayerActor->GetState().weapon <<
-										" weapon state " << pPlayerActor->GetState().weaponState << 
-										" weapon time " << pPlayerActor->GetState().weaponTime;
-									aiManager->PrintInfo(weaponInfo.str());
+											std::stringstream weaponInfo;
+											weaponInfo << "\n FIRING WEAPON frame " <<
+												aiManager->GetFrame() << " player " << mPlayerId <<
+												" current weapon " << pPlayerActor->GetState().weapon <<
+												" weapon state " << pPlayerActor->GetState().weaponState <<
+												" weapon time " << pPlayerActor->GetState().weaponTime;
+											aiManager->PrintInfo(weaponInfo.str());
+										}
+									}
 								}
+								else mReactionTime = 0;
 							}
 						}
 					}

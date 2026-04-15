@@ -1396,15 +1396,24 @@ bool PhysX::FindIntersection(ActorId actorId, const Vector3<float>& point)
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
 		PxBounds3 aabb = controller->getActor()->getWorldBounds();
-
 		//sometimes physx swaps internally X and Z, we can check it comparing both dimensions
-		PxVec3 aabbExtents = aabb.getDimensions();
+		PxVec3 aabbExtents = aabb.getDimensions() / 2.f;
 		if (aabbExtents.x > aabbExtents.z)
 		{
 			// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
-			std::swap(aabb.minimum.x, aabb.minimum.z);
-			std::swap(aabb.maximum.x, aabb.maximum.z);
+			std::swap(aabbExtents.x, aabbExtents.z);
 		}
+		// Build axis-aligned bounding box in world space
+		PxExtendedVec3 center = controller->getPosition();
+		aabb.minimum = PxVec3(
+			float(center.x - aabbExtents.x),
+			float(center.y - aabbExtents.y),
+			float(center.z - aabbExtents.z));
+		aabb.maximum = PxVec3(
+			float(center.x + aabbExtents.x),
+			float(center.y + aabbExtents.y),
+			float(center.z + aabbExtents.z));
+
 		if (aabb.minimum[0] > point[0] || aabb.maximum[0] < point[0] ||
 			aabb.minimum[1] > point[1] || aabb.maximum[1] < point[1] ||
 			aabb.minimum[2] > point[2] || aabb.maximum[2] < point[2])
@@ -1525,16 +1534,14 @@ ActorId PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform
 
 		// 2. Get exact geometry
 		PxBounds3 aabb = controller->getActor()->getWorldBounds();
-
 		//sometimes physx swaps internally X and Z, we can check it comparing both dimensions
-		PxVec3 aabbExtents = aabb.getDimensions();
+		PxVec3 aabbExtents = aabb.getDimensions() / 2.f;
 		if (aabbExtents.x > aabbExtents.z)
 		{
 			// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
-			std::swap(aabb.minimum.x, aabb.minimum.z);
-			std::swap(aabb.maximum.x, aabb.maximum.z);
+			std::swap(aabbExtents.x, aabbExtents.z);
 		}
-		PxBoxGeometry boxGeom(aabb.getDimensions() / 2.f);
+		PxBoxGeometry boxGeom(aabbExtents);
 
 		// 3. Single directional sweep
 		Vector3<float> dir = end.GetTranslation() - origin.GetTranslation();
@@ -1590,16 +1597,14 @@ void PhysX::ConvexSweep(ActorId aId, const Transform& origin, const Transform& e
 
 		// 2. Get exact geometry
 		PxBounds3 aabb = controller->getActor()->getWorldBounds();
-
 		//sometimes physx swaps internally X and Z, we can check it comparing both dimensions
-		PxVec3 aabbExtents = aabb.getDimensions();
+		PxVec3 aabbExtents = aabb.getDimensions() / 2.f;
 		if (aabbExtents.x > aabbExtents.z)
 		{
 			// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
-			std::swap(aabb.minimum.x, aabb.minimum.z);
-			std::swap(aabb.maximum.x, aabb.maximum.z);
+			std::swap(aabbExtents.x, aabbExtents.z);
 		}
-		PxBoxGeometry boxGeom(aabb.getDimensions() / 2.f);
+		PxBoxGeometry boxGeom(aabbExtents);
 
 		// 3. Single directional sweep
 		Vector3<float> dir = end.GetTranslation() - origin.GetTranslation();
@@ -1643,15 +1648,23 @@ BoundingBox<float> PhysX::GetBoundingBox(ActorId actorId)
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
 		PxBounds3 aabb = controller->getActor()->getWorldBounds();
-
 		//sometimes physx swaps internally X and Z, we can check it comparing both dimensions
-		PxVec3 aabbExtents = aabb.getDimensions();
+		PxVec3 aabbExtents = aabb.getDimensions() / 2.f;
 		if (aabbExtents.x > aabbExtents.z)
 		{
 			// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
-			std::swap(aabb.minimum.x, aabb.minimum.z);
-			std::swap(aabb.maximum.x, aabb.maximum.z);
+			std::swap(aabbExtents.x, aabbExtents.z);
 		}
+		// Build axis-aligned bounding box in world space
+		PxExtendedVec3 center = controller->getPosition();
+		aabb.minimum = PxVec3(
+			float(center.x - aabbExtents.x),
+			float(center.y - aabbExtents.y),
+			float(center.z - aabbExtents.z));
+		aabb.maximum = PxVec3(
+			float(center.x + aabbExtents.x),
+			float(center.y + aabbExtents.y),
+			float(center.z + aabbExtents.z));
 		return BoundingBox<float>(PxVector3ToVector3(aabb.minimum), PxVector3ToVector3(aabb.maximum));
 	}
 	else if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId))
@@ -1670,15 +1683,25 @@ Vector3<float> PhysX::GetCenter(ActorId actorId)
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
 		PxBounds3 aabb = controller->getActor()->getWorldBounds();
-		PxVec3 aabbCenter = aabb.minimum + (aabb.maximum - aabb.minimum) / 2.f;
-
 		//sometimes physx swaps internally X and Z, we can check it comparing both dimensions
-		PxVec3 aabbExtents = aabb.getDimensions();
+		PxVec3 aabbExtents = aabb.getDimensions() / 2.f;
 		if (aabbExtents.x > aabbExtents.z)
 		{
 			// Swap X and Z to convert from PhysX's Y-up to our Z-up coordinate system
-			std::swap(aabbCenter.x, aabbCenter.z);
+			std::swap(aabbExtents.x, aabbExtents.z);
 		}
+		// Build axis-aligned bounding box in world space
+		PxExtendedVec3 center = controller->getPosition();
+		aabb.minimum = PxVec3(
+			float(center.x - aabbExtents.x),
+			float(center.y - aabbExtents.y),
+			float(center.z - aabbExtents.z));
+		aabb.maximum = PxVec3(
+			float(center.x + aabbExtents.x),
+			float(center.y + aabbExtents.y),
+			float(center.z + aabbExtents.z));
+
+		PxVec3 aabbCenter = aabb.minimum + (aabb.maximum - aabb.minimum) / 2.f;
 		return PxVector3ToVector3(aabbCenter);
 	}
 	else if (PxRigidActor* const collisionObject = FindPhysXCollisionObject(actorId))
@@ -1698,7 +1721,6 @@ Vector3<float> PhysX::GetScale(ActorId actorId)
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
 		PxBounds3 aabb = controller->getActor()->getWorldBounds();
-
 		//sometimes physx swaps internally X and Z, we can check it comparing both dimensions
 		PxVec3 aabbExtents = aabb.getDimensions();
 		if (aabbExtents.x > aabbExtents.z)

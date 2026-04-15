@@ -1954,33 +1954,45 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 			if (pActor->GetType() == "Ammo")
 			{
 				std::shared_ptr<AmmoPickup> pAmmoPickup = pActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
-				AIAnalysis::ActorPickup* ammoPickup = new AIAnalysis::ActorPickup(pAmmoPickup->GetCode(),
-					pActor->GetType(), pAmmoPickup->GetWait(), pAmmoPickup->GetAmount(), pAmmoPickup->GetMaximum());
+				AIAnalysis::ActorPickup* ammoPickup = new AIAnalysis::ActorPickup(pAmmoPickup->GetCode(), pActor->GetType(), 
+					itemNode, pAmmoPickup->GetWait(), pAmmoPickup->GetAmount(), pAmmoPickup->GetMaximum());
 				gameActorPickups[pActor->GetId()] = ammoPickup;
 			}
 			if (pActor->GetType() == "Armor")
 			{
 				std::shared_ptr<ArmorPickup> pArmorPickup = pActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
-				AIAnalysis::ActorPickup* armorPickup = new AIAnalysis::ActorPickup(pArmorPickup->GetCode(),
-					pActor->GetType(), pArmorPickup->GetWait(), pArmorPickup->GetAmount(), pArmorPickup->GetMaximum());
+				AIAnalysis::ActorPickup* armorPickup = new AIAnalysis::ActorPickup(pArmorPickup->GetCode(), pActor->GetType(), 
+					itemNode, pArmorPickup->GetWait(), pArmorPickup->GetAmount(), pArmorPickup->GetMaximum());
 				gameActorPickups[pActor->GetId()] = armorPickup;
 			}
 			if (pActor->GetType() == "Weapon")
 			{
 				std::shared_ptr<WeaponPickup> pWeaponPickup = pActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
 				AIAnalysis::WeaponActorPickup* weaponPickup = new AIAnalysis::WeaponActorPickup(pWeaponPickup->GetCode(), pActor->GetType(),
-					pWeaponPickup->GetWait(), pWeaponPickup->GetAmount(), pWeaponPickup->GetMaximum(), pWeaponPickup->GetAmmo());
+					itemNode, pWeaponPickup->GetWait(), pWeaponPickup->GetAmount(), pWeaponPickup->GetMaximum(), pWeaponPickup->GetAmmo());
 				gameActorPickups[pActor->GetId()] = weaponPickup;
 			}
 			if (pActor->GetType() == "Health")
 			{
 				std::shared_ptr<HealthPickup> pHealthPickup = pActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
-				AIAnalysis::ActorPickup* healthPickup = new AIAnalysis::ActorPickup(pHealthPickup->GetCode(),
-					pActor->GetType(), pHealthPickup->GetWait(), pHealthPickup->GetAmount(), pHealthPickup->GetMaximum());
+				AIAnalysis::ActorPickup* healthPickup = new AIAnalysis::ActorPickup(pHealthPickup->GetCode(), pActor->GetType(), 
+					itemNode, pHealthPickup->GetWait(), pHealthPickup->GetAmount(), pHealthPickup->GetMaximum());
 				gameActorPickups[pActor->GetId()] = healthPickup;
 			}
 		}
@@ -2050,33 +2062,45 @@ void QuakeLogic::AnalyzeAIGameDelegate(BaseEventDataPtr pEventData)
 				if (pActor->GetType() == "Ammo")
 				{
 					std::shared_ptr<AmmoPickup> pAmmoPickup = pActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
+					std::shared_ptr<TransformComponent> pTransformComponent(
+						pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+					PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
-					AIAnalysis::ActorPickup* ammoPickup = new AIAnalysis::ActorPickup(pAmmoPickup->GetCode(),
-						pActor->GetType(), pAmmoPickup->GetWait(), pAmmoPickup->GetAmount(), pAmmoPickup->GetMaximum());
+					AIAnalysis::ActorPickup* ammoPickup = new AIAnalysis::ActorPickup(pAmmoPickup->GetCode(), pActor->GetType(), 
+						itemNode, pAmmoPickup->GetWait(), pAmmoPickup->GetAmount(), pAmmoPickup->GetMaximum());
 					gameActorPickups[pActor->GetId()] = ammoPickup;
 				}
 				if (pActor->GetType() == "Armor")
 				{
 					std::shared_ptr<ArmorPickup> pArmorPickup = pActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
+					std::shared_ptr<TransformComponent> pTransformComponent(
+						pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+					PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
-					AIAnalysis::ActorPickup* armorPickup = new AIAnalysis::ActorPickup(pArmorPickup->GetCode(),
-						pActor->GetType(), pArmorPickup->GetWait(), pArmorPickup->GetAmount(), pArmorPickup->GetMaximum());
+					AIAnalysis::ActorPickup* armorPickup = new AIAnalysis::ActorPickup(pArmorPickup->GetCode(), pActor->GetType(), 
+						itemNode, pArmorPickup->GetWait(), pArmorPickup->GetAmount(), pArmorPickup->GetMaximum());
 					gameActorPickups[pActor->GetId()] = armorPickup;
 				}
 				if (pActor->GetType() == "Weapon")
 				{
 					std::shared_ptr<WeaponPickup> pWeaponPickup = pActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+					std::shared_ptr<TransformComponent> pTransformComponent(
+						pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+					PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
 					AIAnalysis::WeaponActorPickup* weaponPickup = new AIAnalysis::WeaponActorPickup(pWeaponPickup->GetCode(), pActor->GetType(),
-						pWeaponPickup->GetWait(), pWeaponPickup->GetAmount(), pWeaponPickup->GetMaximum(), pWeaponPickup->GetAmmo());
+						itemNode, pWeaponPickup->GetWait(), pWeaponPickup->GetAmount(), pWeaponPickup->GetMaximum(), pWeaponPickup->GetAmmo());
 					gameActorPickups[pActor->GetId()] = weaponPickup;
 				}
 				if (pActor->GetType() == "Health")
 				{
 					std::shared_ptr<HealthPickup> pHealthPickup = pActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
+					std::shared_ptr<TransformComponent> pTransformComponent(
+						pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+					PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
 
-					AIAnalysis::ActorPickup* healthPickup = new AIAnalysis::ActorPickup(pHealthPickup->GetCode(),
-						pActor->GetType(), pHealthPickup->GetWait(), pHealthPickup->GetAmount(), pHealthPickup->GetMaximum());
+					AIAnalysis::ActorPickup* healthPickup = new AIAnalysis::ActorPickup(pHealthPickup->GetCode(), pActor->GetType(), 
+						itemNode, pHealthPickup->GetWait(), pHealthPickup->GetAmount(), pHealthPickup->GetMaximum());
 					gameActorPickups[pActor->GetId()] = healthPickup;
 				}
 			}

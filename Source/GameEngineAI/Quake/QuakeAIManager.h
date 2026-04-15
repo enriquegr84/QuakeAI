@@ -472,6 +472,7 @@ namespace AIAnalysis
 	{
 		unsigned int mCode;
 		std::string mType;
+		PathingNode* mNode;
 
 		unsigned int mWait;
 		unsigned int mAmount;
@@ -479,15 +480,16 @@ namespace AIAnalysis
 
 	public:
 
-		ActorPickup(unsigned int code, std::string& type,
+		ActorPickup(unsigned int code, std::string& type, PathingNode* pNode,
 			unsigned int wait, unsigned int amount, unsigned int maximum)
-			: mCode(code), mType(type), mWait(wait), mAmount(amount), mMaximum(maximum)
+			: mCode(code), mType(type), mNode(pNode), mWait(wait), mAmount(amount), mMaximum(maximum)
 		{
 
 		}
 
 		unsigned int GetCode(void) const { return mCode; }
 		const std::string& GetType() const { return mType; }
+		PathingNode* GetNode() const { return mNode; }
 
 		unsigned int GetWait() const { return mWait; }
 		unsigned int GetAmount() const { return mAmount; }
@@ -504,9 +506,9 @@ namespace AIAnalysis
 
 	public:
 
-		WeaponActorPickup(unsigned int code, std::string& type,
+		WeaponActorPickup(unsigned int code, std::string& type, PathingNode* pNode,
 			unsigned int wait, unsigned int amount, unsigned int maximum, unsigned int ammo)
-			: ActorPickup(code, type, wait, amount, maximum), mAmmo(ammo)
+			: ActorPickup(code, type, pNode, wait, amount, maximum), mAmmo(ammo)
 		{
 
 		}
