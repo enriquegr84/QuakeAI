@@ -854,6 +854,10 @@ void QuakeAIView::UpdatePlayerWeapon(const PlayerView& playerView)
 						}
 					}
 				}
+				else
+				{
+					mCurrentPlayerData.target = playerView.simulation.target;
+				}
 			}
 			else
 			{
@@ -866,6 +870,10 @@ void QuakeAIView::UpdatePlayerWeapon(const PlayerView& playerView)
 						pPlayerActor->GetAction().weaponSelect == WP_GAUNTLET)
 					{
 						pPlayerActor->ChangeWeapon(playerView.simulation.weapon);
+					}
+					else
+					{
+						mCurrentPlayerData.target = playerView.simulation.target;
 					}
 				}
 				else

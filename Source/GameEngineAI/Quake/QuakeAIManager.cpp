@@ -24,7 +24,7 @@
 #include "QuakeApp.h"
 #include "Quake.h"
 
-#define MAX_DAMAGE 600
+#define MAX_DAMAGE 500
 
 #define GROUND_DISTANCE 16.f
 #define FLOATING_DISTANCE 32.f
@@ -10275,7 +10275,7 @@ void QuakeAIManager::PerformGuessingMaking(
 			if (playerGuessingHeuristic.first == ULLONG_MAX)
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristicAvg - playerClusterHeuristic) < 0.02f)
+				if (abs(playerGuessingHeuristicAvg - playerClusterHeuristic) < 0.05f)
 				{
 					playerClusterCode = playerGuessingHeuristic.first;
 					playerClusterHeuristic = playerGuessingHeuristicAvg;
@@ -10409,7 +10409,7 @@ void QuakeAIManager::PerformGuessingMaking(
 
 			//jumping decision takes less priority
 			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -10423,7 +10423,13 @@ void QuakeAIManager::PerformGuessingMaking(
 			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
@@ -10487,7 +10493,7 @@ void QuakeAIManager::PerformGuessingMaking(
 
 			//jumping decision takes less priority
 			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -10501,7 +10507,13 @@ void QuakeAIManager::PerformGuessingMaking(
 			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
@@ -10658,7 +10670,7 @@ void QuakeAIManager::PerformGuessingMaking(
 
 		//jumping decision takes less priority
 		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 		{
 			playerClusterCode = playerClusterJumpCode;
 			playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -10672,7 +10684,13 @@ void QuakeAIManager::PerformGuessingMaking(
 		if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
 		{
 			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+			if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+			{
+				playerClusterCode = ULLONG_MAX;
+				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+			}
+			//lets take the value which maximize players heuristic
+			else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 			{
 				playerClusterCode = ULLONG_MAX;
 				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
@@ -10855,7 +10873,7 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 			if (playerDecisionHeuristic.first == ULLONG_MAX)
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristicAvg - playerClusterHeuristic) < 0.02f)
+				if (abs(playerDecisionHeuristicAvg - playerClusterHeuristic) < 0.05f)
 				{
 					playerClusterCode = playerDecisionHeuristic.first;
 					playerClusterHeuristic = playerDecisionHeuristicAvg;
@@ -10998,7 +11016,7 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 
 			//jumping decision takes less priority
 			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -11012,7 +11030,13 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
@@ -11078,7 +11102,7 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 
 			//jumping decision takes less priority
 			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -11092,7 +11116,13 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
@@ -11262,7 +11292,7 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 
 		//jumping decision takes less priority
 		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 		{
 			playerClusterCode = playerClusterJumpCode;
 			playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -11276,7 +11306,13 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
 		{
 			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+			if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+			{
+				playerClusterCode = ULLONG_MAX;
+				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+			}
+			//lets take the value which maximize players heuristic
+			else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 			{
 				playerClusterCode = ULLONG_MAX;
 				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
@@ -11471,7 +11507,7 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 			if (playerGuessingHeuristic.first == ULLONG_MAX)
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristicAvg - playerClusterHeuristic) < 0.02f)
+				if (abs(playerGuessingHeuristicAvg - playerClusterHeuristic) < 0.05f)
 				{
 					playerClusterCode = playerGuessingHeuristic.first;
 					playerClusterHeuristic = playerGuessingHeuristicAvg;
@@ -11614,7 +11650,7 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 
 			//jumping decision takes less priority
 			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -11628,7 +11664,13 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
@@ -11694,7 +11736,7 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 
 			//jumping decision takes less priority
 			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -11708,7 +11750,13 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
@@ -11878,7 +11926,7 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 
 		//jumping decision takes less priority
 		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 		{
 			playerClusterCode = playerClusterJumpCode;
 			playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -11892,7 +11940,13 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
 		{
 			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+			if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+			{
+				playerClusterCode = ULLONG_MAX;
+				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+			}
+			//lets take the value which maximize players heuristic
+			else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 			{
 				playerClusterCode = ULLONG_MAX;
 				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
@@ -12081,7 +12135,7 @@ void QuakeAIManager::PerformDecisionMaking(
 			if (playerDecisionHeuristic.first == ULLONG_MAX)
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristicAvg - playerClusterHeuristic) < 0.02f)
+				if (abs(playerDecisionHeuristicAvg - playerClusterHeuristic) < 0.05f)
 				{
 					playerClusterCode = playerDecisionHeuristic.first;
 					playerClusterHeuristic = playerDecisionHeuristicAvg;
@@ -12214,7 +12268,7 @@ void QuakeAIManager::PerformDecisionMaking(
 			}
 
 			//jumping decision takes less priority
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -12228,7 +12282,13 @@ void QuakeAIManager::PerformDecisionMaking(
 			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
@@ -12291,7 +12351,7 @@ void QuakeAIManager::PerformDecisionMaking(
 			}
 
 			//jumping decision takes less priority
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 			{
 				playerClusterCode = playerClusterJumpCode;
 				playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -12305,7 +12365,13 @@ void QuakeAIManager::PerformDecisionMaking(
 			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
 			{
 				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+				{
+					playerClusterCode = ULLONG_MAX;
+					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+				}
+				//lets take the value which maximize players heuristic
+				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 				{
 					playerClusterCode = ULLONG_MAX;
 					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
@@ -12462,7 +12528,7 @@ void QuakeAIManager::PerformDecisionMaking(
 
 		//jumping decision takes less priority
 		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.02f)
+		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
 		{
 			playerClusterCode = playerClusterJumpCode;
 			playerClusterHeuristic = playerClusterJumpHeuristic;
@@ -12476,7 +12542,13 @@ void QuakeAIManager::PerformDecisionMaking(
 		if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
 		{
 			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.02f)
+			if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+			{
+				playerClusterCode = ULLONG_MAX;
+				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+			}
+			//lets take the value which maximize players heuristic
+			else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 			{
 				playerClusterCode = ULLONG_MAX;
 				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);

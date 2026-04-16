@@ -2288,12 +2288,12 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 		aiManager->BuildPlayerPath(simulation->otherPlayerSimulation,
 			otherPlayer.plan.node, otherPlayerOffset.plan.weight, otherPlayerPath);
 
+		printf("\n debug simulation %u\n", mGameDecision);
+
 		aiManager->Simulation(
 			(EvaluationType)evaluation.type, gameItems,
 			player, playerPath, playerOffset.plan.weight,
 			otherPlayer, otherPlayerPath, otherPlayerOffset.plan.weight);
-
-		printf("\n debug simulation %u", mGameDecision);
 
 		std::shared_ptr<PlayerActor> pPlayerActor(
 			std::dynamic_pointer_cast<PlayerActor>(GetActor(mPlayerInput.id).lock()));
