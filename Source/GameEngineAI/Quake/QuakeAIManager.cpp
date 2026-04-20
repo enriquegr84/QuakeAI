@@ -9451,18 +9451,42 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 		otherPlayerData.target = INVALID_ACTOR_ID;
 		otherPlayerData.weapon = WP_NONE;
 	}
-	playerMaxDamage = playerMaxDamage > MAX_DAMAGE ? (int)MAX_DAMAGE : playerMaxDamage;
-	otherPlayerMaxDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (int)MAX_DAMAGE : otherPlayerMaxDamage;
 
-	//prioritize damage heuristic based on players health/armor and weapon status
-	float playerStatus = 
-		(CalculatePlayerStatus(playerData) > 0.3f && CalculatePlayerWeaponStatus(playerData) > 0.f) ? 1.2f : 0.4f;
-	heuristic += (playerMaxDamage / (float)MAX_DAMAGE) * playerStatus;
+	float playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
+	float otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
 
-	float otherPlayerStatus = 
-		(CalculatePlayerStatus(otherPlayerData) > 0.3f && CalculatePlayerWeaponStatus(otherPlayerData) > 0.f) ? 1.2f : 0.4f;
-	heuristic -= (otherPlayerMaxDamage / (float)MAX_DAMAGE) * otherPlayerStatus;
+	//calculate total damage as difference between inflicted and taken damage
+	float heuristicDamage = (playerDamage - otherPlayerDamage) / (float)MAX_DAMAGE;
+	//reward taking less damage
+	if (playerDamage > otherPlayerDamage)
+		heuristicDamage += 0.4f * (playerDamage - otherPlayerDamage) / playerDamage;
+	else if (otherPlayerDamage > 0.f)
+		heuristicDamage += 0.4f * (playerDamage - otherPlayerDamage) / otherPlayerDamage;
 
+	//calculate damage based on players health/armor and weapon status
+	if (CalculatePlayerStatus(playerData) > 0.3f && CalculatePlayerWeaponStatus(playerData) > 0.f)
+	{
+		if (CalculatePlayerStatus(otherPlayerData) > 0.3f && CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
+		{
+			//remains the same
+		}
+		else
+		{
+			heuristicDamage = playerDamage > otherPlayerDamage ? heuristicDamage * 1.5f : heuristicDamage * 0.25f;
+		}
+	}
+	else
+	{
+		if (CalculatePlayerStatus(otherPlayerData) > 0.3f && CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
+		{
+			heuristicDamage = otherPlayerDamage > playerDamage ? heuristicDamage * 1.5f : heuristicDamage * 0.25f;
+		}
+		else
+		{
+			heuristicDamage = heuristicDamage * 0.5f;
+		}
+	}
+	heuristic += heuristicDamage;
 	playerData.heuristic = heuristic;
 	otherPlayerData.heuristic = heuristic;
 }
@@ -12857,11 +12881,7 @@ void QuakeAIManager::UpdatePlayerGuessPlan(std::shared_ptr<PlayerActor> playerAc
 		//we take the current player plan
 		playerGuessData = PlayerData(playerActor);
 		playerGuessData.plan = playerData.plan;
-		if (playerData.plan.path.size())
-		{
-			playerGuessData.plan.ResetPathPlan({ *playerData.plan.path.begin() });
-			playerGuessData.planWeight = CalculatePathWeight(playerGuessData);
-		}
+		playerGuessData.planWeight = CalculatePathWeight(playerGuessData);
 
 		playerGuessData.items = playerData.items;
 		playerGuessData.itemAmount = playerData.itemAmount;

@@ -1863,23 +1863,33 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 									mPitchTarget = std::max(-85.f, std::min(85.f, mPitchTarget));
 									mPitch = 90 * ((mPitchTarget + 85.f) / 170.f) - 45.f;
-
-									if (abs(mYawSmooth - mYaw) < 30.f)
-									{
-										mYawSmooth = mYaw;
-										mYawSmoothTime = 0.f;
-									}
-									if (mYaw != mYawSmooth)
+									/*
+									std::stringstream rotationInfo;
+									rotationInfo << "\n ROTATION player " << mPlayerId << " smooth yaw rotation " << mYawSmooth << 
+										" yaw rotation " << mYaw  << " yaw smooth time " << mYawSmoothTime << " reaction time " << mReactionTime;
+									aiManager->PrintInfo(rotationInfo.str());
+									*/
+									if (abs(mYawSmooth - mYaw) >= 30.f && abs(mYawSmooth + mYaw) >= 30.f)
 									{
 										//avoid shooting while rotating
 										closestCollisionId = INVALID_ACTOR_ID;
 
-										//smoothing rotation
+										//smooth rotation
+										if (mYaw - mYawSmooth > 180)
+											mYawSmooth -= 10.f;
+										else if (mYaw - mYawSmooth < -180)
+											mYawSmooth += 10.f;
 										if (mYaw > mYawSmooth)
 											mYawSmooth += 10.f;
 										else
 											mYawSmooth -= 10.f;
 									}
+									else
+									{
+										mYawSmooth = mYaw;
+										mYawSmoothTime = 0.f;
+									}
+
 									yawRotation = Rotation<4, float>(
 										AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), mYawSmooth * (float)GE_C_DEG_TO_RAD));
 									pitchRotation = Rotation<4, float>(
@@ -1888,7 +1898,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 									if (closestCollisionId == pPlayerTarget->GetId())
 									{
-										if (!pPlayerActor->IsChangingWeapon() && mReactionTime >= 0.3f)
+										if (!pPlayerActor->IsChangingWeapon() && mReactionTime >= 0.2f)
 										{
 											pPlayerActor->GetAction().actionType |= ACTION_ATTACK;
 
