@@ -4913,23 +4913,25 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 	unsigned int time = Timer::GetRealTime();
 
 	std::map<ActorId, float> gameItems;
-	std::unordered_set<PathingNode*> playerClusterPathings, otherPlayerClusterPathings;
+	std::unordered_set<PathingNode*> playerClusterPathings, playerClusterExpandedPathings, 
+		otherPlayerClusterPathings, otherPlayerClusterExpandedPathings;
 	if (gameDecision.evaluation.type == ET_GUESSING)
 	{
 		// update guessing items
 		gameItems = gameDecision.evaluation.playerGuessItems;
 
 		//simulation guessing
-		bool success = aiManager->SimulateClusterPathing(playerGuessData, playerGuessSimulation,
-			otherPlayerGuessData, otherPlayerGuessSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		bool success = aiManager->SimulateClusterPathing(
+			gameItems, playerGuessData, playerGuessSimulation, otherPlayerGuessData, otherPlayerGuessSimulation, 
+			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
 		{
 			// update decision items
 			gameItems = gameDecision.evaluation.playerDecisionItems;
 
 			//simulation guessing decision
-			success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
-				otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+			success = aiManager->SimulateClusterPathing(gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
+				playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 			if (success)
 			{
 				unsigned int time2 = Timer::GetRealTime();
@@ -4943,8 +4945,8 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		gameItems = gameDecision.evaluation.playerGuessItems;
 
 		//simulation guessing
-		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
-			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		bool success = aiManager->SimulateClusterPathing(gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation, 
+			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
 		{
 			unsigned int time2 = Timer::GetRealTime();
@@ -4957,8 +4959,8 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		gameItems = gameDecision.evaluation.playerDecisionItems;
 
 		//simulation decision
-		bool success = aiManager->SimulateClusterPathing(playerData, playerSimulation,
-			otherPlayerData, otherPlayerSimulation, gameItems, playerClusterPathings, otherPlayerClusterPathings);
+		bool success = aiManager->SimulateClusterPathing(gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
+			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
 		{
 			unsigned int time2 = Timer::GetRealTime();
@@ -4981,7 +4983,13 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 	for (auto const& playerClusterPathingNode : playerClusterPathings)
 		nodes.push_back({ playerClusterPathingNode->GetPosition(), playerColor.ToArray()});
 	for (auto const& otherPlayerClusterPathingNode : otherPlayerClusterPathings)
-		nodes.push_back({ otherPlayerClusterPathingNode->GetPosition(), otherPlayerColor.ToArray()});
+		nodes.push_back({ otherPlayerClusterPathingNode->GetPosition(), otherPlayerColor.ToArray() });
+
+	/*
+	for (auto const& playerClusterExpandedPathingNode : playerClusterExpandedPathings)
+		nodes.push_back({ playerClusterExpandedPathingNode->GetPosition(), otherPlayerColor.ToArray() });
+	*/
+
 	if (nodes.empty())
 		return;
 
@@ -5009,7 +5017,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 	}
 
 	std::vector<Vector3<float>> pathNodes;
-	pathNodes.push_back(playerData.plan.node->GetPosition());
+	pathNodes.push_back(playerSimulation.plan.node->GetPosition());
 	for (auto const& arc : playerData.plan.path)
 	{
 		PathingTransition* transition = arc->GetTransition();
@@ -5017,7 +5025,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 			for (auto const& position : transition->GetPositions())
 				pathNodes.push_back(position);
 	}
-	pathNodes.push_back(otherPlayerData.plan.node->GetPosition());
+	pathNodes.push_back(otherPlayerSimulation.plan.node->GetPosition());
 	for (auto const& arc : otherPlayerData.plan.path)
 	{
 		PathingTransition* transition = arc->GetTransition();
@@ -5055,10 +5063,10 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		pItemNode->SetVisible(item.second <= 0);
 	}
 
-	std::shared_ptr<Node> pPlayerNode = mScene->GetSceneNode(playerData.player);
+	std::shared_ptr<Node> pPlayerNode = mScene->GetSceneNode(playerSimulation.player);
 	if (pPlayerNode)
 	{
-		PathingNode* pathingNode = playerData.plan.node;
+		PathingNode* pathingNode = playerSimulation.plan.node;
 		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
 		Normalize(direction);
 
@@ -5068,7 +5076,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		pPlayerNode->UpdateAbsoluteTransform();
 
 		std::shared_ptr<PlayerActor> pPlayerActor(
-			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(playerData.player).lock()));
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(playerSimulation.player).lock()));
 		std::shared_ptr<TransformComponent> pTransformComponent(
 			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 		if (pTransformComponent)
@@ -5078,12 +5086,31 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
 			pTransformComponent->SetRotation(yawRotation * rollRotation);
 		}
+
+		std::shared_ptr<AnimatedMeshNode> animatedNode = std::dynamic_pointer_cast<AnimatedMeshNode>(pPlayerNode);
+		std::shared_ptr<AnimateMeshMD3> animMeshMD3 = std::dynamic_pointer_cast<AnimateMeshMD3>(animatedNode->GetMesh());
+		std::vector<std::shared_ptr<MD3Mesh>> meshes;
+		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
+
+		int weaponIdx = 0;
+		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		for (std::shared_ptr<MD3Mesh> mesh : meshes)
+		{
+			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
+			{
+				weaponIdx++;
+				if (pPlayerActor->GetState().weapon == weaponIdx)
+					mesh->SetRenderMesh(true);
+				else
+					mesh->SetRenderMesh(false);
+			}
+		}
 	}
 
-	pPlayerNode = mScene->GetSceneNode(otherPlayerData.player);
+	pPlayerNode = mScene->GetSceneNode(otherPlayerSimulation.player);
 	if (pPlayerNode)
 	{
-		PathingNode* pathingNode = otherPlayerData.plan.node;
+		PathingNode* pathingNode = otherPlayerSimulation.plan.node;
 		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
 		Normalize(direction);
 
@@ -5093,7 +5120,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		pPlayerNode->UpdateAbsoluteTransform();
 
 		std::shared_ptr<PlayerActor> pPlayerActor(
-			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(otherPlayerData.player).lock()));
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(otherPlayerSimulation.player).lock()));
 		std::shared_ptr<TransformComponent> pTransformComponent(
 			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 		if (pTransformComponent)
@@ -5102,6 +5129,25 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 			Matrix4x4<float> rollRotation = Rotation<4, float>(
 				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
 			pTransformComponent->SetRotation(yawRotation * rollRotation);
+		}
+
+		std::shared_ptr<AnimatedMeshNode> animatedNode = std::dynamic_pointer_cast<AnimatedMeshNode>(pPlayerNode);
+		std::shared_ptr<AnimateMeshMD3> animMeshMD3 = std::dynamic_pointer_cast<AnimateMeshMD3>(animatedNode->GetMesh());
+		std::vector<std::shared_ptr<MD3Mesh>> meshes;
+		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
+
+		int weaponIdx = 0;
+		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		for (std::shared_ptr<MD3Mesh> mesh : meshes)
+		{
+			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
+			{
+				weaponIdx++;
+				if (pPlayerActor->GetState().weapon == weaponIdx)
+					mesh->SetRenderMesh(true);
+				else
+					mesh->SetRenderMesh(false);
+			}
 		}
 	}
 }
@@ -5150,7 +5196,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 	}
 
 	std::vector<Vector3<float>> pathNodes;
-	pathNodes.push_back(playerData.plan.node->GetPosition());
+	pathNodes.push_back(playerSimulation.plan.node->GetPosition());
 	for (auto const& arc : playerData.plan.path)
 	{
 		PathingTransition* transition = arc->GetTransition();
@@ -5158,7 +5204,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 			for (auto const& position : transition->GetPositions())
 				pathNodes.push_back(position);
 	}
-	pathNodes.push_back(otherPlayerData.plan.node->GetPosition());
+	pathNodes.push_back(otherPlayerSimulation.plan.node->GetPosition());
 	for (auto const& arc : otherPlayerData.plan.path)
 	{
 		PathingTransition* transition = arc->GetTransition();
@@ -5196,10 +5242,10 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		pItemNode->SetVisible(item.second <= 0);
 	}
 
-	std::shared_ptr<Node> pPlayerNode = mScene->GetSceneNode(playerData.player);
+	std::shared_ptr<Node> pPlayerNode = mScene->GetSceneNode(playerSimulation.player);
 	if (pPlayerNode)
 	{
-		PathingNode* pathingNode = playerData.plan.node;
+		PathingNode* pathingNode = playerSimulation.plan.node;
 		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
 		Normalize(direction);
 
@@ -5209,7 +5255,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		pPlayerNode->UpdateAbsoluteTransform();
 
 		std::shared_ptr<PlayerActor> pPlayerActor(
-			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(playerData.player).lock()));
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(playerSimulation.player).lock()));
 		std::shared_ptr<TransformComponent> pTransformComponent(
 			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 		if (pTransformComponent)
@@ -5219,12 +5265,31 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
 			pTransformComponent->SetRotation(yawRotation * rollRotation);
 		}
+
+		std::shared_ptr<AnimatedMeshNode> animatedNode = std::dynamic_pointer_cast<AnimatedMeshNode>(pPlayerNode);
+		std::shared_ptr<AnimateMeshMD3> animMeshMD3 = std::dynamic_pointer_cast<AnimateMeshMD3>(animatedNode->GetMesh());
+		std::vector<std::shared_ptr<MD3Mesh>> meshes;
+		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
+
+		int weaponIdx = 0;
+		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		for (std::shared_ptr<MD3Mesh> mesh : meshes)
+		{
+			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
+			{
+				weaponIdx++;
+				if (pPlayerActor->GetState().weapon == weaponIdx)
+					mesh->SetRenderMesh(true);
+				else
+					mesh->SetRenderMesh(false);
+			}
+		}
 	}
 
-	pPlayerNode = mScene->GetSceneNode(otherPlayerData.player);
+	pPlayerNode = mScene->GetSceneNode(otherPlayerSimulation.player);
 	if (pPlayerNode)
 	{
-		PathingNode* pathingNode = otherPlayerData.plan.node;
+		PathingNode* pathingNode = otherPlayerSimulation.plan.node;
 		Vector4<float> direction = HLift(pathingNode->GetPosition() - pPlayerNode->GetAbsoluteTransform().GetTranslation(), 0.f);
 		Normalize(direction);
 
@@ -5234,7 +5299,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		pPlayerNode->UpdateAbsoluteTransform();
 
 		std::shared_ptr<PlayerActor> pPlayerActor(
-			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(otherPlayerData.player).lock()));
+			std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(otherPlayerSimulation.player).lock()));
 		std::shared_ptr<TransformComponent> pTransformComponent(
 			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 		if (pTransformComponent)
@@ -5243,6 +5308,25 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 			Matrix4x4<float> rollRotation = Rotation<4, float>(
 				AxisAngle<4, float>(Vector4<float>::Unit(AXIS_X), 90.f * (float)GE_C_DEG_TO_RAD));
 			pTransformComponent->SetRotation(yawRotation * rollRotation);
+		}
+
+		std::shared_ptr<AnimatedMeshNode> animatedNode = std::dynamic_pointer_cast<AnimatedMeshNode>(pPlayerNode);
+		std::shared_ptr<AnimateMeshMD3> animMeshMD3 = std::dynamic_pointer_cast<AnimateMeshMD3>(animatedNode->GetMesh());
+		std::vector<std::shared_ptr<MD3Mesh>> meshes;
+		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
+
+		int weaponIdx = 0;
+		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		for (std::shared_ptr<MD3Mesh> mesh : meshes)
+		{
+			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
+			{
+				weaponIdx++;
+				if (pPlayerActor->GetState().weapon == weaponIdx)
+					mesh->SetRenderMesh(true);
+				else
+					mesh->SetRenderMesh(false);
+			}
 		}
 	}
 }

@@ -2413,10 +2413,10 @@ void QuakeLogic::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsi
 	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
-		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
+		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerSimulation.player).lock()));
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = playerData.plan.node;
+		PathingNode* pathingNode = playerSimulation.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());
@@ -2435,10 +2435,10 @@ void QuakeLogic::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsi
 		pPlayerActor->ChangeWeapon(playerData.weapon);
 	}
 
-	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerData.player).lock());
+	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerSimulation.player).lock());
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = otherPlayerData.plan.node;
+		PathingNode* pathingNode = otherPlayerSimulation.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());
@@ -2481,10 +2481,10 @@ void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsi
 	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
-		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
+		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerSimulation.player).lock()));
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = playerData.plan.node;
+		PathingNode* pathingNode = playerSimulation.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());
@@ -2503,10 +2503,10 @@ void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsi
 		pPlayerActor->ChangeWeapon(playerData.weapon);
 	}
 
-	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerData.player).lock());
+	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerSimulation.player).lock());
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = otherPlayerData.plan.node;
+		PathingNode* pathingNode = otherPlayerSimulation.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());

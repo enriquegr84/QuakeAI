@@ -1176,13 +1176,13 @@ protected:
 		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerDecisions,
-		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponDecisions,
+		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>>& playerWeaponDecisions,
 		WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode);
 	void PerformGuessingMaking(const PlayerData& playerDataIn, const PlayerData& otherPlayerDataIn,
 		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 		const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerGuessings,
-		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponGuessings,
+		const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>>& playerWeaponGuessings,
 		WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode);
 
 	void PerformDecisionMaking(
@@ -1233,11 +1233,13 @@ protected:
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
 
 	bool SimulateClusterPathing(
+		const std::map<ActorId, float>& gameItems,
 		const PlayerData& playerDataIn, PlayerData& playerDataOut,
 		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, 
-		const std::map<ActorId, float>& gameItems,
 		std::unordered_set<PathingNode*>& playerClusterPathings,
-		std::unordered_set<PathingNode*>& otherPlayerClusterPathings);
+		std::unordered_set<PathingNode*>& playerClusterExpandedPathings,
+		std::unordered_set<PathingNode*>& otherPlayerClusterPathings,
+		std::unordered_set<PathingNode*>& otherPlayerClusterExpandedPathings);
 
 	//players viewType
 	void OnAttach(GameViewType vtype, ActorId aid)

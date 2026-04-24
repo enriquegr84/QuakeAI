@@ -29,8 +29,6 @@
 #define GROUND_DISTANCE 16.f
 #define FLOATING_DISTANCE 32.f
 
-#define ENGAGE_THRESHOLD -0.05f
-
 //--------------------------------------------------------------------------------------------------------
 // AIPlanNode
 //--------------------------------------------------------------------------------------------------------
@@ -1393,14 +1391,12 @@ bool QuakeAIManager::BuildPath(
 {
 	std::unordered_map<unsigned int, PathingNode*> clusterNodes, otherClusterNodes;
 
-	std::map<PathingCluster*, PathingArcVec> clusterPaths, otherClusterPaths;
-	std::map<PathingCluster*, float> clusterPathWeights, otherClusterPathWeights;
+	std::map<PathingCluster*, PathingArcVec> clusterPaths, jumpClusterPaths;
+	std::map<PathingCluster*, float> clusterPathWeights, jumpClusterPathWeights;
 	clusterNodeStart->GetClusters(AT_MOVE, 100, clusterPaths, clusterPathWeights);
 	for (auto& clusterPath : clusterPaths)
 		clusterNodes[clusterPath.first->GetTarget()->GetCluster()] = clusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
-	std::map<PathingCluster*, PathingArcVec> jumpClusterPaths, jumpOtherClusterPaths;
-	std::map<PathingCluster*, float> jumpClusterPathWeights, jumpOtherClusterPathWeights;
 	clusterNodeStart->GetClusters(AT_JUMP, 100, jumpClusterPaths, jumpClusterPathWeights);
 	for (auto& jumpClusterPath : jumpClusterPaths)
 	{
@@ -1427,17 +1423,19 @@ bool QuakeAIManager::BuildPath(
 		}
 	}
 
+	std::map<PathingCluster*, PathingArcVec> otherClusterPaths, otherJumpClusterPaths;
+	std::map<PathingCluster*, float> otherClusterPathWeights, otherJumpClusterPathWeights;
 	otherClusterNodeStart->GetClusters(AT_MOVE, 100, otherClusterPaths, otherClusterPathWeights);
 	for (auto& otherClusterPath : otherClusterPaths)
 		otherClusterNodes[otherClusterPath.first->GetTarget()->GetCluster()] = otherClusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
-	otherClusterNodeStart->GetClusters(AT_JUMP, 100, jumpOtherClusterPaths, jumpOtherClusterPathWeights);
-	for (auto& jumpOtherClusterPath : jumpOtherClusterPaths)
+	otherClusterNodeStart->GetClusters(AT_JUMP, 100, otherJumpClusterPaths, otherJumpClusterPathWeights);
+	for (auto& otherJumpClusterPath : otherJumpClusterPaths)
 	{
-		if (otherClusterNodes.find(jumpOtherClusterPath.first->GetTarget()->GetCluster()) == otherClusterNodes.end())
+		if (otherClusterNodes.find(otherJumpClusterPath.first->GetTarget()->GetCluster()) == otherClusterNodes.end())
 		{
-			otherClusterPaths[jumpOtherClusterPath.first] = jumpOtherClusterPath.second;
-			otherClusterPathWeights[jumpOtherClusterPath.first] = jumpOtherClusterPathWeights[jumpOtherClusterPath.first];
+			otherClusterPaths[otherJumpClusterPath.first] = otherJumpClusterPath.second;
+			otherClusterPathWeights[otherJumpClusterPath.first] = otherJumpClusterPathWeights[otherJumpClusterPath.first];
 		}
 	}
 
@@ -1457,6 +1455,7 @@ bool QuakeAIManager::BuildPath(
 		}
 	}
 
+	std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights, otherClosestClusterPathWeights;
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>> visibleClusters;
 	Concurrency::parallel_for_each(begin(pathingClusterNodes), end(pathingClusterNodes), [&](auto& pathingClusterNode)
 	//for (auto& pathingClusterNode : pathingClusterNodes)
@@ -1479,13 +1478,12 @@ bool QuakeAIManager::BuildPath(
 		});
 	});
 
+	//add paths if there is at least one visible node 
 	if (visibleClusters.size())
 	{
-		//we will only process those clusters which are visibles from both players
-		std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights, otherClosestClusterPathWeights;
-		for (auto& visibleCluster : visibleClusters)
+		for (auto& clusterPath : clusterPaths)
 		{
-			PathingCluster* pathingCluster = visibleCluster.second.first;
+			PathingCluster* pathingCluster = clusterPath.first;
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode(pathingCluster->GetTarget()->GetCluster());
 
 			unsigned long long pathingClusterCode =
@@ -1498,11 +1496,12 @@ bool QuakeAIManager::BuildPath(
 			{
 				clusterNodePathPlans[pathingClusterCode] = clusterPaths[pathingCluster];
 				clusterPathings[pathingClusterCode] = { pathingCluster, pathingCluster };
-
-				closestClusterPathWeights.insert({ clusterPathWeights[pathingCluster], pathingCluster });
 			}
+		}
 
-			PathingCluster* otherPathingCluster = visibleCluster.second.second;
+		for (auto& otherClusterPath : otherClusterPaths)
+		{
+			PathingCluster* otherPathingCluster = otherClusterPath.first;
 			PathingNode* otherPathingClusterNodeEnd = graph->FindClusterNode(otherPathingCluster->GetTarget()->GetCluster());
 
 			unsigned long long otherPathingClusterCode =
@@ -1515,9 +1514,14 @@ bool QuakeAIManager::BuildPath(
 			{
 				otherClusterNodePathPlans[otherPathingClusterCode] = otherClusterPaths[otherPathingCluster];
 				otherClusterPathings[otherPathingClusterCode] = { otherPathingCluster, otherPathingCluster };
-
-				otherClosestClusterPathWeights.insert({ otherClusterPathWeights[otherPathingCluster], otherPathingCluster });
 			}
+		}
+
+		//we will only expand those clusters which are visibles from both players
+		for (auto& visibleCluster : visibleClusters)
+		{
+			closestClusterPathWeights.insert({ clusterPathWeights[visibleCluster.second.first], visibleCluster.second.first });
+			otherClosestClusterPathWeights.insert({ otherClusterPathWeights[visibleCluster.second.second], visibleCluster.second.second });
 		}
 
 		unsigned int maxClosestClusters = 30;
@@ -1592,14 +1596,12 @@ bool QuakeAIManager::BuildLongPath(
 {
 	std::unordered_map<unsigned int, PathingNode*> clusterNodes, otherClusterNodes;
 
-	std::map<PathingCluster*, PathingArcVec> clusterPaths, otherClusterPaths;
-	std::map<PathingCluster*, float> clusterPathWeights, otherClusterPathWeights;
+	std::map<PathingCluster*, PathingArcVec> clusterPaths, jumpClusterPaths;
+	std::map<PathingCluster*, float> clusterPathWeights, jumpClusterPathWeights;
 	clusterNodeStart->GetClusters(AT_MOVE, 200, clusterPaths, clusterPathWeights);
 	for (auto& clusterPath : clusterPaths)
 		clusterNodes[clusterPath.first->GetTarget()->GetCluster()] = clusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
-	std::map<PathingCluster*, PathingArcVec> jumpClusterPaths, jumpOtherClusterPaths;
-	std::map<PathingCluster*, float> jumpClusterPathWeights, jumpOtherClusterPathWeights;
 	clusterNodeStart->GetClusters(AT_JUMP, 200, jumpClusterPaths, jumpClusterPathWeights);
 	for (auto& jumpClusterPath : jumpClusterPaths)
 	{
@@ -1610,7 +1612,7 @@ bool QuakeAIManager::BuildLongPath(
 		}
 	}
 
-	//skip top clusters to reduce the number of candidates as they have been inspected previously
+	//skip closest clusters to reduce the number of candidates as they have been inspected previously
 	unsigned int skipPathingClusters = 80;
 	std::unordered_map<PathingNode*, std::unordered_map<PathingCluster*, unsigned int>> pathingClusterNodes;
 	std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights;
@@ -1639,6 +1641,8 @@ bool QuakeAIManager::BuildLongPath(
 		}
 	}
 
+	std::map<PathingCluster*, PathingArcVec> otherClusterPaths, jumpOtherClusterPaths;
+	std::map<PathingCluster*, float> otherClusterPathWeights, jumpOtherClusterPathWeights;
 	otherClusterNodeStart->GetClusters(AT_MOVE, 200, otherClusterPaths, otherClusterPathWeights);
 	for (auto& otherClusterPath : otherClusterPaths)
 		otherClusterNodes[otherClusterPath.first->GetTarget()->GetCluster()] = otherClusterPath.first->GetTarget();
@@ -1653,7 +1657,7 @@ bool QuakeAIManager::BuildLongPath(
 		}
 	}
 
-	//skip top clusters to reduce the number of candidates as they have been inspected previously
+	//skip closest clusters to reduce the number of candidates as they have been inspected previously
 	std::unordered_map<PathingNode*, std::unordered_map<PathingCluster*, unsigned int>> otherPathingClusterNodes;
 	std::multimap<float, PathingCluster*, std::less<float>> otherClosestClusterPathWeights;
 	for (auto& otherClusterPathWeight : otherClusterPathWeights)
@@ -1703,14 +1707,12 @@ bool QuakeAIManager::BuildLongPath(
 		});
 	});
 
+	//add paths if there is at least one visible node 
 	if (visibleClusters.size())
 	{
-		//we will only process those clusters which are visibles from both players
-		closestClusterPathWeights.clear();
-		otherClosestClusterPathWeights.clear();
-		for (auto& visibleCluster : visibleClusters)
+		for (auto& clusterPath : clusterPaths)
 		{
-			PathingCluster* pathingCluster = visibleCluster.second.first;
+			PathingCluster* pathingCluster = clusterPath.first;
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode(pathingCluster->GetTarget()->GetCluster());
 
 			unsigned long long pathingClusterCode =
@@ -1723,11 +1725,12 @@ bool QuakeAIManager::BuildLongPath(
 			{
 				clusterNodePathPlans[pathingClusterCode] = clusterPaths[pathingCluster];
 				clusterPathings[pathingClusterCode] = { pathingCluster, pathingCluster };
-
-				closestClusterPathWeights.insert({ clusterPathWeights[pathingCluster], pathingCluster });
 			}
+		}
 
-			PathingCluster* otherPathingCluster = visibleCluster.second.second;
+		for (auto& otherClusterPath : otherClusterPaths)
+		{
+			PathingCluster* otherPathingCluster = otherClusterPath.first;
 			PathingNode* otherPathingClusterNodeEnd = graph->FindClusterNode(otherPathingCluster->GetTarget()->GetCluster());
 
 			unsigned long long otherPathingClusterCode =
@@ -1740,9 +1743,16 @@ bool QuakeAIManager::BuildLongPath(
 			{
 				otherClusterNodePathPlans[otherPathingClusterCode] = otherClusterPaths[otherPathingCluster];
 				otherClusterPathings[otherPathingClusterCode] = { otherPathingCluster, otherPathingCluster };
-
-				otherClosestClusterPathWeights.insert({ otherClusterPathWeights[otherPathingCluster], otherPathingCluster });
 			}
+		}
+
+		//we will only expand those clusters which are visibles from both players
+		closestClusterPathWeights.clear();
+		otherClosestClusterPathWeights.clear();
+		for (auto& visibleCluster : visibleClusters)
+		{
+			closestClusterPathWeights.insert({ clusterPathWeights[visibleCluster.second.first], visibleCluster.second.first });
+			otherClosestClusterPathWeights.insert({ otherClusterPathWeights[visibleCluster.second.second], visibleCluster.second.second });
 		}
 
 		unsigned int maxClosestClusters = 30;
@@ -1762,7 +1772,6 @@ bool QuakeAIManager::BuildLongPath(
 			otherClosestClusterPaths[(*itOtherCluster).second] = (*itOtherCluster).first;
 		BuildExpandedPath(graph, maxPathingClusters, otherClusterNodeStart,
 			otherClusterPaths, otherClosestClusterPaths, otherClusterPathings, otherClusterNodePathPlans);
-
 		return true;
 	}
 	
@@ -4504,7 +4513,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerDecisions;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponDecisions;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponDecisions;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -4518,7 +4527,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for_each(begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
 		//for (auto const& otherPlayerCluster : otherPlayerClusters)
 		{
@@ -4534,7 +4543,9 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			player.plan.id = -1;
 			playerSimulations[otherPlayerCluster.first] = player.heuristic;
-			playerWeaponSimulations[otherPlayerCluster.first] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherPlayerCluster.first] =
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 
 		playerDecisions[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
@@ -4544,7 +4555,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for_each(begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
 		//for (auto const& otherPathingClusterNode : otherPathingClusterNodes)
 		{
@@ -4559,7 +4570,9 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
 			playerSimulations[otherPlayerCluster.first] = player.heuristic;
-			playerWeaponSimulations[otherPlayerCluster.first] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherPlayerCluster.first] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 
 		playerDecisions[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
@@ -4904,7 +4917,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerGuessings;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponGuessings;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponGuessings;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -4918,7 +4931,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -4944,7 +4957,9 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			player.plan.id = -1;
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherClusterCode] =
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 		
 		if (otherPlayerDataIn.valid)
@@ -4957,7 +4972,9 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			player.plan.id = -1;
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[ULLONG_MAX] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		}
 
 		playerGuessings[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
@@ -4967,7 +4984,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -4992,7 +5009,9 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherClusterCode] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 
 		if (otherPlayerDataIn.valid)
@@ -5004,7 +5023,9 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[ULLONG_MAX] =
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		}
 		playerGuessings[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponGuessings[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -5353,7 +5374,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerGuessings;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponGuessings;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponGuessings;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -5367,7 +5388,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -5393,7 +5414,9 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			player.plan.id = -1;
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherClusterCode] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 		
 		if (otherPlayerDataIn.valid)
@@ -5406,7 +5429,9 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			player.plan.id = -1;
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[ULLONG_MAX] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		}
 
 		playerGuessings[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
@@ -5416,7 +5441,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -5441,7 +5466,9 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherClusterCode] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 
 		if (otherPlayerDataIn.valid)
@@ -5453,7 +5480,9 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[ULLONG_MAX] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		}
 		playerGuessings[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponGuessings[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -5803,7 +5832,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerDecisions;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponDecisions;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponDecisions;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -5817,7 +5846,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			auto itOtherCluster = otherClusterPathings.begin();
@@ -5839,7 +5868,9 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			player.plan.id = -1;
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherClusterCode] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 		
 		if (otherPlayerDataIn.valid)
@@ -5852,7 +5883,9 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			player.plan.id = -1;
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[ULLONG_MAX] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		}
 		playerDecisions[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponDecisions[clusterCode].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -5861,7 +5894,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
 		Concurrency::parallel_for_each(begin(otherClusterPathings), end(otherClusterPathings), [&](auto const& otherClusterPathing)
 		//for (auto const& otherClusterPathing : otherClusterPathings)
 		{
@@ -5880,7 +5913,9 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[otherClusterCode] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		});
 
 		if (otherPlayerDataIn.valid)
@@ -5892,7 +5927,9 @@ bool QuakeAIManager::SimulatePlayerDecision(
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
+			playerWeaponSimulations[ULLONG_MAX] = 
+				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
+				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
 		}
 		playerDecisions[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponDecisions[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -6043,11 +6080,13 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 
 bool QuakeAIManager::SimulateClusterPathing(
+	const std::map<ActorId, float>& gameItems,
 	const PlayerData& playerDataIn, PlayerData& playerDataOut,
 	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
-	const std::map<ActorId, float>& gameItems,
-	std::unordered_set<PathingNode*>& playerClusterPathings,
-	std::unordered_set<PathingNode*>& otherPlayerClusterPathings)
+	std::unordered_set<PathingNode*>& playerClusterPathings, 
+	std::unordered_set<PathingNode*>& playerClusterExpandedPathings,
+	std::unordered_set<PathingNode*>& otherPlayerClusterPathings, 
+	std::unordered_set<PathingNode*>& otherPlayerClusterExpandedPathings)
 {
 	PathingNode* clusterNodeStart = playerDataIn.plan.node;
 	PathingNode* otherClusterNodeStart = otherPlayerDataIn.plan.node;
@@ -6240,8 +6279,16 @@ bool QuakeAIManager::SimulateClusterPathing(
 		if (itClusterNodePathPlan == actorPathPlanClusters.end())
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
+		PathingNode* pathingClusterNodeEnd = mPathingGraph->FindClusterNode(playerClusterStart->GetTarget()->GetCluster());
 		for (auto& itPathArc = itClusterNodePathPlan->second.begin(); itPathArc != itClusterNodePathPlan->second.end(); itPathArc++)
+		{
 			playerClusterPathings.insert((*itPathArc)->GetNode());
+			if (pathingClusterNodeEnd == (*itPathArc)->GetNode() ||
+				playerClusterExpandedPathings.find(pathingClusterNodeEnd) != playerClusterExpandedPathings.end())
+			{
+				playerClusterExpandedPathings.insert((*itPathArc)->GetNode());
+			}
+		}
 	}
 
 	for (auto& itOtherCluster = otherClusterPathings.begin(); itOtherCluster != otherClusterPathings.end(); itOtherCluster++)
@@ -6256,8 +6303,16 @@ bool QuakeAIManager::SimulateClusterPathing(
 		if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
 			itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherClusterCode);
 
+		PathingNode* otherPathingClusterNodeEnd = mPathingGraph->FindClusterNode(otherPlayerClusterStart->GetTarget()->GetCluster());
 		for (auto& itOtherPathArc = itOtherClusterNodePathPlan->second.begin(); itOtherPathArc != itOtherClusterNodePathPlan->second.end(); itOtherPathArc++)
+		{
 			otherPlayerClusterPathings.insert((*itOtherPathArc)->GetNode());
+			if (otherPathingClusterNodeEnd == (*itOtherPathArc)->GetNode() ||
+				otherPlayerClusterExpandedPathings.find(otherPathingClusterNodeEnd) != otherPlayerClusterExpandedPathings.end())
+			{
+				otherPlayerClusterExpandedPathings.insert((*itOtherPathArc)->GetNode());
+			}
+		}
 	}
 
 	return true;
@@ -9452,8 +9507,35 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 		otherPlayerData.weapon = WP_NONE;
 	}
 
-	float playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-	float otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+	//calculate damage based on players health/armor and weapon status
+	float playerDamage, otherPlayerDamage;
+	if (CalculatePlayerStatus(playerData) > 0.3f && CalculatePlayerWeaponStatus(playerData) > 0.f)
+	{
+		if (CalculatePlayerStatus(otherPlayerData) > 0.3f && CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
+		{
+			//remains the same
+			playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
+			otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+		}
+		else
+		{
+			playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
+			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+		}
+	}
+	else
+	{
+		if (CalculatePlayerStatus(otherPlayerData) > 0.3f && CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
+		{
+			playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
+			otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+		}
+		else
+		{
+			playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
+			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+		}
+	}
 
 	//calculate total damage as difference between inflicted and taken damage
 	float heuristicDamage = (playerDamage - otherPlayerDamage) / (float)MAX_DAMAGE;
@@ -9463,29 +9545,6 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 	else if (otherPlayerDamage > 0.f)
 		heuristicDamage += 0.4f * (playerDamage - otherPlayerDamage) / otherPlayerDamage;
 
-	//calculate damage based on players health/armor and weapon status
-	if (CalculatePlayerStatus(playerData) > 0.3f && CalculatePlayerWeaponStatus(playerData) > 0.f)
-	{
-		if (CalculatePlayerStatus(otherPlayerData) > 0.3f && CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
-		{
-			//remains the same
-		}
-		else
-		{
-			heuristicDamage = playerDamage > otherPlayerDamage ? heuristicDamage * 1.5f : heuristicDamage * 0.25f;
-		}
-	}
-	else
-	{
-		if (CalculatePlayerStatus(otherPlayerData) > 0.3f && CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
-		{
-			heuristicDamage = otherPlayerDamage > playerDamage ? heuristicDamage * 1.5f : heuristicDamage * 0.25f;
-		}
-		else
-		{
-			heuristicDamage = heuristicDamage * 0.5f;
-		}
-	}
 	heuristic += heuristicDamage;
 	playerData.heuristic = heuristic;
 	otherPlayerData.heuristic = heuristic;
@@ -10260,26 +10319,86 @@ void QuakeAIManager::PerformGuessingMaking(
 		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
 			isConservativeGuessing = true;
 	}
+	isConservativeGuessing = false;
 
 	if (!isConservativeGuessing)
 	{
+		//lets filter decisions in which the opponent has weapon advantage against all the player actions
 		std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
+		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponGuessings;
 		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
 		{
 			for (auto const& simulation : gameSimulation->simulations)
 			{
-				playerGuessingHeuristics[simulation->playerSimulation.code] = 0;
-				break;
+				//other cluster code
+				unsigned long long clusterCode = simulation->playerSimulation.code;
+				unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+
+				playerGuessingHeuristics[clusterCode] = 0;
+				otherPlayerGuessingHeuristics[otherClusterCode] = 0;
+				otherPlayerWeaponGuessings[otherClusterCode][clusterCode] =
+					simulation->playerSimulation.damage - simulation->otherPlayerSimulation.damage;
 			}
 		}
 
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+		for (auto& otherPlayerWeaponGuessing : otherPlayerWeaponGuessings)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
+
+			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
+			for (auto& playerWeaponGuessing : otherPlayerWeaponGuessing.second)
 			{
-				otherPlayerGuessingHeuristics[simulation->otherPlayerSimulation.code] = 0;
+				if (playerWeaponGuessing.second > 0)
+				{
+					otherPlayerWeaponHeuristics.clear();
+					break;
+				}
+				else if (playerWeaponGuessing.second < 0)
+				{
+					unsigned long long clusterCode = playerWeaponGuessing.first;
+					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
+				}
 			}
-			break;
+			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
+			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
+			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponGuessing.second.size())
+			{
+				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
+				{
+					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
+					playerGuessingHeuristics.erase(clusterCode);
+				}
+			}
+		}
+
+		//check we dont remove all decision heuristics
+		if (playerGuessingHeuristics.empty())
+		{
+			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+			{
+				for (auto const& simulation : gameSimulation->simulations)
+				{
+					if (simulation->playerSimulation.code == ULLONG_MAX)
+					{
+						//lets take default path instead
+						playerGuessingHeuristics[simulation->playerSimulation.code] = 0;
+					}
+					break;
+				}
+			}
+
+			if (playerGuessingHeuristics.empty())
+			{
+				for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+				{
+					for (auto const& simulation : gameSimulation->simulations)
+					{
+						playerGuessingHeuristics[simulation->playerSimulation.code] = 0;
+						break;
+					}
+				}
+			}
 		}
 
 		//calculate each average and take the best outcome for both players
@@ -10287,6 +10406,9 @@ void QuakeAIManager::PerformGuessingMaking(
 		{
 			for (auto const& simulation : gameSimulation->simulations)
 			{
+				if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+					break;
+
 				playerGuessingHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
 				otherPlayerGuessingHeuristics[simulation->otherPlayerSimulation.code] += simulation->otherPlayerSimulation.heuristic;
 			}
@@ -10320,8 +10442,15 @@ void QuakeAIManager::PerformGuessingMaking(
 
 		std::unordered_map<unsigned long long, std::vector<WeaponType>> playerGuessingWeapons;
 		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+		{
 			for (auto const& simulation : gameSimulation->simulations)
+			{
+				if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+					break;
+
 				playerGuessingWeapons[simulation->playerSimulation.code].push_back(simulation->playerSimulation.weapon);
+			}
+		}
 
 		unsigned int playerWeaponCount = 0;
 		std::map<WeaponType, unsigned int> playerWeapons;
@@ -10352,8 +10481,15 @@ void QuakeAIManager::PerformGuessingMaking(
 
 		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerGuessingWeapons;
 		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+		{
 			for (auto const& simulation : gameSimulation->simulations)
+			{
+				if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+					break;
+
 				otherPlayerGuessingWeapons[simulation->otherPlayerSimulation.code].push_back(simulation->otherPlayerSimulation.weapon);
+			}
+		}
 
 		unsigned int otherPlayerWeaponCount = 0;
 		std::map<WeaponType, unsigned int> otherPlayerWeapons;
@@ -10373,26 +10509,33 @@ void QuakeAIManager::PerformGuessingMaking(
 		//run minimax with the best playerCluster simulations
 		if (playerClusterCode != ULLONG_MAX)
 		{
-			playerGuessingHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
 			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
 			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+						break;
+
 					if (simulation->playerSimulation.code != ULLONG_MAX &&
 						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
 					{
-						playerGuessingHeuristics[simulation->playerSimulation.code] = FLT_MAX;
+						tempPlayerGuessingHeuristics[simulation->playerSimulation.code] = FLT_MAX;
 					}
 					break;
 				}
 			}
+			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+						break;
+
 					if (simulation->playerSimulation.code != ULLONG_MAX &&
 						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
 					{
@@ -10462,16 +10605,20 @@ void QuakeAIManager::PerformGuessingMaking(
 		}
 		else
 		{
-			playerGuessingHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
 			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+						break;
+
 					if (simulation->playerSimulation.code == playerClusterCode)
-						playerGuessingHeuristics[simulation->playerSimulation.code] = FLT_MAX;
+						tempPlayerGuessingHeuristics[simulation->playerSimulation.code] = FLT_MAX;
 					break;
 				}
 			}
+			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
@@ -10480,6 +10627,9 @@ void QuakeAIManager::PerformGuessingMaking(
 				{
 					if (simulation->playerSimulation.code == playerClusterCode)
 					{
+						if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+							break;
+
 						if (playerGuessingHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
 							playerGuessingHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
 					}
@@ -10566,6 +10716,9 @@ void QuakeAIManager::PerformGuessingMaking(
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+						break;
+
 					//other cluster code
 					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
 					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
@@ -10605,6 +10758,9 @@ void QuakeAIManager::PerformGuessingMaking(
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
+						break;
+
 					//other cluster code
 					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
 					if (otherClusterCode == otherPlayerClusterCode)
@@ -10841,7 +10997,7 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerDecisions,
-	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponDecisions,
+	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>>& playerWeaponDecisions,
 	WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode)
 {
 	bool isConservativeDecision = CalculatePlayerStatus(playerDataIn) > 0.3f ? false : true;
@@ -10853,26 +11009,79 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
 			isConservativeDecision = true;
 	}
+	isConservativeDecision = false;
 
 	if (!isConservativeDecision)
 	{
+		//lets filter decisions in which the opponent has weapon advantage against all the player actions
 		std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
-		for (auto& playerDecisionSimulation : playerDecisions)
+		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponDecisions;
+		for (auto& playerWeaponDecision : playerWeaponDecisions)
 		{
 			//cluster code
-			unsigned long long clusterCode = playerDecisionSimulation.first;
+			unsigned long long clusterCode = playerWeaponDecision.first;
 			playerDecisionHeuristics[clusterCode] = 0;
-		}
 
-		for (auto& playerDecisionSimulation : playerDecisions)
-		{
-			for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
+			for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
 			{
 				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
+				unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
 				otherPlayerDecisionHeuristics[otherClusterCode] = 0;
+
+				unsigned long long otherPlayerWeaponDamage = otherPlayerWeaponDecision.second & 0xfff;
+				unsigned long long playerWeaponDamage = (otherPlayerWeaponDecision.second >> 12) & 0xfff;
+				otherPlayerWeaponDecisions[otherClusterCode][clusterCode] = (int)(playerWeaponDamage - otherPlayerWeaponDamage);
 			}
-			break;
+		}
+
+		for (auto& otherPlayerWeaponDecision : otherPlayerWeaponDecisions)
+		{
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
+
+			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
+			for (auto& playerWeaponDecision : otherPlayerWeaponDecision.second)
+			{
+				if (playerWeaponDecision.second > 0)
+				{
+					otherPlayerWeaponHeuristics.clear();
+					break;
+				}
+				else if (playerWeaponDecision.second < 0)
+				{
+					unsigned long long clusterCode = playerWeaponDecision.first;
+					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
+				}
+			}
+			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
+			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
+			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponDecision.second.size())
+			{
+				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
+				{
+					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
+					playerDecisionHeuristics.erase(clusterCode);
+				}
+			}
+		}
+
+		//check we dont remove all decision heuristics
+		if (playerDecisionHeuristics.empty())
+		{
+			if (playerDecisions.find(ULLONG_MAX) == playerDecisions.end())
+			{
+				for (auto& playerDecisionSimulation : playerDecisions)
+				{
+					//cluster code
+					unsigned long long clusterCode = playerDecisionSimulation.first;
+					playerDecisionHeuristics[clusterCode] = 0;
+				}
+			}
+			else
+			{
+				//lets take default path instead 
+				playerDecisionHeuristics[ULLONG_MAX] = 0;
+			}
 		}
 
 		//calculate each average and take the best outcome for both players
@@ -10880,6 +11089,8 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		{
 			//cluster code
 			unsigned long long clusterCode = playerDecisionSimulation.first;
+			if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+				continue;
 
 			for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 			{
@@ -10921,8 +11132,14 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		{
 			//cluster code
 			unsigned long long clusterCode = playerWeaponDecision.first;
+			if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+				continue;
+
 			for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
-				playerDecisionWeapons[clusterCode].push_back((WeaponType)((otherPlayerWeaponDecision.second >> 8) & 0xff));
+			{
+				unsigned long long playerWeaponType = (otherPlayerWeaponDecision.second >> 28) & 0xf;
+				playerDecisionWeapons[clusterCode].push_back((WeaponType)playerWeaponType);
+			}
 		}
 
 		unsigned int playerWeaponCount = 0;
@@ -10955,11 +11172,17 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerDecisionWeapons;
 		for (auto& playerWeaponDecision : playerWeaponDecisions)
 		{
+			//cluster code
+			unsigned long long clusterCode = playerWeaponDecision.first;
+			if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+				continue;
+
 			for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
 			{
 				//other cluster code
 				unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
-				otherPlayerDecisionWeapons[otherClusterCode].push_back((WeaponType)(otherPlayerWeaponDecision.second & 0xff));
+				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponDecision.second >> 24) & 0xf;
+				otherPlayerDecisionWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
 			}
 		}
 
@@ -10981,21 +11204,27 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		//run minimax with the best playerCluster simulations
 		if (playerClusterCode != ULLONG_MAX)
 		{
-			playerDecisionHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
 			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
 			for (auto& playerDecisionSimulation : playerDecisions)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerDecisionSimulation.first;
+				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+					continue;
+
 				if (clusterCode != ULLONG_MAX && clusterPathings.at(clusterCode).second->GetTarget()->GetCluster() == playerCluster)
-					playerDecisionHeuristics[clusterCode] = FLT_MAX;
+					tempPlayerDecisionHeuristics[clusterCode] = FLT_MAX;
 			}
+			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto& playerDecisionSimulation : playerDecisions)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerDecisionSimulation.first;
+				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+					continue;
 
 				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 				{
@@ -11069,20 +11298,27 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		}
 		else
 		{
-			playerDecisionHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
 			for (auto& playerDecisionSimulation : playerDecisions)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerDecisionSimulation.first;
+				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+					continue;
+
 				if (clusterCode == playerClusterCode)
-					playerDecisionHeuristics[clusterCode] = FLT_MAX;
+					tempPlayerDecisionHeuristics[clusterCode] = FLT_MAX;
 			}
+			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto& playerDecisionSimulation : playerDecisions)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerDecisionSimulation.first;
+				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+					continue;
+
 				if (clusterCode == playerClusterCode)
 				{
 					for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
@@ -11175,6 +11411,8 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 			{
 				//cluster code
 				unsigned long long clusterCode = playerDecisionSimulation.first;
+				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+					continue;
 
 				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 				{
@@ -11217,6 +11455,8 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 			{
 				//cluster code
 				unsigned long long clusterCode = playerDecisionSimulation.first;
+				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
+					continue;
 
 				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 				{
@@ -11277,8 +11517,8 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 
 				if (playerDecisionHeuristics[clusterCode] > otherPlayerDecisionSimulation.second)
 				{
-					playerDecisionWeapons[clusterCode] = 
-						(WeaponType)((playerWeaponDecisions.at(clusterCode).at(otherClusterCode) >> 8) & 0xff);
+					unsigned long long playerWeaponType = (playerWeaponDecisions.at(clusterCode).at(otherClusterCode) >> 28) & 0xf;
+					playerDecisionWeapons[clusterCode] = (WeaponType)playerWeaponType;
 					playerDecisionHeuristics[clusterCode] = otherPlayerDecisionSimulation.second;
 				}
 				otherPlayerDecisionHeuristics[otherClusterCode] += otherPlayerDecisionSimulation.second;
@@ -11363,7 +11603,9 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 			{
 				//other cluster code
 				unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
-				otherPlayerDecisionWeapons[otherClusterCode].push_back((WeaponType)(otherPlayerWeaponDecision.second & 0xff));
+
+				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponDecision.second >> 24) & 0xf;
+				otherPlayerDecisionWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
 			}
 		}
 
@@ -11475,7 +11717,7 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerGuessings,
-	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponGuessings,
+	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>>&  playerWeaponGuessings,
 	WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode)
 {
 	bool isConservativeGuessing = CalculatePlayerStatus(playerDataIn) > 0.3f ? false : true;
@@ -11487,26 +11729,79 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
 			isConservativeGuessing = true;
 	}
+	isConservativeGuessing = false;
 
 	if (!isConservativeGuessing)
 	{
+		//lets filter decisions in which the opponent has weapon advantage against all the player actions
 		std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
-		for (auto& playerGuessingSimulation : playerGuessings)
+		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponGuessings;
+		for (auto& playerWeaponGuessing : playerWeaponGuessings)
 		{
 			//cluster code
-			unsigned long long clusterCode = playerGuessingSimulation.first;
+			unsigned long long clusterCode = playerWeaponGuessing.first;
 			playerGuessingHeuristics[clusterCode] = 0;
-		}
 
-		for (auto& playerGuessingSimulation : playerGuessings)
-		{
-			for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
+			for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
 			{
 				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
+				unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
 				otherPlayerGuessingHeuristics[otherClusterCode] = 0;
+
+				unsigned long long otherPlayerWeaponDamage = otherPlayerWeaponGuessing.second & 0xfff;
+				unsigned long long playerWeaponDamage = (otherPlayerWeaponGuessing.second >> 12) & 0xfff;
+				otherPlayerWeaponGuessings[otherClusterCode][clusterCode] = (int)(playerWeaponDamage - otherPlayerWeaponDamage);
 			}
-			break;
+		}
+
+		for (auto& otherPlayerWeaponGuessing : otherPlayerWeaponGuessings)
+		{
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
+
+			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
+			for (auto& playerWeaponGuessing : otherPlayerWeaponGuessing.second)
+			{
+				if (playerWeaponGuessing.second > 0)
+				{
+					otherPlayerWeaponHeuristics.clear();
+					break;
+				}
+				else if (playerWeaponGuessing.second < 0)
+				{
+					unsigned long long clusterCode = playerWeaponGuessing.first;
+					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
+				}
+			}
+			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
+			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
+			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponGuessing.second.size())
+			{
+				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
+				{
+					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
+					playerGuessingHeuristics.erase(clusterCode);
+				}
+			}
+		}
+
+		//check we dont remove all decision heuristics
+		if (playerGuessingHeuristics.empty())
+		{
+			if (playerGuessings.find(ULLONG_MAX) == playerGuessings.end())
+			{
+				for (auto& playerGuessingSimulation : playerGuessings)
+				{
+					//cluster code
+					unsigned long long clusterCode = playerGuessingSimulation.first;
+					playerGuessingHeuristics[clusterCode] = 0;
+				}
+			}
+			else
+			{
+				//lets take default path instead 
+				playerGuessingHeuristics[ULLONG_MAX] = 0;
+			}
 		}
 
 		//calculate each average and take the best outcome for both players
@@ -11514,6 +11809,8 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		{
 			//cluster code
 			unsigned long long clusterCode = playerGuessingSimulation.first;
+			if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+				continue;
 
 			for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 			{
@@ -11555,8 +11852,14 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		{
 			//cluster code
 			unsigned long long clusterCode = playerWeaponGuessing.first;
+			if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+				continue;
+
 			for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
-				playerGuessingWeapons[clusterCode].push_back((WeaponType)((otherPlayerWeaponGuessing.second >> 8) & 0xff));
+			{
+				unsigned long long playerWeaponType = (otherPlayerWeaponGuessing.second >> 28) & 0xf;
+				playerGuessingWeapons[clusterCode].push_back((WeaponType)playerWeaponType);
+			}
 		}
 
 		unsigned int playerWeaponCount = 0;
@@ -11589,11 +11892,17 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerGuessingWeapons;
 		for (auto& playerWeaponGuessing : playerWeaponGuessings)
 		{
+			//cluster code
+			unsigned long long clusterCode = playerWeaponGuessing.first;
+			if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+				continue;
+
 			for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
 			{
 				//other cluster code
 				unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
-				otherPlayerGuessingWeapons[otherClusterCode].push_back((WeaponType)(otherPlayerWeaponGuessing.second & 0xff));
+				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponGuessing.second >> 24) & 0xf;
+				otherPlayerGuessingWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
 			}
 		}
 
@@ -11615,21 +11924,27 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		//run minimax with the best playerCluster simulations
 		if (playerClusterCode != ULLONG_MAX)
 		{
-			playerGuessingHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
 			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
 			for (auto& playerGuessingSimulation : playerGuessings)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerGuessingSimulation.first;
+				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+					continue;
+
 				if (clusterCode != ULLONG_MAX && clusterPathings.at(clusterCode).second->GetTarget()->GetCluster() == playerCluster)
-					playerGuessingHeuristics[clusterCode] = FLT_MAX;
+					tempPlayerGuessingHeuristics[clusterCode] = FLT_MAX;
 			}
+			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto& playerGuessingSimulation : playerGuessings)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerGuessingSimulation.first;
+				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+					continue;
 
 				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 				{
@@ -11703,20 +12018,27 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		}
 		else
 		{
-			playerGuessingHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
 			for (auto& playerGuessingSimulation : playerGuessings)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerGuessingSimulation.first;
+				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+					continue;
+
 				if (clusterCode == playerClusterCode)
-					playerGuessingHeuristics[clusterCode] = FLT_MAX;
+					tempPlayerGuessingHeuristics[clusterCode] = FLT_MAX;
 			}
+			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto& playerGuessingSimulation : playerGuessings)
 			{
 				//cluster code
 				unsigned long long clusterCode = playerGuessingSimulation.first;
+				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+					continue;
+
 				if (clusterCode == playerClusterCode)
 				{
 					for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
@@ -11809,6 +12131,8 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 			{
 				//cluster code
 				unsigned long long clusterCode = playerGuessingSimulation.first;
+				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+					continue;
 
 				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 				{
@@ -11851,6 +12175,8 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 			{
 				//cluster code
 				unsigned long long clusterCode = playerGuessingSimulation.first;
+				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
+					continue;
 
 				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 				{
@@ -11911,8 +12237,8 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 
 				if (playerGuessingHeuristics[clusterCode] > otherPlayerGuessingSimulation.second)
 				{
-					playerGuessingWeapons[clusterCode] =
-						(WeaponType)((playerWeaponGuessings.at(clusterCode).at(otherClusterCode) >> 8) & 0xff);
+					unsigned long long playerWeaponType = (playerWeaponGuessings.at(clusterCode).at(otherClusterCode) >> 28) & 0xf;
+					playerGuessingWeapons[clusterCode] = (WeaponType)playerWeaponType;
 					playerGuessingHeuristics[clusterCode] = otherPlayerGuessingSimulation.second;
 				}
 				otherPlayerGuessingHeuristics[otherClusterCode] += otherPlayerGuessingSimulation.second;
@@ -11997,7 +12323,9 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 			{
 				//other cluster code
 				unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
-				otherPlayerGuessingWeapons[otherClusterCode].push_back((WeaponType)(otherPlayerWeaponGuessing.second & 0xff));
+
+				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponGuessing.second >> 24) & 0xf;
+				otherPlayerGuessingWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
 			}
 		}
 
@@ -12120,26 +12448,86 @@ void QuakeAIManager::PerformDecisionMaking(
 		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
 			isConservativeDecision = true;
 	}
+	isConservativeDecision = false;
 
 	if (!isConservativeDecision)
 	{
+		//lets filter decisions in which the opponent has weapon advantage against all the player actions
 		std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
+		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponDecisions;
 		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
 		{
 			for (auto const& simulation : gameSimulation->simulations)
 			{
-				playerDecisionHeuristics[simulation->playerSimulation.code] = 0;
-				break;
+				//other cluster code
+				unsigned long long clusterCode = simulation->playerSimulation.code;
+				unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+
+				playerDecisionHeuristics[clusterCode] = 0;
+				otherPlayerDecisionHeuristics[otherClusterCode] = 0;
+				otherPlayerWeaponDecisions[otherClusterCode][clusterCode] = 
+					simulation->playerSimulation.damage - simulation->otherPlayerSimulation.damage;
 			}
 		}
 
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+		for (auto& otherPlayerWeaponDecision : otherPlayerWeaponDecisions)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
+
+			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
+			for (auto& playerWeaponDecision : otherPlayerWeaponDecision.second)
 			{
-				otherPlayerDecisionHeuristics[simulation->otherPlayerSimulation.code] = 0;
+				if (playerWeaponDecision.second > 0)
+				{
+					otherPlayerWeaponHeuristics.clear();
+					break;
+				}
+				else if (playerWeaponDecision.second < 0)
+				{
+					unsigned long long clusterCode = playerWeaponDecision.first;
+					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
+				}
 			}
-			break;
+			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
+			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
+			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponDecision.second.size())
+			{
+				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
+				{
+					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
+					playerDecisionHeuristics.erase(clusterCode);
+				}
+			}
+		}
+
+		//check we dont remove all decision heuristics
+		if (playerDecisionHeuristics.empty())
+		{
+			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+			{
+				for (auto const& simulation : gameSimulation->simulations)
+				{
+					if (simulation->playerSimulation.code == ULLONG_MAX)
+					{
+						//lets take default path instead
+						playerDecisionHeuristics[simulation->playerSimulation.code] = 0;
+					}
+					break;
+				}
+			}
+
+			if (playerDecisionHeuristics.empty())
+			{
+				for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+				{
+					for (auto const& simulation : gameSimulation->simulations)
+					{
+						playerDecisionHeuristics[simulation->playerSimulation.code] = 0;
+						break;
+					}
+				}
+			}
 		}
 
 		//calculate each average and take the best outcome for both players
@@ -12147,6 +12535,9 @@ void QuakeAIManager::PerformDecisionMaking(
 		{
 			for (auto const& simulation : gameSimulation->simulations)
 			{
+				if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+					break;
+
 				playerDecisionHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
 				otherPlayerDecisionHeuristics[simulation->otherPlayerSimulation.code] += simulation->otherPlayerSimulation.heuristic;
 			}
@@ -12180,8 +12571,15 @@ void QuakeAIManager::PerformDecisionMaking(
 
 		std::unordered_map<unsigned long long, std::vector<WeaponType>> playerDecisionWeapons;
 		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+		{
 			for (auto const& simulation : gameSimulation->simulations)
+			{
+				if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+					break;
+
 				playerDecisionWeapons[simulation->playerSimulation.code].push_back(simulation->playerSimulation.weapon);
+			}
+		}
 
 		unsigned int playerWeaponCount = 0;
 		std::map<WeaponType, unsigned int> playerWeapons;
@@ -12212,8 +12610,15 @@ void QuakeAIManager::PerformDecisionMaking(
 
 		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerDecisionWeapons;
 		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+		{
 			for (auto const& simulation : gameSimulation->simulations)
+			{
+				if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+					break;
+
 				otherPlayerDecisionWeapons[simulation->otherPlayerSimulation.code].push_back(simulation->otherPlayerSimulation.weapon);
+			}
+		}
 
 		unsigned int otherPlayerWeaponCount = 0;
 		std::map<WeaponType, unsigned int> otherPlayerWeapons;
@@ -12233,26 +12638,33 @@ void QuakeAIManager::PerformDecisionMaking(
 		//run minimax with the best playerCluster simulations
 		if (playerClusterCode != ULLONG_MAX)
 		{
-			playerDecisionHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
 			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
 			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+						break;
+
 					if (simulation->playerSimulation.code != ULLONG_MAX &&
 						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
 					{
-						playerDecisionHeuristics[simulation->playerSimulation.code] = FLT_MAX;
+						tempPlayerDecisionHeuristics[simulation->playerSimulation.code] = FLT_MAX;
 					}
 					break;
 				}
 			}
+			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+						break;
+
 					if (simulation->playerSimulation.code != ULLONG_MAX &&
 						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
 					{
@@ -12321,16 +12733,20 @@ void QuakeAIManager::PerformDecisionMaking(
 		}
 		else
 		{
-			playerDecisionHeuristics.clear();
+			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
 			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+						break;
+
 					if (simulation->playerSimulation.code == playerClusterCode)
-						playerDecisionHeuristics[simulation->playerSimulation.code] = FLT_MAX;
+						tempPlayerDecisionHeuristics[simulation->playerSimulation.code] = FLT_MAX;
 					break;
 				}
 			}
+			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
 
 			//calculate each average and take the best outcome for both players
 			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
@@ -12339,6 +12755,9 @@ void QuakeAIManager::PerformDecisionMaking(
 				{
 					if (simulation->playerSimulation.code == playerClusterCode)
 					{
+						if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+							break;
+
 						if (playerDecisionHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
 							playerDecisionHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
 					}
@@ -12424,6 +12843,9 @@ void QuakeAIManager::PerformDecisionMaking(
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+						break;
+
 					//other cluster code
 					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
 					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
@@ -12463,6 +12885,9 @@ void QuakeAIManager::PerformDecisionMaking(
 			{
 				for (auto const& simulation : gameSimulation->simulations)
 				{
+					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
+						break;
+
 					//other cluster code
 					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
 					if (otherClusterCode == otherPlayerClusterCode)
