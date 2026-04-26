@@ -155,6 +155,7 @@ public:
 	float GetTolerance(void) const { return mTolerance; }
 	const Vector3<float>& GetPosition(void) const { return mPos; }
 
+	void RemoveVisibleNodes();
 	void RemoveVisibleNode(PathingNode* pNode);
 	void AddVisibleNode(PathingNode* pNode, float value);
 	const std::unordered_map<PathingNode*, float>& GetVisibileNodes();

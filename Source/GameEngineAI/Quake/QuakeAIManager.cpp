@@ -4513,7 +4513,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerDecisions;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponDecisions;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponDecisions;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -4527,7 +4527,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for_each(begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
 		//for (auto const& otherPlayerCluster : otherPlayerClusters)
 		{
@@ -4543,9 +4543,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			player.plan.id = -1;
 			playerSimulations[otherPlayerCluster.first] = player.heuristic;
-			playerWeaponSimulations[otherPlayerCluster.first] =
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherPlayerCluster.first] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 
 		playerDecisions[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
@@ -4555,7 +4553,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for_each(begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
 		//for (auto const& otherPathingClusterNode : otherPathingClusterNodes)
 		{
@@ -4570,9 +4568,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
 			playerSimulations[otherPlayerCluster.first] = player.heuristic;
-			playerWeaponSimulations[otherPlayerCluster.first] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherPlayerCluster.first] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 
 		playerDecisions[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
@@ -4917,7 +4913,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerGuessings;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponGuessings;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponGuessings;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -4931,7 +4927,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -4957,9 +4953,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			player.plan.id = -1;
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] =
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 		
 		if (otherPlayerDataIn.valid)
@@ -4972,9 +4966,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			player.plan.id = -1;
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		}
 
 		playerGuessings[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
@@ -4984,7 +4976,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -5009,9 +5001,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 
 		if (otherPlayerDataIn.valid)
@@ -5023,9 +5013,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] =
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		}
 		playerGuessings[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponGuessings[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -5374,7 +5362,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerGuessings;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponGuessings;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponGuessings;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -5388,7 +5376,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -5414,9 +5402,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			player.plan.id = -1;
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 		
 		if (otherPlayerDataIn.valid)
@@ -5429,9 +5415,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			player.plan.id = -1;
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		}
 
 		playerGuessings[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
@@ -5441,7 +5425,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			//we need to stop the simulation if an aware decision making has started
@@ -5466,9 +5450,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 
 		if (otherPlayerDataIn.valid)
@@ -5480,9 +5462,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		}
 		playerGuessings[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponGuessings[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -5832,7 +5812,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerDecisions;
 	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>> playerWeaponDecisions;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponDecisions;
 	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
 	{
 		auto itCluster = clusterPathings.begin();
@@ -5846,7 +5826,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
 
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
 		{
 			auto itOtherCluster = otherClusterPathings.begin();
@@ -5868,9 +5848,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			player.plan.id = -1;
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 		
 		if (otherPlayerDataIn.valid)
@@ -5883,9 +5861,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			player.plan.id = -1;
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		}
 		playerDecisions[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponDecisions[clusterCode].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -5894,7 +5870,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	if (playerDataIn.valid)
 	{
 		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned int> playerWeaponSimulations;
+		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
 		Concurrency::parallel_for_each(begin(otherClusterPathings), end(otherClusterPathings), [&](auto const& otherClusterPathing)
 		//for (auto const& otherClusterPathing : otherClusterPathings)
 		{
@@ -5913,9 +5889,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			otherPlayer.plan.id = -1;
 			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		});
 
 		if (otherPlayerDataIn.valid)
@@ -5927,9 +5901,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = 
-				(unsigned int)player.weapon << 28 | (unsigned int)otherPlayer.weapon << 24 |
-				(unsigned int)player.damage[player.weapon] << 12 | (unsigned int)otherPlayer.damage[otherPlayer.weapon];
+			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
 		}
 		playerDecisions[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
 		playerWeaponDecisions[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
@@ -10310,685 +10282,247 @@ void QuakeAIManager::PerformGuessingMaking(
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode)
 {
-	bool isConservativeGuessing = CalculatePlayerStatus(playerDataIn) > 0.3f ? false : true;
-	if (!isConservativeGuessing)
+	//lets filter guessings in which the opponent has weapon advantage against all the player actions
+	std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
+	for (auto& playerGuessingSimulation : gameEvaluation.playerGuessings)
 	{
-		float playerWeaponStatus = CalculatePlayerWeaponStatus(playerDataIn);
-		float otherPlayerWeaponStatus = CalculatePlayerWeaponStatus(otherPlayerDataIn);
-		//if the opponent has top tier weapon and we dont then we run conservative
-		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
-			isConservativeGuessing = true;
-	}
-	isConservativeGuessing = false;
-
-	if (!isConservativeGuessing)
-	{
-		//lets filter decisions in which the opponent has weapon advantage against all the player actions
-		std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
-		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponGuessings;
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+		for (auto& simulation : playerGuessingSimulation->simulations)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				//other cluster code
-				unsigned long long clusterCode = simulation->playerSimulation.code;
-				unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-
-				playerGuessingHeuristics[clusterCode] = 0;
-				otherPlayerGuessingHeuristics[otherClusterCode] = 0;
-				otherPlayerWeaponGuessings[otherClusterCode][clusterCode] =
-					simulation->playerSimulation.damage - simulation->otherPlayerSimulation.damage;
-			}
+			playerGuessingHeuristics[simulation->playerSimulation.code] = 0;
+			otherPlayerGuessingHeuristics[simulation->otherPlayerSimulation.code] = 0;
 		}
+	}
 
-		for (auto& otherPlayerWeaponGuessing : otherPlayerWeaponGuessings)
+	//calculate other guessing average 
+	for (auto& playerGuessingSimulation : gameEvaluation.playerGuessings)
+	{
+		for (auto& simulation : playerGuessingSimulation->simulations)
 		{
 			//other cluster code
-			unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
-
-			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
-			for (auto& playerWeaponGuessing : otherPlayerWeaponGuessing.second)
-			{
-				if (playerWeaponGuessing.second > 0)
-				{
-					otherPlayerWeaponHeuristics.clear();
-					break;
-				}
-				else if (playerWeaponGuessing.second < 0)
-				{
-					unsigned long long clusterCode = playerWeaponGuessing.first;
-					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
-				}
-			}
-			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
-			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
-			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponGuessing.second.size())
-			{
-				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
-				{
-					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
-					playerGuessingHeuristics.erase(clusterCode);
-				}
-			}
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			//invert heuristic for opponent
+			otherPlayerGuessingHeuristics[otherClusterCode] -= simulation->otherPlayerSimulation.heuristic;
 		}
+	}
 
-		//check we dont remove all decision heuristics
-		if (playerGuessingHeuristics.empty())
-		{
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (simulation->playerSimulation.code == ULLONG_MAX)
-					{
-						//lets take default path instead
-						playerGuessingHeuristics[simulation->playerSimulation.code] = 0;
-					}
-					break;
-				}
-			}
+	//lets assign a probability to each opponent Guessing based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> otherPlayerGuessingProbabilities;
+	if (!otherPlayerGuessingHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+			if (otherPlayerGuessingHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = otherPlayerGuessingHeuristic.second;
 
-			if (playerGuessingHeuristics.empty())
-			{
-				for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-				{
-					for (auto const& simulation : gameSimulation->simulations)
-					{
-						playerGuessingHeuristics[simulation->playerSimulation.code] = 0;
-						break;
-					}
-				}
-			}
-		}
-
-		//calculate each average and take the best outcome for both players
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-					break;
-
-				playerGuessingHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
-				otherPlayerGuessingHeuristics[simulation->otherPlayerSimulation.code] += simulation->otherPlayerSimulation.heuristic;
-			}
-		}
-
-		float playerClusterHeuristic = -FLT_MAX;
-		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
-		{
-			float playerGuessingHeuristicAvg = playerGuessingHeuristic.second / (float)otherPlayerGuessingHeuristics.size();
-			if (playerGuessingHeuristic.first == ULLONG_MAX)
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristicAvg - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = playerGuessingHeuristic.first;
-					playerClusterHeuristic = playerGuessingHeuristicAvg;
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerGuessingHeuristicAvg > playerClusterHeuristic)
-				{
-					playerClusterCode = playerGuessingHeuristic.first;
-					playerClusterHeuristic = playerGuessingHeuristicAvg;
-				}
-			}
-			else if (playerGuessingHeuristicAvg > playerClusterHeuristic)
-			{
-				playerClusterCode = playerGuessingHeuristic.first;
-				playerClusterHeuristic = playerGuessingHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> playerGuessingWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-					break;
-
-				playerGuessingWeapons[simulation->playerSimulation.code].push_back(simulation->playerSimulation.weapon);
-			}
-		}
-
-		unsigned int playerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> playerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			playerWeapons[(WeaponType)weapon] = 0;
-		for (auto& playerGuessingWeapon : playerGuessingWeapons[playerClusterCode])
-			playerWeapons[playerGuessingWeapon]++;
-		for (auto& playerWeaponInstance : playerWeapons)
-		{
-			if (playerWeaponInstance.second > playerWeaponCount)
-			{
-				playerWeapon = playerWeaponInstance.first;
-				playerWeaponCount =playerWeaponInstance.second;
-			}
-		}
-
-		float otherPlayerClusterHeuristic = FLT_MAX;
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> otherPlayerGuessingExps;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
-			float otherPlayerGuessingHeuristicAvg = otherPlayerGuessingHeuristic.second / (float)playerGuessingHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerGuessingHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
-			}
+			unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
+
+			otherPlayerGuessingExps[otherClusterCode] = std::exp(otherPlayerGuessingHeuristic.second - maxHeuristicValue);
+			sumExp += otherPlayerGuessingExps[otherClusterCode];
 		}
 
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerGuessingWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+		// Normalize to probabilities
+		for (auto& otherPlayerGuessingExp : otherPlayerGuessingExps)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-					break;
-
-				otherPlayerGuessingWeapons[simulation->otherPlayerSimulation.code].push_back(simulation->otherPlayerSimulation.weapon);
-			}
+			unsigned long long otherClusterCode = otherPlayerGuessingExp.first;
+			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingExp.second / sumExp;
 		}
+	}
 
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerGuessingWeapon : otherPlayerGuessingWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerGuessingWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
+	//calculate each average and take the best outcome for both players
+	for (auto& playerGuessingSimulation : gameEvaluation.playerGuessings)
+	{
+		for (auto& simulation : playerGuessingSimulation->simulations)
 		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
+			//other cluster code
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			playerGuessingHeuristics[clusterCode] += simulation->playerSimulation.heuristic * otherPlayerGuessingProbabilities[otherClusterCode];
 		}
+	}
 
-		//run minimax with the best playerCluster simulations
-		if (playerClusterCode != ULLONG_MAX)
+	float playerClusterJumpHeuristic = -FLT_MAX;
+	float playerClusterMoveHeuristic = -FLT_MAX;
+	unsigned long long playerClusterJumpCode = ULLONG_MAX;
+	unsigned long long playerClusterMoveCode = ULLONG_MAX;
+	for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
+	{
+		if (playerGuessingHeuristic.first == ULLONG_MAX)
+			continue;
+
+		if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
 		{
-			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
-			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+			//lets take the value which maximize players heuristic
+			if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
 			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-						break;
-
-					if (simulation->playerSimulation.code != ULLONG_MAX &&
-						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
-					{
-						tempPlayerGuessingHeuristics[simulation->playerSimulation.code] = FLT_MAX;
-					}
-					break;
-				}
-			}
-			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-						break;
-
-					if (simulation->playerSimulation.code != ULLONG_MAX &&
-						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
-					{
-						if (playerGuessingHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
-							playerGuessingHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
-			{
-				if (playerGuessingHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerGuessingHeuristic.first;
-						playerClusterMoveHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-				else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerGuessingHeuristic.first;
-						playerClusterJumpHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
+				playerClusterMoveCode = playerGuessingHeuristic.first;
+				playerClusterMoveHeuristic = playerGuessingHeuristic.second;
 			}
 		}
-		else
+		else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
 		{
-			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+			//lets take the value which maximize players heuristic
+			if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
 			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-						break;
-
-					if (simulation->playerSimulation.code == playerClusterCode)
-						tempPlayerGuessingHeuristics[simulation->playerSimulation.code] = FLT_MAX;
-					break;
-				}
-			}
-			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (simulation->playerSimulation.code == playerClusterCode)
-					{
-						if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-							break;
-
-						if (playerGuessingHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
-							playerGuessingHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
-			{
-				if (playerGuessingHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerGuessingHeuristic.first;
-						playerClusterMoveHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-				else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerGuessingHeuristic.first;
-						playerClusterJumpHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
+				playerClusterJumpCode = playerGuessingHeuristic.first;
+				playerClusterJumpHeuristic = playerGuessingHeuristic.second;
 			}
 		}
+	}
 
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			otherPlayerGuessingHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-						break;
-
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerGuessingHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerGuessingHeuristics.clear();
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerGuessingHeuristics.find(simulation->playerSimulation.code) == playerGuessingHeuristics.end())
-						break;
-
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerGuessingHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
-		}
+	//jumping decision takes less priority
+	float playerClusterHeuristic = -FLT_MAX;
+	if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+	{
+		playerClusterCode = playerClusterJumpCode;
+		playerClusterHeuristic = playerClusterJumpHeuristic;
 	}
 	else
 	{
-		//conservative decision making
-		std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				playerGuessingHeuristics[simulation->playerSimulation.code] = FLT_MAX;
-				break;
-			}
-		}
+		playerClusterCode = playerClusterMoveCode;
+		playerClusterHeuristic = playerClusterMoveHeuristic;
+	}
 
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+	if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best player heuristic
+		if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				otherPlayerGuessingHeuristics[simulation->otherPlayerSimulation.code] = 0;
-			}
-			break;
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
 		}
-
-		//calculate each average and take the best outcome for both players
-		std::unordered_map<unsigned long long, WeaponType> playerGuessingWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
+		//lets take the value which maximize players heuristic
+		else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerGuessingHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
-				{
-					playerGuessingWeapons[simulation->playerSimulation.code] = simulation->playerSimulation.weapon;
-					playerGuessingHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
-				}
-				otherPlayerGuessingHeuristics[simulation->otherPlayerSimulation.code] += simulation->otherPlayerSimulation.heuristic;
-			}
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
 		}
+	}
 
-		float playerClusterJumpHeuristic = -FLT_MAX;
-		float playerClusterMoveHeuristic = -FLT_MAX;
-		unsigned long long playerClusterJumpCode = ULLONG_MAX;
-		unsigned long long playerClusterMoveCode = ULLONG_MAX;
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> playerGuessingWeapons;
+	for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
+	{
+		unsigned long long clusterCode = playerGuessingHeuristic.first;
+		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
+			playerGuessingWeapons[clusterCode][(WeaponType)weapon] = 0.f;
+	}
+	for (auto const& playerGuessingSimulation : gameEvaluation.playerGuessings)
+	{
+		for (auto const& simulation : playerGuessingSimulation->simulations)
+		{
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+
+			unsigned short playerWeaponType = simulation->playerSimulation.weapon;
+			playerGuessingWeapons[clusterCode][(WeaponType)playerWeaponType] += otherPlayerGuessingProbabilities[otherClusterCode];
+		}
+	}
+	float bestWeaponProbability = -FLT_MAX;
+	for (auto& playerGuessingWeapon : playerGuessingWeapons[otherPlayerClusterCode])
+	{
+		if (playerGuessingWeapon.second > bestWeaponProbability)
+		{
+			playerWeapon = playerGuessingWeapon.first;
+			bestWeaponProbability = playerGuessingWeapon.second;
+		}
+	}
+
+
+
+	//calculate player guessing average 
+	for (auto& playerGuessingSimulation : gameEvaluation.playerGuessings)
+	{
+		for (auto const& simulation : playerGuessingSimulation->simulations)
+		{
+			playerGuessingHeuristics[simulation->playerSimulation.code] = 0;
+			otherPlayerGuessingHeuristics[simulation->otherPlayerSimulation.code] = 0;
+		}
+	}
+	for (auto& playerGuessingSimulation : gameEvaluation.playerGuessings)
+		for (auto const& simulation : playerGuessingSimulation->simulations)
+			playerGuessingHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
+
+	//lets assign a probability to each player Guessing based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> playerGuessingProbabilities;
+	if (!playerGuessingHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
+			if (playerGuessingHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = playerGuessingHeuristic.second;
+
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> playerGuessingExps;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
-			if (playerGuessingHeuristic.first == ULLONG_MAX)
-				continue;
+			unsigned long long clusterCode = playerGuessingHeuristic.first;
 
-			if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
-				{
-					playerClusterMoveCode = playerGuessingHeuristic.first;
-					playerClusterMoveHeuristic = playerGuessingHeuristic.second;
-				}
-			}
-			else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
-				{
-					playerClusterJumpCode = playerGuessingHeuristic.first;
-					playerClusterJumpHeuristic = playerGuessingHeuristic.second;
-				}
-			}
+			playerGuessingExps[clusterCode] = std::exp(playerGuessingHeuristic.second - maxHeuristicValue);
+			sumExp += playerGuessingExps[clusterCode];
 		}
 
-		//jumping decision takes less priority
-		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+		// Normalize to probabilities
+		for (auto& playerGuessingExp : playerGuessingExps)
 		{
-			playerClusterCode = playerClusterJumpCode;
-			playerClusterHeuristic = playerClusterJumpHeuristic;
+			unsigned long long clusterCode = playerGuessingExp.first;
+			playerGuessingProbabilities[clusterCode] = playerGuessingExp.second / sumExp;
 		}
-		else
+	}
+
+	//calculate each average and take the best outcome for the other player
+	for (auto& playerGuessingSimulation : gameEvaluation.playerGuessings)
+	{
+		for (auto& simulation : playerGuessingSimulation->simulations)
 		{
-			playerClusterCode = playerClusterMoveCode;
-			playerClusterHeuristic = playerClusterMoveHeuristic;
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			otherPlayerGuessingHeuristics[otherClusterCode] += simulation->otherPlayerSimulation.heuristic * playerGuessingProbabilities[clusterCode];
 		}
+	}
 
-		if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
+	float otherPlayerClusterHeuristic = FLT_MAX;
+	for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+	{
+		float otherPlayerGuessingHeuristicAvg = otherPlayerGuessingHeuristic.second;
+		//lets take the value which minimize players heuristic
+		if (otherPlayerGuessingHeuristicAvg < otherPlayerClusterHeuristic)
 		{
-			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-			}
-			//lets take the value which maximize players heuristic
-			else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-			}
+			otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
+			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
 		}
-		playerWeapon = playerGuessingWeapons[playerClusterCode];
+	}
 
-		float otherPlayerClusterHeuristic = FLT_MAX;
-		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-		{
-			float otherPlayerGuessingHeuristicAvg = otherPlayerGuessingHeuristic.second / (float)playerGuessingHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerGuessingHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerGuessingWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			for (auto const& simulation : gameSimulation->simulations)
-				otherPlayerGuessingWeapons[simulation->otherPlayerSimulation.code].push_back(simulation->otherPlayerSimulation.weapon);
-
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> otherPlayerGuessingWeapons;
+	for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+	{
+		unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
 		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerGuessingWeapon : otherPlayerGuessingWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerGuessingWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
+			otherPlayerGuessingWeapons[otherClusterCode][(WeaponType)weapon] = 0.f;
+	}
+	for (auto const& playerGuessingSimulation : gameEvaluation.playerGuessings)
+	{
+		for (auto const& simulation : playerGuessingSimulation->simulations)
 		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			unsigned short otherPlayerWeaponType = simulation->otherPlayerSimulation.weapon;
+			otherPlayerGuessingWeapons[otherClusterCode][(WeaponType)otherPlayerWeaponType] += playerGuessingProbabilities[clusterCode];
 		}
-
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
+	}
+	float bestOtherWeaponProbability = -FLT_MAX;
+	for (auto& otherPlayerGuessingWeapon : otherPlayerGuessingWeapons[otherPlayerClusterCode])
+	{
+		if (otherPlayerGuessingWeapon.second > bestOtherWeaponProbability)
 		{
-			otherPlayerGuessingHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerGuessingHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerGuessingHeuristics.clear();
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerGuessingHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
+			otherPlayerWeapon = otherPlayerGuessingWeapon.first;
+			bestOtherWeaponProbability = otherPlayerGuessingWeapon.second;
 		}
 	}
 }
@@ -10997,1438 +10531,542 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerDecisions,
-	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>>& playerWeaponDecisions,
+	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponDecisions,
 	WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode)
 {
-	bool isConservativeDecision = CalculatePlayerStatus(playerDataIn) > 0.3f ? false : true;
-	if (!isConservativeDecision)
+	//lets filter decisions in which the opponent has weapon advantage against all the player actions
+	std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
+	for (auto& playerDecisionSimulation : playerDecisions)
 	{
-		float playerWeaponStatus = CalculatePlayerWeaponStatus(playerDataIn);
-		float otherPlayerWeaponStatus = CalculatePlayerWeaponStatus(otherPlayerDataIn);
-		//if the opponent has top tier weapon and we dont then we run conservative
-		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
-			isConservativeDecision = true;
-	}
-	isConservativeDecision = false;
-
-	if (!isConservativeDecision)
-	{
-		//lets filter decisions in which the opponent has weapon advantage against all the player actions
-		std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
-		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponDecisions;
-		for (auto& playerWeaponDecision : playerWeaponDecisions)
+		for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 		{
-			//cluster code
-			unsigned long long clusterCode = playerWeaponDecision.first;
-			playerDecisionHeuristics[clusterCode] = 0;
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
+			otherPlayerDecisionHeuristics[otherClusterCode] = 0;
+		}
+		break;
+	}
 
-			for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
-				otherPlayerDecisionHeuristics[otherClusterCode] = 0;
+	//calculate other decision average 
+	for (auto& playerDecisionSimulation : playerDecisions)
+	{
+		for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
+		{
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
+			//invert heuristic for opponent
+			otherPlayerDecisionHeuristics[otherClusterCode] -= otherPlayerDecisionSimulation.second;
+		}
+	}
 
-				unsigned long long otherPlayerWeaponDamage = otherPlayerWeaponDecision.second & 0xfff;
-				unsigned long long playerWeaponDamage = (otherPlayerWeaponDecision.second >> 12) & 0xfff;
-				otherPlayerWeaponDecisions[otherClusterCode][clusterCode] = (int)(playerWeaponDamage - otherPlayerWeaponDamage);
-			}
+	//lets assign a probability to each opponent decision based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> otherPlayerDecisionProbabilities;
+	if (!otherPlayerDecisionHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+			if (otherPlayerDecisionHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = otherPlayerDecisionHeuristic.second;
+
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> otherPlayerDecisionExps;
+		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+		{
+			unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
+
+			otherPlayerDecisionExps[otherClusterCode] = std::exp(otherPlayerDecisionHeuristic.second - maxHeuristicValue);
+			sumExp += otherPlayerDecisionExps[otherClusterCode];
 		}
 
-		for (auto& otherPlayerWeaponDecision : otherPlayerWeaponDecisions)
+		// Normalize to probabilities
+		for (auto& otherPlayerDecisionExp : otherPlayerDecisionExps)
+		{
+			unsigned long long otherClusterCode = otherPlayerDecisionExp.first;
+			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionExp.second / sumExp;
+		}
+	}
+
+	//calculate each average and take the best outcome for both players
+	for (auto& playerDecisionSimulation : playerDecisions)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerDecisionSimulation.first;
+		playerDecisionHeuristics[clusterCode] = 0;
+
+		for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
+		{
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
+			playerDecisionHeuristics[clusterCode] += otherPlayerDecisionSimulation.second * otherPlayerDecisionProbabilities[otherClusterCode];
+		}
+	}
+
+	float playerClusterJumpHeuristic = -FLT_MAX;
+	float playerClusterMoveHeuristic = -FLT_MAX;
+	unsigned long long playerClusterJumpCode = ULLONG_MAX;
+	unsigned long long playerClusterMoveCode = ULLONG_MAX;
+	for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
+	{
+		if (playerDecisionHeuristic.first == ULLONG_MAX)
+			continue;
+
+		if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
+		{
+			//lets take the value which maximize players heuristic
+			if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
+			{
+				playerClusterMoveCode = playerDecisionHeuristic.first;
+				playerClusterMoveHeuristic = playerDecisionHeuristic.second;
+			}
+		}
+		else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
+		{
+			//lets take the value which maximize players heuristic
+			if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
+			{
+				playerClusterJumpCode = playerDecisionHeuristic.first;
+				playerClusterJumpHeuristic = playerDecisionHeuristic.second;
+			}
+		}
+	}
+
+	//jumping decision takes less priority
+	float playerClusterHeuristic = -FLT_MAX;
+	if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+	{
+		playerClusterCode = playerClusterJumpCode;
+		playerClusterHeuristic = playerClusterJumpHeuristic;
+	}
+	else
+	{
+		playerClusterCode = playerClusterMoveCode;
+		playerClusterHeuristic = playerClusterMoveHeuristic;
+	}
+
+	if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best player heuristic
+		if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+		{
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+		}
+		//lets take the value which maximize players heuristic
+		else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
+		{
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
+		}
+	}
+
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> playerDecisionWeapons;
+	for (auto& playerWeaponDecision : playerWeaponDecisions)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerWeaponDecision.first;
+		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
+			playerDecisionWeapons[clusterCode][(WeaponType)weapon] = 0.f;
+
+		for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
 		{
 			//other cluster code
 			unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
 
-			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
-			for (auto& playerWeaponDecision : otherPlayerWeaponDecision.second)
-			{
-				if (playerWeaponDecision.second > 0)
-				{
-					otherPlayerWeaponHeuristics.clear();
-					break;
-				}
-				else if (playerWeaponDecision.second < 0)
-				{
-					unsigned long long clusterCode = playerWeaponDecision.first;
-					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
-				}
-			}
-			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
-			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
-			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponDecision.second.size())
-			{
-				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
-				{
-					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
-					playerDecisionHeuristics.erase(clusterCode);
-				}
-			}
-		}
-
-		//check we dont remove all decision heuristics
-		if (playerDecisionHeuristics.empty())
-		{
-			if (playerDecisions.find(ULLONG_MAX) == playerDecisions.end())
-			{
-				for (auto& playerDecisionSimulation : playerDecisions)
-				{
-					//cluster code
-					unsigned long long clusterCode = playerDecisionSimulation.first;
-					playerDecisionHeuristics[clusterCode] = 0;
-				}
-			}
-			else
-			{
-				//lets take default path instead 
-				playerDecisionHeuristics[ULLONG_MAX] = 0;
-			}
-		}
-
-		//calculate each average and take the best outcome for both players
-		for (auto& playerDecisionSimulation : playerDecisions)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerDecisionSimulation.first;
-			if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-				continue;
-
-			for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-				playerDecisionHeuristics[clusterCode] += otherPlayerDecisionSimulation.second;
-				otherPlayerDecisionHeuristics[otherClusterCode] += otherPlayerDecisionSimulation.second;
-			}
-		}
-
-		float playerClusterHeuristic = -FLT_MAX;
-		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
-		{
-			float playerDecisionHeuristicAvg = playerDecisionHeuristic.second / (float)otherPlayerDecisionHeuristics.size();
-			if (playerDecisionHeuristic.first == ULLONG_MAX)
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristicAvg - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = playerDecisionHeuristic.first;
-					playerClusterHeuristic = playerDecisionHeuristicAvg;
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerDecisionHeuristicAvg > playerClusterHeuristic)
-				{
-					playerClusterCode = playerDecisionHeuristic.first;
-					playerClusterHeuristic = playerDecisionHeuristicAvg;
-				}
-			}
-			else if (playerDecisionHeuristicAvg > playerClusterHeuristic)
-			{
-				playerClusterCode = playerDecisionHeuristic.first;
-				playerClusterHeuristic = playerDecisionHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> playerDecisionWeapons;
-		for (auto& playerWeaponDecision : playerWeaponDecisions)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerWeaponDecision.first;
-			if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-				continue;
-
-			for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
-			{
-				unsigned long long playerWeaponType = (otherPlayerWeaponDecision.second >> 28) & 0xf;
-				playerDecisionWeapons[clusterCode].push_back((WeaponType)playerWeaponType);
-			}
-		}
-
-		unsigned int playerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> playerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			playerWeapons[(WeaponType)weapon] = 0;
-		for (auto& playerDecisionWeapon : playerDecisionWeapons[playerClusterCode])
-			playerWeapons[playerDecisionWeapon]++;
-		for (auto& playerWeaponInstance : playerWeapons)
-		{
-			if (playerWeaponInstance.second > playerWeaponCount)
-			{
-				playerWeapon = playerWeaponInstance.first;
-				playerWeaponCount = playerWeaponInstance.second;
-			}
-		}
-
-		float otherPlayerClusterHeuristic = FLT_MAX;
-		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-		{
-			float otherPlayerDecisionHeuristicAvg = otherPlayerDecisionHeuristic.second / (float)playerDecisionHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerDecisionHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerDecisionWeapons;
-		for (auto& playerWeaponDecision : playerWeaponDecisions)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerWeaponDecision.first;
-			if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-				continue;
-
-			for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
-				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponDecision.second >> 24) & 0xf;
-				otherPlayerDecisionWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
-			}
-		}
-
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerDecisionWeapon : otherPlayerDecisionWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerDecisionWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
-		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
-		}
-
-		//run minimax with the best playerCluster simulations
-		if (playerClusterCode != ULLONG_MAX)
-		{
-			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
-			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-					continue;
-
-				if (clusterCode != ULLONG_MAX && clusterPathings.at(clusterCode).second->GetTarget()->GetCluster() == playerCluster)
-					tempPlayerDecisionHeuristics[clusterCode] = FLT_MAX;
-			}
-			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-					continue;
-
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (clusterCode != ULLONG_MAX && clusterPathings.at(clusterCode).second->GetTarget()->GetCluster() == playerCluster)
-					{
-						if (playerDecisionHeuristics[clusterCode] > otherPlayerDecisionSimulation.second)
-							playerDecisionHeuristics[clusterCode] = otherPlayerDecisionSimulation.second;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
-			{
-				if (playerDecisionHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerDecisionHeuristic.first;
-						playerClusterMoveHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-				else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerDecisionHeuristic.first;
-						playerClusterJumpHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
-			}
-		}
-		else
-		{
-			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-					continue;
-
-				if (clusterCode == playerClusterCode)
-					tempPlayerDecisionHeuristics[clusterCode] = FLT_MAX;
-			}
-			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-					continue;
-
-				if (clusterCode == playerClusterCode)
-				{
-					for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-					{
-						//other cluster code
-						unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-						if (playerDecisionHeuristics[clusterCode] > otherPlayerDecisionSimulation.second)
-							playerDecisionHeuristics[clusterCode] = otherPlayerDecisionSimulation.second;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
-			{
-				if (playerDecisionHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerDecisionHeuristic.first;
-						playerClusterMoveHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-				else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerDecisionHeuristic.first;
-						playerClusterJumpHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
-			}
-		}
-
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			otherPlayerDecisionHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-					continue;
-
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < otherPlayerDecisionSimulation.second)
-							otherPlayerDecisionHeuristics[otherClusterCode] = otherPlayerDecisionSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerDecisionHeuristics.clear();
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-				if (playerDecisionHeuristics.find(clusterCode) == playerDecisionHeuristics.end())
-					continue;
-
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < otherPlayerDecisionSimulation.second)
-							otherPlayerDecisionHeuristics[otherClusterCode] = otherPlayerDecisionSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
+			unsigned short playerWeaponType = (otherPlayerWeaponDecision.second >> 8) & 0xff;
+			playerDecisionWeapons[clusterCode][(WeaponType)playerWeaponType] += otherPlayerDecisionProbabilities[otherClusterCode];
 		}
 	}
-	else
+	float bestWeaponProbability = -FLT_MAX;
+	for (auto& playerDecisionWeapon : playerDecisionWeapons[playerClusterCode])
 	{
-		//conservative decision making
-		std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
-		for (auto& playerDecisionSimulation : playerDecisions)
+		if (playerDecisionWeapon.second > bestWeaponProbability)
 		{
-			//cluster code
-			unsigned long long clusterCode = playerDecisionSimulation.first;
-			playerDecisionHeuristics[clusterCode] = FLT_MAX;
+			playerWeapon = playerDecisionWeapon.first;
+			bestWeaponProbability = playerDecisionWeapon.second;
 		}
+	}
 
-		for (auto& playerDecisionSimulation : playerDecisions)
+
+
+	//calculate player decision average 
+	for (auto& playerDecisionSimulation : playerDecisions)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerDecisionSimulation.first;
+		playerDecisionHeuristics[clusterCode] = 0.f;
+	}
+	for (auto& playerDecisionSimulation : playerDecisions)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerDecisionSimulation.first;
+
+		for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 		{
-			for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-				otherPlayerDecisionHeuristics[otherClusterCode] = 0;
-			}
-			break;
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
+
+			otherPlayerDecisionHeuristics[otherClusterCode] = 0.f;
+			playerDecisionHeuristics[clusterCode] += otherPlayerDecisionSimulation.second;
 		}
+	}
 
-		//calculate each average and take the best outcome for both players
-		std::unordered_map<unsigned long long, WeaponType> playerDecisionWeapons;
-		for (auto& playerDecisionSimulation : playerDecisions)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerDecisionSimulation.first;
+	//lets assign a probability to each player decision based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> playerDecisionProbabilities;
+	if (!playerDecisionHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
+			if (playerDecisionHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = playerDecisionHeuristic.second;
 
-			for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-
-				if (playerDecisionHeuristics[clusterCode] > otherPlayerDecisionSimulation.second)
-				{
-					unsigned long long playerWeaponType = (playerWeaponDecisions.at(clusterCode).at(otherClusterCode) >> 28) & 0xf;
-					playerDecisionWeapons[clusterCode] = (WeaponType)playerWeaponType;
-					playerDecisionHeuristics[clusterCode] = otherPlayerDecisionSimulation.second;
-				}
-				otherPlayerDecisionHeuristics[otherClusterCode] += otherPlayerDecisionSimulation.second;
-			}
-		}
-
-		float playerClusterJumpHeuristic = -FLT_MAX;
-		float playerClusterMoveHeuristic = -FLT_MAX;
-		unsigned long long playerClusterJumpCode = ULLONG_MAX;
-		unsigned long long playerClusterMoveCode = ULLONG_MAX;
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> playerDecisionExps;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
-			if (playerDecisionHeuristic.first == ULLONG_MAX)
-				continue;
+			unsigned long long clusterCode = playerDecisionHeuristic.first;
 
-			if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
-				{
-					playerClusterMoveCode = playerDecisionHeuristic.first;
-					playerClusterMoveHeuristic = playerDecisionHeuristic.second;
-				}
-			}
-			else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
-				{
-					playerClusterJumpCode = playerDecisionHeuristic.first;
-					playerClusterJumpHeuristic = playerDecisionHeuristic.second;
-				}
-			}
+			playerDecisionExps[clusterCode] = std::exp(playerDecisionHeuristic.second - maxHeuristicValue);
+			sumExp += playerDecisionExps[clusterCode];
 		}
 
-		//jumping decision takes less priority
-		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+		// Normalize to probabilities
+		for (auto& playerDecisionExp : playerDecisionExps)
 		{
-			playerClusterCode = playerClusterJumpCode;
-			playerClusterHeuristic = playerClusterJumpHeuristic;
+			unsigned long long clusterCode = playerDecisionExp.first;
+			playerDecisionProbabilities[clusterCode] = playerDecisionExp.second / sumExp;
 		}
-		else
+	}
+
+	//calculate each average and take the best outcome for the other player
+	for (auto& playerDecisionSimulation : playerDecisions)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerDecisionSimulation.first;
+
+		for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 		{
-			playerClusterCode = playerClusterMoveCode;
-			playerClusterHeuristic = playerClusterMoveHeuristic;
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
+			otherPlayerDecisionHeuristics[otherClusterCode] += otherPlayerDecisionSimulation.second * playerDecisionProbabilities[clusterCode];
 		}
+	}
 
-		if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
+	float otherPlayerClusterHeuristic = FLT_MAX;
+	for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+	{
+		float otherPlayerDecisionHeuristicAvg = otherPlayerDecisionHeuristic.second;
+		//lets take the value which minimize players heuristic
+		if (otherPlayerDecisionHeuristicAvg < otherPlayerClusterHeuristic)
 		{
-			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-			}
-			//lets take the value which maximize players heuristic
-			else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-			}
+			otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
+			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
 		}
-		playerWeapon = playerDecisionWeapons[playerClusterCode];
+	}
 
-		float otherPlayerClusterHeuristic = FLT_MAX;
-		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-		{
-			float otherPlayerDecisionHeuristicAvg = otherPlayerDecisionHeuristic.second / (float)playerDecisionHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerDecisionHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerDecisionWeapons;
-		for (auto& playerWeaponDecision : playerWeaponDecisions)
-		{
-			for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
-
-				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponDecision.second >> 24) & 0xf;
-				otherPlayerDecisionWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
-			}
-		}
-
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> otherPlayerDecisionWeapons;
+	for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+	{
+		//other cluster code
+		unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
 		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerDecisionWeapon : otherPlayerDecisionWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerDecisionWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
+			otherPlayerDecisionWeapons[otherClusterCode][(WeaponType)weapon] = 0.f;
+	}
+	for (auto& playerWeaponDecision : playerWeaponDecisions)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerWeaponDecision.first;
+
+		for (auto& otherPlayerWeaponDecision : playerWeaponDecision.second)
 		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
+
+			unsigned short otherPlayerWeaponType = otherPlayerWeaponDecision.second & 0xff;
+			otherPlayerDecisionWeapons[otherClusterCode][(WeaponType)otherPlayerWeaponType] += playerDecisionProbabilities[clusterCode];
 		}
-
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
+	}
+	float bestOtherWeaponProbability = -FLT_MAX;
+	for (auto& otherPlayerDecisionWeapon : otherPlayerDecisionWeapons[otherPlayerClusterCode])
+	{
+		if (otherPlayerDecisionWeapon.second > bestOtherWeaponProbability)
 		{
-			otherPlayerDecisionHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < otherPlayerDecisionSimulation.second)
-							otherPlayerDecisionHeuristics[otherClusterCode] = otherPlayerDecisionSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerDecisionHeuristics.clear();
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerDecisionSimulation : playerDecisions)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerDecisionSimulation.first;
-
-				for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerDecisionSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < otherPlayerDecisionSimulation.second)
-							otherPlayerDecisionHeuristics[otherClusterCode] = otherPlayerDecisionSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
+			otherPlayerWeapon = otherPlayerDecisionWeapon.first;
+			bestOtherWeaponProbability = otherPlayerDecisionWeapon.second;
 		}
 	}
 }
-
 void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const PlayerData& otherPlayerDataIn,
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, float>>& playerGuessings,
-	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned int>>&  playerWeaponGuessings,
+	const Concurrency::concurrent_unordered_map<unsigned long long, Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>>& playerWeaponGuessings,
 	WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode)
 {
-	bool isConservativeGuessing = CalculatePlayerStatus(playerDataIn) > 0.3f ? false : true;
-	if (!isConservativeGuessing)
+	//lets filter guessings in which the opponent has weapon advantage against all the player actions
+	std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
+	for (auto& playerGuessingSimulation : playerGuessings)
 	{
-		float playerWeaponStatus = CalculatePlayerWeaponStatus(playerDataIn);
-		float otherPlayerWeaponStatus = CalculatePlayerWeaponStatus(otherPlayerDataIn);
-		//if the opponent has top tier weapon and we dont then we run conservative
-		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
-			isConservativeGuessing = true;
-	}
-	isConservativeGuessing = false;
-
-	if (!isConservativeGuessing)
-	{
-		//lets filter decisions in which the opponent has weapon advantage against all the player actions
-		std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
-		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponGuessings;
-		for (auto& playerWeaponGuessing : playerWeaponGuessings)
+		for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 		{
-			//cluster code
-			unsigned long long clusterCode = playerWeaponGuessing.first;
-			playerGuessingHeuristics[clusterCode] = 0;
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
+			otherPlayerGuessingHeuristics[otherClusterCode] = 0;
+		}
+		break;
+	}
 
-			for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
-				otherPlayerGuessingHeuristics[otherClusterCode] = 0;
+	//calculate other guessing average 
+	for (auto& playerGuessingSimulation : playerGuessings)
+	{
+		for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
+		{
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
+			//invert heuristic for opponent
+			otherPlayerGuessingHeuristics[otherClusterCode] -= otherPlayerGuessingSimulation.second;
+		}
+	}
 
-				unsigned long long otherPlayerWeaponDamage = otherPlayerWeaponGuessing.second & 0xfff;
-				unsigned long long playerWeaponDamage = (otherPlayerWeaponGuessing.second >> 12) & 0xfff;
-				otherPlayerWeaponGuessings[otherClusterCode][clusterCode] = (int)(playerWeaponDamage - otherPlayerWeaponDamage);
-			}
+	//lets assign a probability to each opponent guessing based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> otherPlayerGuessingProbabilities;
+	if (!otherPlayerGuessingHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+			if (otherPlayerGuessingHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = otherPlayerGuessingHeuristic.second;
+
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> otherPlayerGuessingExps;
+		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+		{
+			unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
+
+			otherPlayerGuessingExps[otherClusterCode] = std::exp(otherPlayerGuessingHeuristic.second - maxHeuristicValue);
+			sumExp += otherPlayerGuessingExps[otherClusterCode];
 		}
 
-		for (auto& otherPlayerWeaponGuessing : otherPlayerWeaponGuessings)
+		// Normalize to probabilities
+		for (auto& otherPlayerGuessingExp : otherPlayerGuessingExps)
+		{
+			unsigned long long otherClusterCode = otherPlayerGuessingExp.first;
+			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingExp.second / sumExp;
+		}
+	}
+
+	//calculate each average and take the best outcome for both players
+	for (auto& playerGuessingSimulation : playerGuessings)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerGuessingSimulation.first;
+		playerGuessingHeuristics[clusterCode] = 0;
+
+		for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
+		{
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
+			playerGuessingHeuristics[clusterCode] += otherPlayerGuessingSimulation.second * otherPlayerGuessingProbabilities[otherClusterCode];
+		}
+	}
+
+	float playerClusterJumpHeuristic = -FLT_MAX;
+	float playerClusterMoveHeuristic = -FLT_MAX;
+	unsigned long long playerClusterJumpCode = ULLONG_MAX;
+	unsigned long long playerClusterMoveCode = ULLONG_MAX;
+	for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
+	{
+		if (playerGuessingHeuristic.first == ULLONG_MAX)
+			continue;
+
+		if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
+		{
+			//lets take the value which maximize players heuristic
+			if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
+			{
+				playerClusterMoveCode = playerGuessingHeuristic.first;
+				playerClusterMoveHeuristic = playerGuessingHeuristic.second;
+			}
+		}
+		else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
+		{
+			//lets take the value which maximize players heuristic
+			if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
+			{
+				playerClusterJumpCode = playerGuessingHeuristic.first;
+				playerClusterJumpHeuristic = playerGuessingHeuristic.second;
+			}
+		}
+	}
+
+	//jumping decision takes less priority
+	float playerClusterHeuristic = -FLT_MAX;
+	if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+	{
+		playerClusterCode = playerClusterJumpCode;
+		playerClusterHeuristic = playerClusterJumpHeuristic;
+	}
+	else
+	{
+		playerClusterCode = playerClusterMoveCode;
+		playerClusterHeuristic = playerClusterMoveHeuristic;
+	}
+
+	if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best player heuristic
+		if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
+		{
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+		}
+		//lets take the value which maximize players heuristic
+		else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
+		{
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
+		}
+	}
+
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> playerGuessingWeapons;
+	for (auto& playerWeaponGuessing : playerWeaponGuessings)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerWeaponGuessing.first;
+		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
+			playerGuessingWeapons[clusterCode][(WeaponType)weapon] = 0.f;
+
+		for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
 		{
 			//other cluster code
 			unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
 
-			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
-			for (auto& playerWeaponGuessing : otherPlayerWeaponGuessing.second)
-			{
-				if (playerWeaponGuessing.second > 0)
-				{
-					otherPlayerWeaponHeuristics.clear();
-					break;
-				}
-				else if (playerWeaponGuessing.second < 0)
-				{
-					unsigned long long clusterCode = playerWeaponGuessing.first;
-					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
-				}
-			}
-			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
-			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
-			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponGuessing.second.size())
-			{
-				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
-				{
-					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
-					playerGuessingHeuristics.erase(clusterCode);
-				}
-			}
-		}
-
-		//check we dont remove all decision heuristics
-		if (playerGuessingHeuristics.empty())
-		{
-			if (playerGuessings.find(ULLONG_MAX) == playerGuessings.end())
-			{
-				for (auto& playerGuessingSimulation : playerGuessings)
-				{
-					//cluster code
-					unsigned long long clusterCode = playerGuessingSimulation.first;
-					playerGuessingHeuristics[clusterCode] = 0;
-				}
-			}
-			else
-			{
-				//lets take default path instead 
-				playerGuessingHeuristics[ULLONG_MAX] = 0;
-			}
-		}
-
-		//calculate each average and take the best outcome for both players
-		for (auto& playerGuessingSimulation : playerGuessings)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerGuessingSimulation.first;
-			if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-				continue;
-
-			for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-				playerGuessingHeuristics[clusterCode] += otherPlayerGuessingSimulation.second;
-				otherPlayerGuessingHeuristics[otherClusterCode] += otherPlayerGuessingSimulation.second;
-			}
-		}
-
-		float playerClusterHeuristic = -FLT_MAX;
-		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
-		{
-			float playerGuessingHeuristicAvg = playerGuessingHeuristic.second / (float)otherPlayerGuessingHeuristics.size();
-			if (playerGuessingHeuristic.first == ULLONG_MAX)
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristicAvg - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = playerGuessingHeuristic.first;
-					playerClusterHeuristic = playerGuessingHeuristicAvg;
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerGuessingHeuristicAvg > playerClusterHeuristic)
-				{
-					playerClusterCode = playerGuessingHeuristic.first;
-					playerClusterHeuristic = playerGuessingHeuristicAvg;
-				}
-			}
-			else if (playerGuessingHeuristicAvg > playerClusterHeuristic)
-			{
-				playerClusterCode = playerGuessingHeuristic.first;
-				playerClusterHeuristic = playerGuessingHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> playerGuessingWeapons;
-		for (auto& playerWeaponGuessing : playerWeaponGuessings)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerWeaponGuessing.first;
-			if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-				continue;
-
-			for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
-			{
-				unsigned long long playerWeaponType = (otherPlayerWeaponGuessing.second >> 28) & 0xf;
-				playerGuessingWeapons[clusterCode].push_back((WeaponType)playerWeaponType);
-			}
-		}
-
-		unsigned int playerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> playerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			playerWeapons[(WeaponType)weapon] = 0;
-		for (auto& playerGuessingWeapon : playerGuessingWeapons[playerClusterCode])
-			playerWeapons[playerGuessingWeapon]++;
-		for (auto& playerWeaponInstance : playerWeapons)
-		{
-			if (playerWeaponInstance.second > playerWeaponCount)
-			{
-				playerWeapon = playerWeaponInstance.first;
-				playerWeaponCount = playerWeaponInstance.second;
-			}
-		}
-
-		float otherPlayerClusterHeuristic = FLT_MAX;
-		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-		{
-			float otherPlayerGuessingHeuristicAvg = otherPlayerGuessingHeuristic.second / (float)playerGuessingHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerGuessingHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerGuessingWeapons;
-		for (auto& playerWeaponGuessing : playerWeaponGuessings)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerWeaponGuessing.first;
-			if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-				continue;
-
-			for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
-				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponGuessing.second >> 24) & 0xf;
-				otherPlayerGuessingWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
-			}
-		}
-
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerGuessingWeapon : otherPlayerGuessingWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerGuessingWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
-		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
-		}
-
-		//run minimax with the best playerCluster simulations
-		if (playerClusterCode != ULLONG_MAX)
-		{
-			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
-			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-					continue;
-
-				if (clusterCode != ULLONG_MAX && clusterPathings.at(clusterCode).second->GetTarget()->GetCluster() == playerCluster)
-					tempPlayerGuessingHeuristics[clusterCode] = FLT_MAX;
-			}
-			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-					continue;
-
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (clusterCode != ULLONG_MAX && clusterPathings.at(clusterCode).second->GetTarget()->GetCluster() == playerCluster)
-					{
-						if (playerGuessingHeuristics[clusterCode] > otherPlayerGuessingSimulation.second)
-							playerGuessingHeuristics[clusterCode] = otherPlayerGuessingSimulation.second;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
-			{
-				if (playerGuessingHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerGuessingHeuristic.first;
-						playerClusterMoveHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-				else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerGuessingHeuristic.first;
-						playerClusterJumpHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
-			}
-		}
-		else
-		{
-			std::unordered_map<unsigned long long, float> tempPlayerGuessingHeuristics;
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-					continue;
-
-				if (clusterCode == playerClusterCode)
-					tempPlayerGuessingHeuristics[clusterCode] = FLT_MAX;
-			}
-			playerGuessingHeuristics = tempPlayerGuessingHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-					continue;
-
-				if (clusterCode == playerClusterCode)
-				{
-					for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-					{
-						//other cluster code
-						unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-						if (playerGuessingHeuristics[clusterCode] > otherPlayerGuessingSimulation.second)
-							playerGuessingHeuristics[clusterCode] = otherPlayerGuessingSimulation.second;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
-			{
-				if (playerGuessingHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerGuessingHeuristic.first;
-						playerClusterMoveHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-				else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerGuessingHeuristic.first;
-						playerClusterJumpHeuristic = playerGuessingHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			playerClusterHeuristic = -FLT_MAX;
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-				}
-			}
-		}
-
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			otherPlayerGuessingHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-					continue;
-
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < otherPlayerGuessingSimulation.second)
-							otherPlayerGuessingHeuristics[otherClusterCode] = otherPlayerGuessingSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerGuessingHeuristics.clear();
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-				if (playerGuessingHeuristics.find(clusterCode) == playerGuessingHeuristics.end())
-					continue;
-
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < otherPlayerGuessingSimulation.second)
-							otherPlayerGuessingHeuristics[otherClusterCode] = otherPlayerGuessingSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
+			unsigned short playerWeaponType = (otherPlayerWeaponGuessing.second >> 8) & 0xff;
+			playerGuessingWeapons[clusterCode][(WeaponType)playerWeaponType] += otherPlayerGuessingProbabilities[otherClusterCode];
 		}
 	}
-	else
+	float bestWeaponProbability = -FLT_MAX;
+	for (auto& playerGuessingWeapon : playerGuessingWeapons[playerClusterCode])
 	{
-		//conservative Guessing making
-		std::unordered_map<unsigned long long, float> playerGuessingHeuristics, otherPlayerGuessingHeuristics;
-		for (auto& playerGuessingSimulation : playerGuessings)
+		if (playerGuessingWeapon.second > bestWeaponProbability)
 		{
-			//cluster code
-			unsigned long long clusterCode = playerGuessingSimulation.first;
-			playerGuessingHeuristics[clusterCode] = FLT_MAX;
+			playerWeapon = playerGuessingWeapon.first;
+			bestWeaponProbability = playerGuessingWeapon.second;
 		}
+	}
 
-		for (auto& playerGuessingSimulation : playerGuessings)
+
+	//calculate player guessing average 
+	for (auto& playerGuessingSimulation : playerGuessings)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerGuessingSimulation.first;
+		playerGuessingHeuristics[clusterCode] = 0.f;
+	}
+	for (auto& playerGuessingSimulation : playerGuessings)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerGuessingSimulation.first;
+
+		for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 		{
-			for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-				otherPlayerGuessingHeuristics[otherClusterCode] = 0;
-			}
-			break;
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
+
+			otherPlayerGuessingHeuristics[otherClusterCode] = 0.f;
+			playerGuessingHeuristics[clusterCode] += otherPlayerGuessingSimulation.second;
 		}
+	}
 
-		//calculate each average and take the best outcome for both players
-		std::unordered_map<unsigned long long, WeaponType> playerGuessingWeapons;
-		for (auto& playerGuessingSimulation : playerGuessings)
-		{
-			//cluster code
-			unsigned long long clusterCode = playerGuessingSimulation.first;
+	//lets assign a probability to each player guessing based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> playerGuessingProbabilities;
+	if (!playerGuessingHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
+			if (playerGuessingHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = playerGuessingHeuristic.second;
 
-			for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-
-				if (playerGuessingHeuristics[clusterCode] > otherPlayerGuessingSimulation.second)
-				{
-					unsigned long long playerWeaponType = (playerWeaponGuessings.at(clusterCode).at(otherClusterCode) >> 28) & 0xf;
-					playerGuessingWeapons[clusterCode] = (WeaponType)playerWeaponType;
-					playerGuessingHeuristics[clusterCode] = otherPlayerGuessingSimulation.second;
-				}
-				otherPlayerGuessingHeuristics[otherClusterCode] += otherPlayerGuessingSimulation.second;
-			}
-		}
-
-		float playerClusterJumpHeuristic = -FLT_MAX;
-		float playerClusterMoveHeuristic = -FLT_MAX;
-		unsigned long long playerClusterJumpCode = ULLONG_MAX;
-		unsigned long long playerClusterMoveCode = ULLONG_MAX;
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> playerGuessingExps;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
-			if (playerGuessingHeuristic.first == ULLONG_MAX)
-				continue;
+			unsigned long long clusterCode = playerGuessingHeuristic.first;
 
-			if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_MOVE)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerGuessingHeuristic.second > playerClusterMoveHeuristic)
-				{
-					playerClusterMoveCode = playerGuessingHeuristic.first;
-					playerClusterMoveHeuristic = playerGuessingHeuristic.second;
-				}
-			}
-			else if (((playerGuessingHeuristic.first >> 60) & 0xff) == AT_JUMP)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerGuessingHeuristic.second > playerClusterJumpHeuristic)
-				{
-					playerClusterJumpCode = playerGuessingHeuristic.first;
-					playerClusterJumpHeuristic = playerGuessingHeuristic.second;
-				}
-			}
+			playerGuessingExps[clusterCode] = std::exp(playerGuessingHeuristic.second - maxHeuristicValue);
+			sumExp += playerGuessingExps[clusterCode];
 		}
 
-		//jumping decision takes less priority
-		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+		// Normalize to probabilities
+		for (auto& playerGuessingExp : playerGuessingExps)
 		{
-			playerClusterCode = playerClusterJumpCode;
-			playerClusterHeuristic = playerClusterJumpHeuristic;
+			unsigned long long clusterCode = playerGuessingExp.first;
+			playerGuessingProbabilities[clusterCode] = playerGuessingExp.second / sumExp;
 		}
-		else
+	}
+
+	//calculate each average and take the best outcome for the other player
+	for (auto& playerGuessingSimulation : playerGuessings)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerGuessingSimulation.first;
+
+		for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 		{
-			playerClusterCode = playerClusterMoveCode;
-			playerClusterHeuristic = playerClusterMoveHeuristic;
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
+			otherPlayerGuessingHeuristics[otherClusterCode] += otherPlayerGuessingSimulation.second * playerGuessingProbabilities[clusterCode];
 		}
+	}
 
-		if (playerGuessingHeuristics.find(ULLONG_MAX) != playerGuessingHeuristics.end())
+	float otherPlayerClusterHeuristic = FLT_MAX;
+	for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+	{
+		float otherPlayerGuessingHeuristicAvg = otherPlayerGuessingHeuristic.second;
+		//lets take the value which minimize players heuristic
+		if (otherPlayerGuessingHeuristicAvg < otherPlayerClusterHeuristic)
 		{
-			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerGuessingHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-			}
-			//lets take the value which maximize players heuristic
-			else if (playerGuessingHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerGuessingHeuristics.at(ULLONG_MAX);
-			}
+			otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
+			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
 		}
-		playerWeapon = playerGuessingWeapons[playerClusterCode];
+	}
 
-		float otherPlayerClusterHeuristic = FLT_MAX;
-		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-		{
-			float otherPlayerGuessingHeuristicAvg = otherPlayerGuessingHeuristic.second / (float)playerGuessingHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerGuessingHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerGuessingWeapons;
-		for (auto& playerWeaponGuessing : playerWeaponGuessings)
-		{
-			for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
-			{
-				//other cluster code
-				unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
-
-				unsigned long long otherPlayerWeaponType = (otherPlayerWeaponGuessing.second >> 24) & 0xf;
-				otherPlayerGuessingWeapons[otherClusterCode].push_back((WeaponType)otherPlayerWeaponType);
-			}
-		}
-
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> otherPlayerGuessingWeapons;
+	for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+	{
+		//other cluster code
+		unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
 		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerGuessingWeapon : otherPlayerGuessingWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerGuessingWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
+			otherPlayerGuessingWeapons[otherClusterCode][(WeaponType)weapon] = 0.f;
+	}
+	for (auto& playerWeaponGuessing : playerWeaponGuessings)
+	{
+		//cluster code
+		unsigned long long clusterCode = playerWeaponGuessing.first;
+
+		for (auto& otherPlayerWeaponGuessing : playerWeaponGuessing.second)
 		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
+			//other cluster code
+			unsigned long long otherClusterCode = otherPlayerWeaponGuessing.first;
+
+			unsigned short otherPlayerWeaponType = otherPlayerWeaponGuessing.second & 0xff;
+			otherPlayerGuessingWeapons[otherClusterCode][(WeaponType)otherPlayerWeaponType] += playerGuessingProbabilities[clusterCode];
 		}
-
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
+	}
+	float bestOtherWeaponProbability = -FLT_MAX;
+	for (auto& otherPlayerGuessingWeapon : otherPlayerGuessingWeapons[otherPlayerClusterCode])
+	{
+		if (otherPlayerGuessingWeapon.second > bestOtherWeaponProbability)
 		{
-			otherPlayerGuessingHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < otherPlayerGuessingSimulation.second)
-							otherPlayerGuessingHeuristics[otherClusterCode] = otherPlayerGuessingSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerGuessingHeuristics.clear();
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerGuessingHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto& playerGuessingSimulation : playerGuessings)
-			{
-				//cluster code
-				unsigned long long clusterCode = playerGuessingSimulation.first;
-
-				for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = otherPlayerGuessingSimulation.first;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerGuessingHeuristics[otherClusterCode] < otherPlayerGuessingSimulation.second)
-							otherPlayerGuessingHeuristics[otherClusterCode] = otherPlayerGuessingSimulation.second;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
-			{
-				if (otherPlayerGuessingHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerGuessingHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerGuessingHeuristic.second;
-				}
-			}
+			otherPlayerWeapon = otherPlayerGuessingWeapon.first;
+			bestOtherWeaponProbability = otherPlayerGuessingWeapon.second;
 		}
 	}
 }
@@ -12439,683 +11077,246 @@ void QuakeAIManager::PerformDecisionMaking(
 	const Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode)
 {
-	bool isConservativeDecision = CalculatePlayerStatus(playerDataIn) > 0.3f ? false : true;
-	if (!isConservativeDecision)
+	//lets filter decisions in which the opponent has weapon advantage against all the player actions
+	std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
+	for (auto& playerDecisionSimulation : gameEvaluation.playerDecisions)
 	{
-		float playerWeaponStatus = CalculatePlayerWeaponStatus(playerDataIn);
-		float otherPlayerWeaponStatus = CalculatePlayerWeaponStatus(otherPlayerDataIn);
-		//if the opponent has top tier weapon and we dont then we run conservative
-		if (playerWeaponStatus < 0.6f && otherPlayerWeaponStatus >= 0.6f)
-			isConservativeDecision = true;
-	}
-	isConservativeDecision = false;
-
-	if (!isConservativeDecision)
-	{
-		//lets filter decisions in which the opponent has weapon advantage against all the player actions
-		std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
-		std::unordered_map<unsigned long long, std::unordered_map<unsigned long long, int>> otherPlayerWeaponDecisions;
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+		for (auto& simulation : playerDecisionSimulation->simulations)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				//other cluster code
-				unsigned long long clusterCode = simulation->playerSimulation.code;
-				unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-
-				playerDecisionHeuristics[clusterCode] = 0;
-				otherPlayerDecisionHeuristics[otherClusterCode] = 0;
-				otherPlayerWeaponDecisions[otherClusterCode][clusterCode] = 
-					simulation->playerSimulation.damage - simulation->otherPlayerSimulation.damage;
-			}
+			playerDecisionHeuristics[simulation->playerSimulation.code] = 0;
+			otherPlayerDecisionHeuristics[simulation->otherPlayerSimulation.code] = 0;
 		}
+	}
 
-		for (auto& otherPlayerWeaponDecision : otherPlayerWeaponDecisions)
+	//calculate other decision average 
+	for (auto& playerDecisionSimulation : gameEvaluation.playerDecisions)
+	{
+		for (auto& simulation : playerDecisionSimulation->simulations)
 		{
 			//other cluster code
-			unsigned long long otherClusterCode = otherPlayerWeaponDecision.first;
-
-			std::unordered_map<unsigned long long, float> otherPlayerWeaponHeuristics;
-			for (auto& playerWeaponDecision : otherPlayerWeaponDecision.second)
-			{
-				if (playerWeaponDecision.second > 0)
-				{
-					otherPlayerWeaponHeuristics.clear();
-					break;
-				}
-				else if (playerWeaponDecision.second < 0)
-				{
-					unsigned long long clusterCode = playerWeaponDecision.first;
-					otherPlayerWeaponHeuristics[clusterCode] = 0.f;
-				}
-			}
-			// if the opponent has weapon advantage in at least % of the player decisions then we consider that 
-			// the opponent has a significant weapon advantage and we will remove those decision clusters for futher evaluation
-			if (otherPlayerWeaponHeuristics.size() >= 0.25f * otherPlayerWeaponDecision.second.size())
-			{
-				for (auto& otherPlayerWeaponHeuristic : otherPlayerWeaponHeuristics)
-				{
-					unsigned long long clusterCode = otherPlayerWeaponHeuristic.first;
-					playerDecisionHeuristics.erase(clusterCode);
-				}
-			}
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			//invert heuristic for opponent
+			otherPlayerDecisionHeuristics[otherClusterCode] -= simulation->otherPlayerSimulation.heuristic;
 		}
+	}
 
-		//check we dont remove all decision heuristics
-		if (playerDecisionHeuristics.empty())
-		{
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (simulation->playerSimulation.code == ULLONG_MAX)
-					{
-						//lets take default path instead
-						playerDecisionHeuristics[simulation->playerSimulation.code] = 0;
-					}
-					break;
-				}
-			}
+	//lets assign a probability to each opponent Decision based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> otherPlayerDecisionProbabilities;
+	if (!otherPlayerDecisionHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+			if (otherPlayerDecisionHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = otherPlayerDecisionHeuristic.second;
 
-			if (playerDecisionHeuristics.empty())
-			{
-				for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-				{
-					for (auto const& simulation : gameSimulation->simulations)
-					{
-						playerDecisionHeuristics[simulation->playerSimulation.code] = 0;
-						break;
-					}
-				}
-			}
-		}
-
-		//calculate each average and take the best outcome for both players
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-					break;
-
-				playerDecisionHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
-				otherPlayerDecisionHeuristics[simulation->otherPlayerSimulation.code] += simulation->otherPlayerSimulation.heuristic;
-			}
-		}
-
-		float playerClusterHeuristic = -FLT_MAX;
-		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
-		{
-			float playerDecisionHeuristicAvg = playerDecisionHeuristic.second / (float)otherPlayerDecisionHeuristics.size();
-			if (playerDecisionHeuristic.first == ULLONG_MAX)
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristicAvg - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = playerDecisionHeuristic.first;
-					playerClusterHeuristic = playerDecisionHeuristicAvg;
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerDecisionHeuristicAvg > playerClusterHeuristic)
-				{
-					playerClusterCode = playerDecisionHeuristic.first;
-					playerClusterHeuristic = playerDecisionHeuristicAvg;
-				}
-			}
-			else if (playerDecisionHeuristicAvg > playerClusterHeuristic)
-			{
-				playerClusterCode = playerDecisionHeuristic.first;
-				playerClusterHeuristic = playerDecisionHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> playerDecisionWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-					break;
-
-				playerDecisionWeapons[simulation->playerSimulation.code].push_back(simulation->playerSimulation.weapon);
-			}
-		}
-
-		unsigned int playerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> playerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			playerWeapons[(WeaponType)weapon] = 0;
-		for (auto& playerDecisionWeapon : playerDecisionWeapons[playerClusterCode])
-			playerWeapons[playerDecisionWeapon]++;
-		for (auto& playerWeaponInstance : playerWeapons)
-		{
-			if (playerWeaponInstance.second > playerWeaponCount)
-			{
-				playerWeapon = playerWeaponInstance.first;
-				playerWeaponCount = playerWeaponInstance.second;
-			}
-		}
-
-		float otherPlayerClusterHeuristic = FLT_MAX;
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> otherPlayerDecisionExps;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
-			float otherPlayerDecisionHeuristicAvg = otherPlayerDecisionHeuristic.second / (float)playerDecisionHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerDecisionHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
-			}
+			unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
+
+			otherPlayerDecisionExps[otherClusterCode] = std::exp(otherPlayerDecisionHeuristic.second - maxHeuristicValue);
+			sumExp += otherPlayerDecisionExps[otherClusterCode];
 		}
 
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerDecisionWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+		// Normalize to probabilities
+		for (auto& otherPlayerDecisionExp : otherPlayerDecisionExps)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-					break;
-
-				otherPlayerDecisionWeapons[simulation->otherPlayerSimulation.code].push_back(simulation->otherPlayerSimulation.weapon);
-			}
+			unsigned long long otherClusterCode = otherPlayerDecisionExp.first;
+			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionExp.second / sumExp;
 		}
+	}
 
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
-		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerDecisionWeapon : otherPlayerDecisionWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerDecisionWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
+	//calculate each average and take the best outcome for both players
+	for (auto& playerDecisionSimulation : gameEvaluation.playerDecisions)
+	{
+		for (auto& simulation : playerDecisionSimulation->simulations)
 		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
+			//other cluster code
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			playerDecisionHeuristics[clusterCode] += simulation->playerSimulation.heuristic * otherPlayerDecisionProbabilities[otherClusterCode];
 		}
+	}
 
-		//run minimax with the best playerCluster simulations
-		if (playerClusterCode != ULLONG_MAX)
+	float playerClusterJumpHeuristic = -FLT_MAX;
+	float playerClusterMoveHeuristic = -FLT_MAX;
+	unsigned long long playerClusterJumpCode = ULLONG_MAX;
+	unsigned long long playerClusterMoveCode = ULLONG_MAX;
+	for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
+	{
+		if (playerDecisionHeuristic.first == ULLONG_MAX)
+			continue;
+
+		if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
 		{
-			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
-			unsigned short playerCluster = clusterPathings.at(playerClusterCode).second->GetTarget()->GetCluster();
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+			//lets take the value which maximize players heuristic
+			if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
 			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-						break;
-
-					if (simulation->playerSimulation.code != ULLONG_MAX &&
-						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
-					{
-						tempPlayerDecisionHeuristics[simulation->playerSimulation.code] = FLT_MAX;
-					}
-					break;
-				}
-			}
-			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-						break;
-
-					if (simulation->playerSimulation.code != ULLONG_MAX &&
-						clusterPathings.at(simulation->playerSimulation.code).second->GetTarget()->GetCluster() == playerCluster)
-					{
-						if (playerDecisionHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
-							playerDecisionHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
-			{
-				if (playerDecisionHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerDecisionHeuristic.first;
-						playerClusterMoveHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-				else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerDecisionHeuristic.first;
-						playerClusterJumpHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
+				playerClusterMoveCode = playerDecisionHeuristic.first;
+				playerClusterMoveHeuristic = playerDecisionHeuristic.second;
 			}
 		}
-		else
+		else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
 		{
-			std::unordered_map<unsigned long long, float> tempPlayerDecisionHeuristics;
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+			//lets take the value which maximize players heuristic
+			if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
 			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-						break;
-
-					if (simulation->playerSimulation.code == playerClusterCode)
-						tempPlayerDecisionHeuristics[simulation->playerSimulation.code] = FLT_MAX;
-					break;
-				}
-			}
-			playerDecisionHeuristics = tempPlayerDecisionHeuristics;
-
-			//calculate each average and take the best outcome for both players
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (simulation->playerSimulation.code == playerClusterCode)
-					{
-						if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-							break;
-
-						if (playerDecisionHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
-							playerDecisionHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
-					}
-				}
-			}
-
-			float playerClusterJumpHeuristic = -FLT_MAX;
-			float playerClusterMoveHeuristic = -FLT_MAX;
-			unsigned long long playerClusterJumpCode = ULLONG_MAX;
-			unsigned long long playerClusterMoveCode = ULLONG_MAX;
-			for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
-			{
-				if (playerDecisionHeuristic.first == ULLONG_MAX)
-					continue;
-
-				if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
-					{
-						playerClusterMoveCode = playerDecisionHeuristic.first;
-						playerClusterMoveHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-				else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
-				{
-					//lets take the value which maximize players heuristic
-					if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
-					{
-						playerClusterJumpCode = playerDecisionHeuristic.first;
-						playerClusterJumpHeuristic = playerDecisionHeuristic.second;
-					}
-				}
-			}
-
-			//jumping decision takes less priority
-			if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
-			{
-				playerClusterCode = playerClusterJumpCode;
-				playerClusterHeuristic = playerClusterJumpHeuristic;
-			}
-			else
-			{
-				playerClusterCode = playerClusterMoveCode;
-				playerClusterHeuristic = playerClusterMoveHeuristic;
-			}
-
-			if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
-			{
-				//we keep the current plan if the heuristic is close to the best player heuristic
-				if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
-				//lets take the value which maximize players heuristic
-				else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-				{
-					playerClusterCode = ULLONG_MAX;
-					playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-				}
+				playerClusterJumpCode = playerDecisionHeuristic.first;
+				playerClusterJumpHeuristic = playerDecisionHeuristic.second;
 			}
 		}
+	}
 
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			otherPlayerDecisionHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-						break;
-
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerDecisionHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerDecisionHeuristics.clear();
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					if (playerDecisionHeuristics.find(simulation->playerSimulation.code) == playerDecisionHeuristics.end())
-						break;
-
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerDecisionHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
-		}
+	//jumping decision takes less priority
+	float playerClusterHeuristic = -FLT_MAX;
+	if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+	{
+		playerClusterCode = playerClusterJumpCode;
+		playerClusterHeuristic = playerClusterJumpHeuristic;
 	}
 	else
 	{
-		//conservative decision making
-		std::unordered_map<unsigned long long, float> playerDecisionHeuristics, otherPlayerDecisionHeuristics;
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				playerDecisionHeuristics[simulation->playerSimulation.code] = FLT_MAX;
-				break;
-			}
-		}
+		playerClusterCode = playerClusterMoveCode;
+		playerClusterHeuristic = playerClusterMoveHeuristic;
+	}
 
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+	if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best player heuristic
+		if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				otherPlayerDecisionHeuristics[simulation->otherPlayerSimulation.code] = 0;
-			}
-			break;
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
 		}
-
-		//calculate each average and take the best outcome for both players
-		std::unordered_map<unsigned long long, WeaponType> playerDecisionWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
+		//lets take the value which maximize players heuristic
+		else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
 		{
-			for (auto const& simulation : gameSimulation->simulations)
-			{
-				if (playerDecisionHeuristics[simulation->playerSimulation.code] > simulation->playerSimulation.heuristic)
-				{
-					playerDecisionWeapons[simulation->playerSimulation.code] = simulation->playerSimulation.weapon;
-					playerDecisionHeuristics[simulation->playerSimulation.code] = simulation->playerSimulation.heuristic;
-				}
-				otherPlayerDecisionHeuristics[simulation->otherPlayerSimulation.code] += simulation->otherPlayerSimulation.heuristic;
-			}
+			playerClusterCode = ULLONG_MAX;
+			playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
 		}
+	}
 
-		float playerClusterJumpHeuristic = -FLT_MAX;
-		float playerClusterMoveHeuristic = -FLT_MAX;
-		unsigned long long playerClusterJumpCode = ULLONG_MAX;
-		unsigned long long playerClusterMoveCode = ULLONG_MAX;
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> playerDecisionWeapons;
+	for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
+	{
+		unsigned long long clusterCode = playerDecisionHeuristic.first;
+		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
+			playerDecisionWeapons[clusterCode][(WeaponType)weapon] = 0.f;
+	}
+	for (auto const& playerDecisionSimulation : gameEvaluation.playerDecisions)
+	{
+		for (auto const& simulation : playerDecisionSimulation->simulations)
+		{
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+
+			unsigned short playerWeaponType = simulation->playerSimulation.weapon;
+			playerDecisionWeapons[clusterCode][(WeaponType)playerWeaponType] += otherPlayerDecisionProbabilities[otherClusterCode];
+		}
+	}
+	float bestWeaponProbability = -FLT_MAX;
+	for (auto& playerDecisionWeapon : playerDecisionWeapons[otherPlayerClusterCode])
+	{
+		if (playerDecisionWeapon.second > bestWeaponProbability)
+		{
+			playerWeapon = playerDecisionWeapon.first;
+			bestWeaponProbability = playerDecisionWeapon.second;
+		}
+	}
+
+
+	//calculate player decision average 
+	for (auto& playerDecisionSimulation : gameEvaluation.playerDecisions)
+	{
+		for (auto const& simulation : playerDecisionSimulation->simulations)
+		{
+			playerDecisionHeuristics[simulation->playerSimulation.code] = 0;
+			otherPlayerDecisionHeuristics[simulation->otherPlayerSimulation.code] = 0;
+		}
+	}
+	for (auto& playerDecisionSimulation : gameEvaluation.playerDecisions)
+		for (auto const& simulation : playerDecisionSimulation->simulations)
+			playerDecisionHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
+
+	//lets assign a probability to each player Decision based on the calculated average heuristics using the softmax function
+	std::unordered_map<unsigned long long, float> playerDecisionProbabilities;
+	if (!playerDecisionHeuristics.empty())
+	{
+		// Find the maximum value for numerical stability
+		float maxHeuristicValue = -FLT_MAX;
+		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
+			if (playerDecisionHeuristic.second > maxHeuristicValue)
+				maxHeuristicValue = playerDecisionHeuristic.second;
+
+		// Compute exp(heuristic_i - max_val) and the sum
+		float sumExp = 0.f;
+		std::unordered_map<unsigned long long, float> playerDecisionExps;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
-			if (playerDecisionHeuristic.first == ULLONG_MAX)
-				continue;
+			unsigned long long clusterCode = playerDecisionHeuristic.first;
 
-			if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_MOVE)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerDecisionHeuristic.second > playerClusterMoveHeuristic)
-				{
-					playerClusterMoveCode = playerDecisionHeuristic.first;
-					playerClusterMoveHeuristic = playerDecisionHeuristic.second;
-				}
-			}
-			else if (((playerDecisionHeuristic.first >> 60) & 0xff) == AT_JUMP)
-			{
-				//lets take the value which maximize players heuristic
-				if (playerDecisionHeuristic.second > playerClusterJumpHeuristic)
-				{
-					playerClusterJumpCode = playerDecisionHeuristic.first;
-					playerClusterJumpHeuristic = playerDecisionHeuristic.second;
-				}
-			}
+			playerDecisionExps[clusterCode] = std::exp(playerDecisionHeuristic.second - maxHeuristicValue);
+			sumExp += playerDecisionExps[clusterCode];
 		}
 
-		//jumping decision takes less priority
-		float playerClusterHeuristic = -FLT_MAX;
-		if (playerClusterJumpHeuristic - playerClusterMoveHeuristic > 0.05f)
+		// Normalize to probabilities
+		for (auto& playerDecisionExp : playerDecisionExps)
 		{
-			playerClusterCode = playerClusterJumpCode;
-			playerClusterHeuristic = playerClusterJumpHeuristic;
+			unsigned long long clusterCode = playerDecisionExp.first;
+			playerDecisionProbabilities[clusterCode] = playerDecisionExp.second / sumExp;
 		}
-		else
+	}
+
+	//calculate each average and take the best outcome for the other player
+	for (auto& playerDecisionSimulation : gameEvaluation.playerDecisions)
+	{
+		for (auto& simulation : playerDecisionSimulation->simulations)
 		{
-			playerClusterCode = playerClusterMoveCode;
-			playerClusterHeuristic = playerClusterMoveHeuristic;
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			otherPlayerDecisionHeuristics[otherClusterCode] += simulation->otherPlayerSimulation.heuristic * playerDecisionProbabilities[clusterCode];
 		}
+	}
 
-		if (playerDecisionHeuristics.find(ULLONG_MAX) != playerDecisionHeuristics.end())
+	float otherPlayerClusterHeuristic = FLT_MAX;
+	for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+	{
+		float otherPlayerDecisionHeuristicAvg = otherPlayerDecisionHeuristic.second;
+		//lets take the value which minimize players heuristic
+		if (otherPlayerDecisionHeuristicAvg < otherPlayerClusterHeuristic)
 		{
-			//we keep the current plan if the heuristic is close to the best player heuristic
-			if (abs(playerDecisionHeuristics.at(ULLONG_MAX) - playerClusterHeuristic) < 0.05f)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-			}
-			//lets take the value which maximize players heuristic
-			else if (playerDecisionHeuristics.at(ULLONG_MAX) > playerClusterHeuristic)
-			{
-				playerClusterCode = ULLONG_MAX;
-				playerClusterHeuristic = playerDecisionHeuristics.at(ULLONG_MAX);
-			}
+			otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
+			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
 		}
-		playerWeapon = playerDecisionWeapons[playerClusterCode];
+	}
 
-		float otherPlayerClusterHeuristic = FLT_MAX;
-		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-		{
-			float otherPlayerDecisionHeuristicAvg = otherPlayerDecisionHeuristic.second / (float)playerDecisionHeuristics.size();
-			//lets take the value which minimize players heuristic
-			if (otherPlayerDecisionHeuristicAvg < otherPlayerClusterHeuristic)
-			{
-				otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-				otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
-			}
-		}
-
-		std::unordered_map<unsigned long long, std::vector<WeaponType>> otherPlayerDecisionWeapons;
-		for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			for (auto const& simulation : gameSimulation->simulations)
-				otherPlayerDecisionWeapons[simulation->otherPlayerSimulation.code].push_back(simulation->otherPlayerSimulation.weapon);
-
-		unsigned int otherPlayerWeaponCount = 0;
-		std::map<WeaponType, unsigned int> otherPlayerWeapons;
+	std::unordered_map<unsigned long long, std::map<WeaponType, float>> otherPlayerDecisionWeapons;
+	for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+	{
+		unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
 		for (unsigned int weapon = 0; weapon <= MAX_WEAPONS; weapon++)
-			otherPlayerWeapons[(WeaponType)weapon] = 0;
-		for (auto& otherPlayerDecisionWeapon : otherPlayerDecisionWeapons[otherPlayerClusterCode])
-			otherPlayerWeapons[otherPlayerDecisionWeapon]++;
-		for (auto& otherPlayerWeaponInstance : otherPlayerWeapons)
+			otherPlayerDecisionWeapons[otherClusterCode][(WeaponType)weapon] = 0.f;
+	}
+	for (auto const& playerDecisionSimulation : gameEvaluation.playerDecisions)
+	{
+		for (auto const& simulation : playerDecisionSimulation->simulations)
 		{
-			if (otherPlayerWeaponInstance.second > otherPlayerWeaponCount)
-			{
-				otherPlayerWeapon = otherPlayerWeaponInstance.first;
-				otherPlayerWeaponCount = otherPlayerWeaponInstance.second;
-			}
+			unsigned long long clusterCode = simulation->playerSimulation.code;
+			unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
+			unsigned short otherPlayerWeaponType = simulation->otherPlayerSimulation.weapon;
+			otherPlayerDecisionWeapons[otherClusterCode][(WeaponType)otherPlayerWeaponType] += playerDecisionProbabilities[clusterCode];
 		}
-
-		//run minimax with the best otherPlayerCluster simulations
-		if (otherPlayerClusterCode != ULLONG_MAX)
+	}
+	float bestOtherWeaponProbability = -FLT_MAX;
+	for (auto& otherPlayerDecisionWeapon : otherPlayerDecisionWeapons[otherPlayerClusterCode])
+	{
+		if (otherPlayerDecisionWeapon.second > bestOtherWeaponProbability)
 		{
-			otherPlayerDecisionHeuristics.clear();
-			unsigned short otherPlayerCluster = otherClusterPathings.at(otherPlayerClusterCode).second->GetTarget()->GetCluster();
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode != ULLONG_MAX && otherClusterPathings.at(otherClusterCode).second->GetTarget()->GetCluster() == otherPlayerCluster)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerDecisionHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
-		}
-		else
-		{
-			otherPlayerDecisionHeuristics.clear();
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-						otherPlayerDecisionHeuristics[otherClusterCode] = -FLT_MAX;
-				}
-				break;
-			}
-
-			for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-			{
-				for (auto const& simulation : gameSimulation->simulations)
-				{
-					//other cluster code
-					unsigned long long otherClusterCode = simulation->otherPlayerSimulation.code;
-					if (otherClusterCode == otherPlayerClusterCode)
-					{
-						if (otherPlayerDecisionHeuristics[otherClusterCode] < simulation->otherPlayerSimulation.heuristic)
-							otherPlayerDecisionHeuristics[otherClusterCode] = simulation->otherPlayerSimulation.heuristic;
-					}
-				}
-			}
-
-			otherPlayerClusterHeuristic = FLT_MAX;
-			for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
-			{
-				if (otherPlayerDecisionHeuristic.second < otherPlayerClusterHeuristic)
-				{
-					otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
-					otherPlayerClusterHeuristic = otherPlayerDecisionHeuristic.second;
-				}
-			}
+			otherPlayerWeapon = otherPlayerDecisionWeapon.first;
+			bestOtherWeaponProbability = otherPlayerDecisionWeapon.second;
 		}
 	}
 }
@@ -18532,10 +16733,11 @@ void QuakeAIManager::SimulateVisibility(std::shared_ptr<PathingGraph>& graph)
 	for (PathingNodeMap::const_iterator it = pathingNodes.begin(); it != pathingNodes.end(); ++it)
 	{
 		PathingNode* pathNode = (*it).second;
-		//set muzzle location relative to pivoting eye
-		Vector3<float> muzzle = pathNode->GetPosition();
-		muzzle[2] += mPlayerActor->GetState().viewHeight;
-		muzzle -= Vector3<float>::Unit(AXIS_Z) * 11.f;
+		pathNode->RemoveVisibleNodes();
+
+		Vector3<float> origin = pathNode->GetPosition();
+		origin[AXIS_Y] += mPlayerActor->GetState().viewHeight;
+
 		Concurrency::parallel_for_each(begin(graph->GetNodes()), end(graph->GetNodes()), [&](auto& node)
 		{
 			PathingNode* visibleNode = node.second;
@@ -18544,7 +16746,7 @@ void QuakeAIManager::SimulateVisibility(std::shared_ptr<PathingGraph>& graph)
 
 			std::vector<ActorId> collisionActors;
 			std::vector<Vector3<float>> collisions, collisionNormals;
-			gamePhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, mPlayerActor->GetId());
+			gamePhysics->CastRay(origin, end, collisionActors, collisions, collisionNormals, mPlayerActor->GetId());
 
 			Vector3<float> collision = NULL;
 			for (unsigned int i = 0; i < collisionActors.size(); i++)

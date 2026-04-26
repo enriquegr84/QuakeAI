@@ -148,6 +148,11 @@ void PathingActor::LinkActors(PathingNode* pNode, PathingNode* pTarget)
 // PathingNode
 //--------------------------------------------------------------------------------------------------------
 
+void PathingNode::RemoveVisibleNodes()
+{
+	mVisibleNodes.clear();
+}
+
 void PathingNode::RemoveVisibleNode(PathingNode* pNode)
 {
 	mVisibleNodes.erase(pNode);
