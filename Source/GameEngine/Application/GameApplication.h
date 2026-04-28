@@ -49,7 +49,6 @@ public:
 	virtual std::wstring GetGameTitle() = 0;
 	virtual std::wstring GetGameAppDirectory() = 0;
 
-	int GetFPS() { return mFramesPerSecond; }
 	void AbortGame() { mQuitting = true; }
 	bool IsRunning() { return mIsRunning; }
 	void SetQuitting(bool quitting) { mQuitting = quitting; }
@@ -138,7 +137,7 @@ protected:
 	virtual void CreateNetworkEventForwarder(void);
 	virtual void DestroyNetworkEventForwarder(void);
 
-	int mFramesPerSecond, mTimer;
+	int mTimer;
 
     // Window parameters (from the constructor).
     std::wstring mTitle;

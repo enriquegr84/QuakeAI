@@ -7,29 +7,30 @@
 #include "Core/OS/OS.h"
 
 //! constructor
-NodeAnimatorRotation::NodeAnimatorRotation(unsigned int time, const Vector4<float>& rotation, float rotationSpeed)
-: mRotationSpeed(rotationSpeed), mStartTime(time)
+NodeAnimatorRotation::NodeAnimatorRotation(unsigned int time, const Vector4<float>& axis, float rotationSpeed)
+	: mRotationSpeed(rotationSpeed), mStartTime(time), mRotationAxis(axis)
 {
-	mRotation = Rotation<4, float>(rotation);
-}
 
+}
 
 //! animates a scene node
 void NodeAnimatorRotation::AnimateNode(Scene* pScene, Node* node, unsigned int timeMs)
 {
-	if (node) // thanks to warui for this fix
+	if (node)
 	{
 		const unsigned int diffTime = timeMs - mStartTime;
 
 		if (diffTime != 0)
 		{
-			// clip the rotation to small values, to avoid
-			// precision problems with huge floats.
-			mRotation.mAngle += mRotationSpeed * 0.1f * diffTime * (float)GE_C_DEG_TO_RAD;
-			if (mRotation.mAngle > (float)GE_C_TWO_PI) mRotation.mAngle = 0.f;
-			
-			Matrix4x4<float> rotation = Rotation<4, float>(mRotation);
-			node->GetAbsoluteTransform().SetRotation(node->GetAbsoluteTransform().GetRotation() * rotation);
+			// This is the child node's rotation.
+			AxisAngle<4, float> localRotation;
+			node->GetRelativeTransform().GetRotation(localRotation);
+			localRotation.mAngle *= Dot(localRotation.mAxis, mRotationAxis) >= 0 ? 1 : -1;
+			localRotation.mAngle += mRotationSpeed * 0.1f * diffTime * (float)GE_C_DEG_TO_RAD;
+
+			Matrix4x4<float> rotation = Rotation<4, float>(AxisAngle<4, float>(mRotationAxis, localRotation.mAngle));
+			node->GetRelativeTransform().SetRotation(rotation);
+			node->UpdateAbsoluteTransform();
 
 			mStartTime=timeMs;
 		}
@@ -39,7 +40,7 @@ void NodeAnimatorRotation::AnimateNode(Scene* pScene, Node* node, unsigned int t
 NodeAnimator* NodeAnimatorRotation::CreateClone(Node* node)
 {
 	NodeAnimatorRotation* newAnimator = 
-		new NodeAnimatorRotation(mStartTime, mRotation.mAxis, mRotationSpeed);
+		new NodeAnimatorRotation(mStartTime, mRotationAxis, mRotationSpeed);
 
 	return newAnimator;
 }

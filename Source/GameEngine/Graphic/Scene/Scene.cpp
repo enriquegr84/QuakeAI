@@ -328,8 +328,7 @@ std::shared_ptr<Node> Scene::AddSphereNode(const std::shared_ptr<Node>& parent,
 //! the returned pointer must not be dropped.
 std::shared_ptr<Node> Scene::AddVolumeLightNode(const std::shared_ptr<Node>& parent,
 	const Vector2<float>& textureSize, const std::shared_ptr<Texture2>& texture, 
-	const Vector2<int>& subdivision, const SColorF& foot, 
-	const SColorF& tail, int id)
+	const Vector2<int>& subdivision, const SColorF& foot, const SColorF& tail, int id)
 {
 	std::shared_ptr<Node> node(new VolumeLightNode(
 		id, &mPVWUpdater, textureSize, texture, subdivision, foot, tail));
@@ -461,9 +460,9 @@ std::shared_ptr<Node> Scene::AddLightNode(const std::shared_ptr<Node>& parent,
 }
 
 //! creates a rotation animator, which rotates the attached scene node around itself.
-std::shared_ptr<NodeAnimator> Scene::CreateRotationAnimator(const Vector4<float>& rotation, float rotationSpeed)
+std::shared_ptr<NodeAnimator> Scene::CreateRotationAnimator(const Vector4<float>& axis, float rotationSpeed)
 {
-	return std::shared_ptr<NodeAnimator>(new NodeAnimatorRotation(Timer::GetTime(), rotation, rotationSpeed));
+	return std::shared_ptr<NodeAnimator>(new NodeAnimatorRotation(Timer::GetTime(), axis, rotationSpeed));
 }
 
 

@@ -10312,8 +10312,12 @@ void QuakeAIManager::PerformGuessingMaking(
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+		{
+			//calculate avg
+			otherPlayerGuessingHeuristic.second /= (float)playerGuessingHeuristics.size();
 			if (otherPlayerGuessingHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = otherPlayerGuessingHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;
@@ -10454,8 +10458,12 @@ void QuakeAIManager::PerformGuessingMaking(
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
+		{
+			//calculate avg
+			playerGuessingHeuristic.second /= (float)otherPlayerGuessingHeuristics.size();
 			if (playerGuessingHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = playerGuessingHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;
@@ -10550,6 +10558,10 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 	//calculate other decision average 
 	for (auto& playerDecisionSimulation : playerDecisions)
 	{
+		//cluster code
+		unsigned long long clusterCode = playerDecisionSimulation.first;
+		playerDecisionHeuristics[clusterCode] = 0;
+
 		for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 		{
 			//other cluster code
@@ -10566,8 +10578,12 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+		{
+			//calculate avg
+			otherPlayerDecisionHeuristic.second /= (float)playerDecisionHeuristics.size();
 			if (otherPlayerDecisionHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = otherPlayerDecisionHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;
@@ -10593,7 +10609,6 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 	{
 		//cluster code
 		unsigned long long clusterCode = playerDecisionSimulation.first;
-		playerDecisionHeuristics[clusterCode] = 0;
 
 		for (auto& otherPlayerDecisionSimulation : playerDecisionSimulation.second)
 		{
@@ -10719,8 +10734,12 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
+		{
+			//calculate avg
+			playerDecisionHeuristic.second /= (float)otherPlayerDecisionHeuristics.size();
 			if (playerDecisionHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = playerDecisionHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;
@@ -10822,6 +10841,10 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 	//calculate other guessing average 
 	for (auto& playerGuessingSimulation : playerGuessings)
 	{
+		//cluster code
+		unsigned long long clusterCode = playerGuessingSimulation.first;
+		playerGuessingHeuristics[clusterCode] = 0;
+
 		for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 		{
 			//other cluster code
@@ -10838,8 +10861,12 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
+		{
+			//calculate avg
+			otherPlayerGuessingHeuristic.second /= (float)playerGuessingHeuristics.size();
 			if (otherPlayerGuessingHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = otherPlayerGuessingHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;
@@ -10865,7 +10892,6 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 	{
 		//cluster code
 		unsigned long long clusterCode = playerGuessingSimulation.first;
-		playerGuessingHeuristics[clusterCode] = 0;
 
 		for (auto& otherPlayerGuessingSimulation : playerGuessingSimulation.second)
 		{
@@ -10990,8 +11016,12 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
+		{
+			//calculate avg
+			playerGuessingHeuristic.second /= (float)otherPlayerGuessingHeuristics.size();
 			if (playerGuessingHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = playerGuessingHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;
@@ -11107,8 +11137,12 @@ void QuakeAIManager::PerformDecisionMaking(
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
+		{
+			//calculate avg
+			otherPlayerDecisionHeuristic.second /= (float)playerDecisionHeuristics.size();
 			if (otherPlayerDecisionHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = otherPlayerDecisionHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;
@@ -11248,8 +11282,12 @@ void QuakeAIManager::PerformDecisionMaking(
 		// Find the maximum value for numerical stability
 		float maxHeuristicValue = -FLT_MAX;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
+		{
+			//calculate avg
+			playerDecisionHeuristic.second /= (float)otherPlayerDecisionHeuristics.size();
 			if (playerDecisionHeuristic.second > maxHeuristicValue)
 				maxHeuristicValue = playerDecisionHeuristic.second;
+		}
 
 		// Compute exp(heuristic_i - max_val) and the sum
 		float sumExp = 0.f;

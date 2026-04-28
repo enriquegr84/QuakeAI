@@ -206,9 +206,9 @@ namespace AIEditor
 		unsigned int frameTimeMin = (unsigned int)(1000 / (System::Get()->IsWindowFocused() ?
 			Settings::Get()->GetFloat("fps_max") : Settings::Get()->GetFloat("fps_max_unfocused")));
 
-		if (fpsTimings->busyTime < frameTimeMin)
+		if (fpsTimings->busyTime + fpsTimings->sleepTime < frameTimeMin)
 		{
-			fpsTimings->sleepTime = frameTimeMin - fpsTimings->busyTime;
+			fpsTimings->sleepTime = frameTimeMin - fpsTimings->busyTime - fpsTimings->sleepTime;
 			Sleep(fpsTimings->sleepTime);
 		}
 		else fpsTimings->sleepTime = 0;

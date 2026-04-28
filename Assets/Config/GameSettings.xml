@@ -23,7 +23,7 @@
 		abm_time_budget="0.2" nodetimer_interval="0.2" debug_log_level="action" debug_log_size_max="50" chat_log_level="error" 
 		num_emerge_threads="1" emergequeue_limit_total="1024" emergequeue_limit_diskonly="128" emergequeue_limit_generate="128"
 		disable_escape_sequences="false" strip_color_codes="false" />
-	<Graphics show_debug="true" fsaa="0" fps_max="60" fps_max_unfocused="20" viewing_range="190" screen_width="1024" screen_height="600" 
+	<Graphics show_debug="true" fsaa="0" fps_max="120" fps_max_unfocused="120" viewing_range="190" screen_width="1024" screen_height="600" 
 		autosave_screensize="true" fullscreen="false" fullscreen_bpp="24" vsync="false" fov="72" video_driver="direct3d11"
 		high_precision_fpu="true" enable_console="false" screen_dpi="72" />
 	<Visual undersampling="0" world_aligned_mode="enable" autoscale_mode="disable" enable_fog="true" fog_start="0.4" mode3d="none" 
@@ -49,7 +49,7 @@
 		server_map_save_interval="5.3" server_unload_unused_data_timeout="29" server_side_occlusion_culling="true" 
 		profiler_print_interval="0" ignore_world_load_errors="false" time_send_interval="5" />
 	<ResCache use_development_directories="false" /> 
-	<Physics debug_draw_wireframe="true" debug_draw_contactpoints="true" movement_acceleration_default="3" movement_acceleration_air="2" 
+	<Physics fps_simulation="35" debug_draw_wireframe="true" debug_draw_contactpoints="true" movement_acceleration_default="3" movement_acceleration_air="2" 
 		movement_acceleration_fast="10" movement_speed_walk="4" movement_speed_crouch="1.35" movement_speed_fast="20" movement_speed_climb="3" 
 		movement_speed_jump="6.5" movement_liquid_fluidity="1" movement_liquid_fluidity_smooth="0.5" movement_liquid_sink="10" movement_gravity="9.81"
 		default_gravity="(0,0,0)"/>

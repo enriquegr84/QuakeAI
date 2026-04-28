@@ -91,7 +91,7 @@ static Transform PxTransformToTransform(PxTransform const& trans)
 	return returnTransform;
 }
 
-QuakePhysX::QuakePhysX() : PhysX()
+QuakePhysX::QuakePhysX() : PhysX(), mAccumulatedTime(0.f)
 {
 	mGravity = Settings::Get()->GetVector3("default_gravity");
 }
@@ -249,9 +249,23 @@ void QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, f
 	}
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // QuakePhysX::OnUpdate
 //
+void QuakePhysX::OnUpdate(float deltaSeconds, float fixedDeltaSeconds)
+{
+	mAccumulatedTime += deltaSeconds > fixedDeltaSeconds ? fixedDeltaSeconds : deltaSeconds;
+	if (mAccumulatedTime < fixedDeltaSeconds)
+	{
+		PhysX::OnUpdate(deltaSeconds);
+		return;
+	}
+	mAccumulatedTime -= fixedDeltaSeconds;
+
+	QuakePhysX::OnUpdate(deltaSeconds);
+}
+
 void QuakePhysX::OnUpdate(float const deltaSeconds)
 {
 	ResetInterpolations();
@@ -584,6 +598,11 @@ QuakeBulletPhysics::~QuakeBulletPhysics()
 /////////////////////////////////////////////////////////////////////////////
 // QuakeBulletPhysics::OnUpdate
 //
+void QuakeBulletPhysics::OnUpdate(float deltaSeconds, float fixedDeltaSeconds)
+{
+	QuakeBulletPhysics::OnUpdate(deltaSeconds);
+}
+
 void QuakeBulletPhysics::OnUpdate(float const deltaSeconds)
 {
 	ActorIDToBulletActionMap::const_iterator itAction = mActorIdToAction.begin();

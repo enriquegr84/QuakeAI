@@ -569,23 +569,6 @@ void QuakeLogic::Stop()
 void QuakeLogic::Step(float dTime)
 {
 	ScopeProfiler sp2(Profiling, "LogicEnv::step()", SPT_AVG);
-
-	// Update this one
-	// NOTE: This is kind of funny on a singleplayer game, but doesn't
-	// really matter that much.
-	static thread_local const float step =
-		Settings::Get()->GetFloat("dedicated_server_step");
-	mRecommendedSendInterval = step;
-
-	/*
-		Increment game time
-	*/
-	{
-		mGameTimeFractionCounter += dTime;
-		unsigned int incTime = (unsigned int)mGameTimeFractionCounter;
-		mGameTime += incTime;
-		mGameTimeFractionCounter -= (float)incTime;
-	}
 }
 
 // Step
@@ -1939,13 +1922,16 @@ void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 
 	if (!mGameAICombat)
 	{
-		//physics simulations run at 60fps, but the game runs as avarage at 35fps, so we need to adjust the weights
-		float weightConversion = 60.f / 35.f;
+		float physicsSimulation = 60.f;
+#if defined(PHYSX) && defined(_WIN64)
+		//ai physics simulated at 60fps, but the game simulates character at 35fps, so we need to adjust the weights
+		physicsSimulation = Settings::Get()->GetFloat("fps_simulation");
+#endif
 
 		std::string levelPath = "ai/quake/" +
 			Settings::Get()->Get("selected_world") + "/map.bin";
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-		aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), weightConversion);
+		aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), 60.f / physicsSimulation);
 
 		std::map<ActorId, const AIAnalysis::ActorPickup*>& gameActorPickups = aiManager->GetGameActorPickups();
 		for (auto const& actor : mActors)
@@ -2049,11 +2035,14 @@ void QuakeLogic::AnalyzeAIGameDelegate(BaseEventDataPtr pEventData)
 
 		if (!aiManager->GetPathingGraph())
 		{
-			//physics simulations run at 60fps, but the game runs as avarage at 35fps, so we need to adjust the weights 
-			float weightConversion = 60.f / 35.f;
+			float physicsSimulation = 60.f;
+#if defined(PHYSX) && defined(_WIN64)
+			//ai physics simulated at 60fps, but the game simulates character at 35fps, so we need to adjust the weights
+			physicsSimulation = Settings::Get()->GetFloat("fps_simulation");
+#endif
 
 			std::string levelPath = "ai/quake/" + Settings::Get()->Get("selected_world") + "/map.bin";
-			aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), weightConversion);
+			aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), 60.f / physicsSimulation);
 
 			std::map<ActorId, const AIAnalysis::ActorPickup*>& gameActorPickups = aiManager->GetGameActorPickups();
 			for (auto const& actor : mActors)
@@ -2408,15 +2397,27 @@ void QuakeLogic::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsi
 		return;
 
 	PlayerData playerData, otherPlayerData;
-	PlayerData playerSimulation, otherPlayerSimulation;
-	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData, playerSimulation);
-	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
+	if (gameDecision.evaluation.type == ET_GUESSING)
+	{
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
+	}
+	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
+	{
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
+	}
+	else if (gameDecision.evaluation.type == ET_AWARENESS)
+	{
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
+		aiManager->GetPlayerOutput(gameDecision.evaluation.otherPlayerOutput, otherPlayerData);
+	}
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
-		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerSimulation.player).lock()));
+		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = playerSimulation.plan.node;
+		PathingNode* pathingNode = playerData.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());
@@ -2435,10 +2436,10 @@ void QuakeLogic::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsi
 		pPlayerActor->ChangeWeapon(playerData.weapon);
 	}
 
-	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerSimulation.player).lock());
+	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerData.player).lock());
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = otherPlayerSimulation.plan.node;
+		PathingNode* pathingNode = otherPlayerData.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());
@@ -2476,15 +2477,27 @@ void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsi
 		return;
 
 	PlayerData playerData, otherPlayerData;
-	PlayerData playerSimulation, otherPlayerSimulation;
-	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData, playerSimulation);
-	aiManager->GetPlayerInput(gameDecision.evaluation.otherPlayerInput, otherPlayerData, otherPlayerSimulation);
+	if (gameDecision.evaluation.type == ET_GUESSING)
+	{
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
+	}
+	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
+	{
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
+	}
+	else if (gameDecision.evaluation.type == ET_AWARENESS)
+	{
+		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
+		aiManager->GetPlayerOutput(gameDecision.evaluation.otherPlayerOutput, otherPlayerData);
+	}
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
-		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerSimulation.player).lock()));
+		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = playerSimulation.plan.node;
+		PathingNode* pathingNode = playerData.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());
@@ -2503,10 +2516,10 @@ void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsi
 		pPlayerActor->ChangeWeapon(playerData.weapon);
 	}
 
-	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerSimulation.player).lock());
+	pPlayerActor = std::dynamic_pointer_cast<PlayerActor>(GetActor(otherPlayerData.player).lock());
 	if (pPlayerActor)
 	{
-		PathingNode* pathingNode = otherPlayerSimulation.plan.node;
+		PathingNode* pathingNode = otherPlayerData.plan.node;
 
 		Transform playerTransform;
 		playerTransform.SetTranslation(pathingNode->GetPosition());

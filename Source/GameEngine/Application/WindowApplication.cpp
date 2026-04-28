@@ -221,16 +221,7 @@ void WindowApplication::OnRun()
 				mSystem->OnClose();
 
 			mSystem->OnRun();
-			/*
-			int fps = mRenderer->GetFPS();
 
-			std::wstring str = L"Game Engine - Demos [";
-			str += mRenderer->GetName();
-			str += L"] FPS: ";
-			str += (signed int)mRenderer->GetFPS();
-
-			mSystem->SetWindowCaption(str.c_str());
-			*/
 			UpdateTime();
 
 			OnIdle();

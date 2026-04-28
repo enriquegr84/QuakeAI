@@ -434,12 +434,6 @@ protected:
 	void CreateNetworkEventForwarder(const int socketId);
 	void DestroyAllNetworkEventForwarders(void);
 
-	unsigned int GetGameTime() const { return mGameTime; }
-
-	void ReportMaxLagEstimate(float f) { mMaxLagEstimate = f; }
-	float GetMaxLagEstimate() { return mMaxLagEstimate; }
-
-
 	std::shared_ptr<PlayerActor> CreatePlayerActor(const std::string& actorResource,
 		tinyxml2::XMLElement* overrides, const Transform* initialTransform = NULL,
 		const ActorId serversActorId = INVALID_ACTOR_ID);
@@ -566,16 +560,6 @@ private:
 	std::unordered_map<int, SoundPlaying> mPlayingSounds;
 	int mNextSoundId = 0; // positive values only
 	int NextSoundId();
-
-	unsigned int mGameTime = 0;
-	// A helper variable for incrementing the latter
-	float mGameTimeFractionCounter = 0.0f;
-
-	// An interval for generally sending object positions and stuff
-	float mRecommendedSendInterval = 0.1f;
-	// Estimate for general maximum lag as determined by logic.
-	// Can raise to high values like 15s with eg. map generation mods.
-	float mMaxLagEstimate = 0.1f;
 
 	/* Threads */
 

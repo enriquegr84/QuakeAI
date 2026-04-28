@@ -323,7 +323,7 @@ public:
 	If you no longer need the animator, you should call ISceneNodeAnimator::drop().
 	See IReferenceCounted::drop() for more information. */
 	std::shared_ptr<NodeAnimator> Scene::CreateRotationAnimator(
-		const Vector4<float>& rotation, float rotationSpeed);
+		const Vector4<float>& axis, float rotationSpeed);
 
 	//! Creates a fly circle animator, which lets the attached scene node fly around a center.
 	/** \param center: Center of the circle.

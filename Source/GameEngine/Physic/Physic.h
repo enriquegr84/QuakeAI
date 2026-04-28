@@ -91,6 +91,7 @@ public:
 	virtual bool Initialize() = 0;
 	virtual void SyncVisibleScene() = 0;
 	virtual void OnUpdate(float deltaSeconds) = 0;
+	virtual void OnUpdate(float deltaSeconds, float fixedDeltaSeconds) = 0;
 
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimensions, 
@@ -184,7 +185,8 @@ public:
 	// Initialization and Maintenance of the Physics World
 	virtual bool Initialize() { return true; }
 	virtual void SyncVisibleScene() { };
-	virtual void OnUpdate(float) { }
+	virtual void OnUpdate(float deltaSeconds) { }
+	virtual void OnUpdate(float deltaSeconds, float fixedDeltaSeconds) { }
 
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimensions,

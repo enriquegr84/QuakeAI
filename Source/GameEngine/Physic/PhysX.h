@@ -109,6 +109,7 @@ public:
 	virtual bool Initialize() override;
 	virtual void SyncVisibleScene() override;
 	virtual void OnUpdate(float deltaSeconds) override;
+	virtual void OnUpdate(float deltaSeconds, float fixedDeltaSeconds) override;
 
 	// Initialization of Physics Objects
 	virtual void AddTrigger(const Vector3<float>& dimension,

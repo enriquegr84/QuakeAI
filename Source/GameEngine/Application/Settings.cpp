@@ -964,6 +964,8 @@ void Settings::Init(SettingsLayer sl, const wchar_t* xmlFileName)
         pNode = mRoot->FirstChildElement("Physics");
         if (pNode)
         {
+            if (pNode->Attribute("fps_simulation"))
+                GetLayer(sl)->Set("fps_simulation", pNode->Attribute("fps_simulation"));
             if (pNode->Attribute("debug_draw_wireframe"))
                 GetLayer(sl)->Set("debug_draw_wireframe", pNode->Attribute("debug_draw_wireframe"));
             if (pNode->Attribute("debug_draw_contactpoints"))

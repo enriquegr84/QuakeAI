@@ -1690,16 +1690,17 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 						AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), mPitch * (float)GE_C_DEG_TO_RAD));
 
 					//smoothing rotation
+					float rotationDegrees = 60.f * (deltaMs / 1000.f);
 					if (abs(mYawSmooth - mYaw) < 90)
 					{
 						if (mYaw - mYawSmooth > 180)
-							mYawSmooth--;
+							mYawSmooth -= rotationDegrees;
 						else if (mYaw - mYawSmooth < -180)
-							mYawSmooth++;
+							mYawSmooth += rotationDegrees;
 						else if (mYaw > mYawSmooth)
-							mYawSmooth++;
+							mYawSmooth += rotationDegrees;
 						else if (mYaw < mYawSmooth)
-							mYawSmooth--;
+							mYawSmooth -= rotationDegrees;
 					}
 					else if (mYawSmoothTime >= 0.5f)
 					{
@@ -1875,14 +1876,15 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 										closestCollisionId = INVALID_ACTOR_ID;
 
 										//smooth rotation
+										float rotationDegrees = 600.f * (deltaMs / 1000.f);
 										if (mYaw - mYawSmooth > 180)
-											mYawSmooth -= 10.f;
+											mYawSmooth -= rotationDegrees;
 										else if (mYaw - mYawSmooth < -180)
-											mYawSmooth += 10.f;
+											mYawSmooth += rotationDegrees;
 										if (mYaw > mYawSmooth)
-											mYawSmooth += 10.f;
+											mYawSmooth += rotationDegrees;
 										else
-											mYawSmooth -= 10.f;
+											mYawSmooth -= rotationDegrees;
 									}
 									else
 									{

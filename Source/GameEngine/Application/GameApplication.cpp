@@ -48,8 +48,7 @@
 GameApplication::GameApplication(const char* windowTitle, int xPosition,
     int yPosition, int width, int height, const SColorF& clearColor)
 :	mTitle(ToWideString(windowTitle)), mXOrigin(xPosition), mYOrigin(yPosition), mWidth(width), 
-	mHeight(height), mClearColor(clearColor), mAllowResize(true), mWindowID(0), 
-	mFramesPerSecond(0), mTimer(0), mSystem(0), mRenderer(0)
+	mHeight(height), mClearColor(clearColor), mAllowResize(true), mWindowID(0), mTimer(0), mSystem(0), mRenderer(0)
 {
 	mIsRunning = false;
 	mIsEditorRunning = false;
@@ -93,10 +92,6 @@ unsigned int GameApplication::UpdateTime()
 	const unsigned int currentTime = Timer::GetRealTime();
 	const unsigned int elapsedTime = currentTime - mTimer;
 	mTimer = currentTime;
-
-	if (elapsedTime > 0)
-		mFramesPerSecond = 1000 / elapsedTime;
-
 	return elapsedTime;
 }
 //----------------------------------------------------------------------------

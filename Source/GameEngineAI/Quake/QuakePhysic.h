@@ -64,6 +64,7 @@ public:
 	virtual ~QuakePhysX();
 
 	virtual void OnUpdate(float deltaSeconds) override;
+	virtual void OnUpdate(float deltaSeconds, float fixedDeltaSeconds) override;
 
 	virtual void AddCharacterController(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 		const std::string& densityStr, const std::string& physicMaterial) override;
@@ -78,6 +79,7 @@ protected:
 
 private:
 
+	float mAccumulatedTime;
 	Vector3<float> mGravity;
 
 	// Speed Controls
@@ -115,6 +117,7 @@ public:
 	virtual ~QuakeBulletPhysics();
 
 	virtual void OnUpdate(float deltaSeconds) override;
+	virtual void OnUpdate(float deltaSeconds, float fixedDeltaSeconds) override;
 
 	virtual void AddCharacterController(const Vector3<float>& dimensions, std::weak_ptr<Actor> pGameActor,
 		const std::string& densityStr, const std::string& physicMaterial) override;

@@ -343,7 +343,8 @@ void GameLogic::OnUpdate(float time, float elapsedTime)
 
             if(mPhysics && !mIsProxy)
             {
-                mPhysics->OnUpdate(elapsedTime / 1000.f);
+				float fixedDeltaTime = 1.f /Settings::Get()->GetFloat("fps_simulation");
+                mPhysics->OnUpdate(elapsedTime / 1000.f, fixedDeltaTime);
                 mPhysics->SyncVisibleScene();
             }
 

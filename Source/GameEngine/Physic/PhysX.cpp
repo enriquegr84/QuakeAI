@@ -713,6 +713,11 @@ void PhysX::OnUpdate( float const deltaSeconds )
 	mScene->fetchResults(true);
 }
 
+void PhysX::OnUpdate(float deltaSeconds, float fixedDeltaSeconds)
+{
+	OnUpdate(deltaSeconds);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // PhysX::SyncVisibleScene
 //

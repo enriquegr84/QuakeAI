@@ -690,6 +690,11 @@ void BulletPhysics::OnUpdate( float const deltaSeconds )
 	mDynamicsWorld->stepSimulation(deltaSeconds, 10 );
 }
 
+void BulletPhysics::OnUpdate(float deltaSeconds, float fixedDeltaSeconds)
+{
+	OnUpdate(deltaSeconds);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // BulletPhysics::SyncVisibleScene				- Chapter 17, page 598
 //

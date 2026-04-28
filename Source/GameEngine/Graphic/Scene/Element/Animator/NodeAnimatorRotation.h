@@ -27,7 +27,7 @@ public:
 protected:
 
 	float				mRotationSpeed;
-	AxisAngle<4, float>	mRotation;
+	Vector4<float>		mRotationAxis;
 	unsigned int		mStartTime;
 };
 
