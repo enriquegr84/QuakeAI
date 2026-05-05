@@ -1217,11 +1217,11 @@ void LimitFps(FpsControl* fpsTimings, float* dTime)
 
 	unsigned int frameTimeMin = (unsigned int)(1000 / (System::Get()->IsWindowFocused() ?
 		Settings::Get()->GetFloat("fps_max") : Settings::Get()->GetFloat("fps_max_unfocused")));
-
 	if (fpsTimings->busyTime + fpsTimings->sleepTime < frameTimeMin)
 	{
 		fpsTimings->sleepTime = frameTimeMin - fpsTimings->busyTime - fpsTimings->sleepTime;
-		Sleep(fpsTimings->sleepTime);
+		//Sleep(fpsTimings->sleepTime);
+		Sleep(1);
 	}
 	else fpsTimings->sleepTime = 0;
 

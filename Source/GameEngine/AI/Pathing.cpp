@@ -275,9 +275,8 @@ void PathingNode::GetClusters(unsigned int pathingType, PathingClusterVec& outCl
 			outClusters.push_back((*itCluster).second);
 }
 
-void PathingNode::GetClusters(unsigned int pathingType,
-	unsigned int clusterLimit, std::map<PathingCluster*, PathingArcVec>& clusterPaths, 
-	std::multimap<float, PathingCluster*, std::greater<float>>& clusterPathWeights)
+void PathingNode::GetClusters(unsigned int pathingType, unsigned int clusterLimit, 
+	std::map<PathingCluster*, PathingArcVec>& clusterPaths, std::multimap<float, PathingCluster*>& clusterPathWeights)
 {
 	Concurrency::concurrent_unordered_multimap<float, PathingCluster*> clusterPathWeightsLimit;
 	Concurrency::concurrent_unordered_map<PathingCluster*, PathingArcVec> clusterPathsLimit;

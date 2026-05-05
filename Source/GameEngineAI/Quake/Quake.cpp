@@ -2397,21 +2397,8 @@ void QuakeLogic::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsi
 		return;
 
 	PlayerData playerData, otherPlayerData;
-	if (gameDecision.evaluation.type == ET_GUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_AWARENESS)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.otherPlayerOutput, otherPlayerData);
-	}
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
 		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
@@ -2477,21 +2464,8 @@ void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsi
 		return;
 
 	PlayerData playerData, otherPlayerData;
-	if (gameDecision.evaluation.type == ET_GUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_AWARENESS)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.otherPlayerOutput, otherPlayerData);
-	}
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
 		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));

@@ -175,9 +175,9 @@ public:
 	PathingCluster* FindCluster(unsigned int pathingType, unsigned int clusterId);
 	PathingCluster* FindCluster(unsigned int pathingType, PathingNode* pTargetNode);
 	void GetClusters(unsigned int pathingType, PathingClusterVec& outClusters);
-	void GetClusters(unsigned int pathingType, 
-		unsigned int clusterLimit, std::map<PathingCluster*, PathingArcVec>& clusterPaths,
-		std::multimap<float, PathingCluster*, std::greater<float>>& clusterPathWeights);
+	void GetClusters(unsigned int pathingType, unsigned int clusterLimit, 
+		std::map<PathingCluster*, PathingArcVec>& clusterPaths,
+		std::multimap<float, PathingCluster*>& clusterPathWeights);
 	void GetClusters(unsigned int pathingType, unsigned int clusterLimit, 
 		std::map<PathingCluster*, PathingArcVec>& clusterPaths, 
 		std::map<PathingCluster*, float>& clusterPathWeights);

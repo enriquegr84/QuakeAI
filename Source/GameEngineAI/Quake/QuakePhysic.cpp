@@ -144,6 +144,11 @@ void QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, f
 	mCCTFall[controller] = Vector3ToPxVector3(mGravity);
 	mCCTFallAccel[controller] = mCCTFall[controller] * subDeltaTime;
 
+	std::shared_ptr<PlayerActor> pPlayerTarget(
+		std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(playerId).lock()));
+	if (pPlayerTarget->GetState().stats[STAT_HEALTH] <= 0)
+		return;
+
 	QuakeLogic* quake = dynamic_cast<QuakeLogic*>(GameLogic::Get());
 	PxExtendedVec3 footPosition = controller->getFootPosition();
 	std::vector<std::shared_ptr<Actor>> triggers;

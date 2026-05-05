@@ -1527,18 +1527,22 @@ bool QuakeAIManager::BuildPath(
 		unsigned int maxClosestClusters = 30;
 		unsigned int maxPathingClusters = 200;
 		std::map<PathingCluster*, float> closestClusterPaths;
-		auto endItCluster = std::next(
-			closestClusterPathWeights.begin(), std::min((size_t)maxClosestClusters, closestClusterPathWeights.size()));
-		for (auto itCluster = closestClusterPathWeights.begin(); itCluster != endItCluster; ++itCluster)
+		for (auto itCluster = closestClusterPathWeights.begin(); itCluster != closestClusterPathWeights.end(); ++itCluster)
+		{
 			closestClusterPaths[(*itCluster).second] = (*itCluster).first;
-		BuildExpandedPath(graph, maxPathingClusters, clusterNodeStart,
+			if (closestClusterPaths.size() >= maxClosestClusters) 
+				break;
+		}
+		BuildExpandedPath(graph, maxPathingClusters, clusterNodeStart, 
 			clusterPaths, closestClusterPaths, clusterPathings, clusterNodePathPlans);
 
 		std::map<PathingCluster*, float> otherClosestClusterPaths;
-		auto endItOtherCluster = std::next(
-			otherClosestClusterPathWeights.begin(), std::min((size_t)maxClosestClusters, otherClosestClusterPathWeights.size()));
-		for (auto itOtherCluster = otherClosestClusterPathWeights.begin(); itOtherCluster != endItOtherCluster; ++itOtherCluster)
+		for (auto itOtherCluster = otherClosestClusterPathWeights.begin(); itOtherCluster != otherClosestClusterPathWeights.end(); ++itOtherCluster)
+		{
 			otherClosestClusterPaths[(*itOtherCluster).second] = (*itOtherCluster).first;
+			if (otherClosestClusterPaths.size() >= maxClosestClusters)
+				break;
+		}
 		BuildExpandedPath(graph, maxPathingClusters, otherClusterNodeStart,
 			otherClusterPaths, otherClosestClusterPaths, otherClusterPathings, otherClusterNodePathPlans);
 	}
@@ -1758,18 +1762,22 @@ bool QuakeAIManager::BuildLongPath(
 		unsigned int maxClosestClusters = 30;
 		unsigned int maxPathingClusters = 200;
 		std::map<PathingCluster*, float> closestClusterPaths;
-		auto endItCluster = std::next(
-			closestClusterPathWeights.begin(), std::min((size_t)maxClosestClusters, closestClusterPathWeights.size()));
-		for (auto itCluster = closestClusterPathWeights.begin(); itCluster != endItCluster; ++itCluster)
+		for (auto itCluster = closestClusterPathWeights.begin(); itCluster != closestClusterPathWeights.end(); ++itCluster)
+		{
 			closestClusterPaths[(*itCluster).second] = (*itCluster).first;
+			if (closestClusterPaths.size() >= maxClosestClusters)
+				break;
+		}
 		BuildExpandedPath(graph, maxPathingClusters, clusterNodeStart,
 			clusterPaths, closestClusterPaths, clusterPathings, clusterNodePathPlans);
 
 		std::map<PathingCluster*, float> otherClosestClusterPaths;
-		auto endItOtherCluster = std::next(
-			otherClosestClusterPathWeights.begin(), std::min((size_t)maxClosestClusters, otherClosestClusterPathWeights.size()));
-		for (auto itOtherCluster = otherClosestClusterPathWeights.begin(); itOtherCluster != endItOtherCluster; ++itOtherCluster)
+		for (auto itOtherCluster = otherClosestClusterPathWeights.begin(); itOtherCluster != otherClosestClusterPathWeights.end(); ++itOtherCluster)
+		{
 			otherClosestClusterPaths[(*itOtherCluster).second] = (*itOtherCluster).first;
+			if (otherClosestClusterPaths.size() >= maxClosestClusters)
+				break;
+		}
 		BuildExpandedPath(graph, maxPathingClusters, otherClusterNodeStart,
 			otherClusterPaths, otherClosestClusterPaths, otherClusterPathings, otherClusterNodePathPlans);
 		return true;
@@ -1881,22 +1889,10 @@ void QuakeAIManager::BuildExpandedPath(
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans)
 {
-	unsigned int pathingClustersLimit = maxPathingClusters;
-	unsigned int clusterPathSize = (unsigned int)expandClusterPathWeights.size();
-	if (clusterPathSize > 7)
-	{
-		pathingClustersLimit = 30;
-		maxPathingClusters = maxPathingClusters / clusterPathSize;
-	}
-	else if (clusterPathSize > 0)
-	{
-		pathingClustersLimit = maxPathingClusters / clusterPathSize;
-		maxPathingClusters = maxPathingClusters / clusterPathSize;
-	}
-
 	std::mutex mutex;
 
 	//we will expand only with move type clusters
+	unsigned int pathingClustersLimit = maxPathingClusters / (unsigned int)expandClusterPathWeights.size();
 	Concurrency::parallel_for_each(
 		begin(expandClusterPathWeights), end(expandClusterPathWeights), [&](auto const& clusterPathWeight)
 	//for (auto& clusterPathWeight : expandClusterPathWeights)
@@ -1905,14 +1901,13 @@ void QuakeAIManager::BuildExpandedPath(
 
 		//lets try to add surrounding clusters
 		std::map<PathingCluster*, PathingArcVec> pathingClusters;
-		std::multimap<float, PathingCluster*, std::greater<float>> pathingClusterWeights;
+		std::multimap<float, PathingCluster*, std::less<float>> pathingClusterWeights;
 		clusterPathWeight.first->GetTarget()->GetClusters(AT_MOVE, pathingClustersLimit, pathingClusters, pathingClusterWeights);
-
-		auto endItCluster = std::next(
-			pathingClusterWeights.begin(), std::min((size_t)maxPathingClusters, pathingClusterWeights.size()));
-		for (auto itCluster = pathingClusterWeights.begin(); itCluster != endItCluster; ++itCluster)
+		for (auto itCluster = pathingClusterWeights.begin(); itCluster != pathingClusterWeights.end(); ++itCluster)
 		{
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode((*itCluster).second->GetTarget()->GetCluster());
+			if (clusterNodeEnd == pathingClusterNodeEnd)
+				continue;
 
 			unsigned long long pathingClusterCode =
 				(unsigned long long)clusterPathWeight.first->GetType() << 60 | (unsigned long long)clusterNodeStart->GetId() << 46 |
@@ -1994,15 +1989,13 @@ void QuakeAIManager::BuildExpandedActorPath(
 
 		//lets try to add surrounding clusters
 		std::map<PathingCluster*, PathingArcVec> pathingClusters;
-		std::multimap<float, PathingCluster*, std::greater<float>> pathingClusterWeights;
-		actorPathNode->GetClusters(AT_MOVE, 60, pathingClusters, pathingClusterWeights);
-
-		size_t maxPathingClusters = 20;
-		auto endItCluster = std::next(
-			pathingClusterWeights.begin(), std::min((size_t)maxPathingClusters, pathingClusterWeights.size()));
-		for (auto itCluster = pathingClusterWeights.begin(); itCluster != endItCluster; ++itCluster)
+		std::multimap<float, PathingCluster*, std::less<float>> pathingClusterWeights;
+		actorPathNode->GetClusters(AT_MOVE, 20, pathingClusters, pathingClusterWeights);
+		for (auto itCluster = pathingClusterWeights.begin(); itCluster != pathingClusterWeights.end(); ++itCluster)
 		{
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode((*itCluster).second->GetTarget()->GetCluster());
+			if (clusterNodeEnd == pathingClusterNodeEnd)
+				continue;
 
 			unsigned long long pathingClusterCode =
 				(unsigned long long)bestClusterPath.first->GetType() << 60 | (unsigned long long)clusterNodeStart->GetId() << 46 |
@@ -2081,15 +2074,13 @@ void QuakeAIManager::BuildExpandedActorPath(
 
 		//lets try to add surrounding clusters
 		std::map<PathingCluster*, PathingArcVec> pathingClusters;
-		std::multimap<float, PathingCluster*, std::greater<float>> pathingClusterWeights;
-		actorPathNode->GetClusters(AT_MOVE, 60, pathingClusters, pathingClusterWeights);
-
-		size_t maxPathingClusters = 20;
-		auto endItCluster = std::next(
-			pathingClusterWeights.begin(), std::min((size_t)maxPathingClusters, pathingClusterWeights.size()));
-		for (auto itCluster = pathingClusterWeights.begin(); itCluster != endItCluster; ++itCluster)
+		std::multimap<float, PathingCluster*, std::less<float>> pathingClusterWeights;
+		actorPathNode->GetClusters(AT_MOVE, 20, pathingClusters, pathingClusterWeights);
+		for (auto itCluster = pathingClusterWeights.begin(); itCluster != pathingClusterWeights.end(); ++itCluster)
 		{
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode((*itCluster).second->GetTarget()->GetCluster());
+			if (clusterNodeEnd == pathingClusterNodeEnd)
+				continue;
 
 			unsigned long long pathingClusterCode =
 				(unsigned long long)bestClusterPath.first->GetType() << 60 | (unsigned long long)clusterNodeStart->GetId() << 46 |
@@ -10085,7 +10076,7 @@ void QuakeAIManager::CalculateVisibility(
 				}
 				totalWeight += currentWeight;
 				// set timelimit; any time further is likely to be unrealistic simulation
-				if (totalWeight > 6.f)
+				if (totalWeight > 4.f)
 					return;
 			}
 
@@ -10151,7 +10142,7 @@ void QuakeAIManager::CalculateVisibility(
 
 				totalWeight += currentWeight;
 				// set timelimit; any time further is likely to be unrealistic simulation
-				if (totalWeight > 6.f)
+				if (totalWeight > 4.f)
 					return;
 			}
 
@@ -10164,14 +10155,14 @@ void QuakeAIManager::CalculateVisibility(
 	for (auto& visibility : playerVisibility)
 		totalVisibleWeight += visibility.second.moveTime;
 
-	if (totalVisibleWeight < 3.f)
+	if (totalVisibleWeight < 2.f)
 	{
 		//we need to add visible time if the total visible move time is short
 		if (currentNode->IsVisibleNode(otherCurrentNode))
 			/*if (RayCollisionDetection(currentNode->GetPosition(), otherCurrentNode->GetPosition()) == NULL)*/
 		{
 			float currentWeight = 0.5f;
-			totalVisibleWeight = totalVisibleWeight < 1.5f ? 2.f : 1.f;
+			totalVisibleWeight = totalVisibleWeight < 1.f ? 2.f : 1.f;
 			if (visibilityIt != playerVisibility.end())
 			{
 				float minimumVisibleWeight = playerVisibleTime < otherPlayerVisibleTime ? playerVisibleTime : otherPlayerVisibleTime;

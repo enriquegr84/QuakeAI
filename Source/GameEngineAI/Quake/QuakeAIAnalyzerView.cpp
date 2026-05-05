@@ -205,11 +205,11 @@ namespace AIAnalyzer
 
 		unsigned int frameTimeMin = (unsigned int)(1000 / (System::Get()->IsWindowFocused() ?
 			Settings::Get()->GetFloat("fps_max") : Settings::Get()->GetFloat("fps_max_unfocused")));
-
 		if (fpsTimings->busyTime + fpsTimings->sleepTime < frameTimeMin)
 		{
 			fpsTimings->sleepTime = frameTimeMin - fpsTimings->busyTime - fpsTimings->sleepTime;
-			Sleep(fpsTimings->sleepTime);
+			//Sleep(fpsTimings->sleepTime);
+			Sleep(1);
 		}
 		else fpsTimings->sleepTime = 0;
 
@@ -5016,21 +5016,9 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		mClusterNode->GenerateMesh(nodes);
 	}
 
-	if (gameDecision.evaluation.type == ET_GUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_AWARENESS)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.otherPlayerOutput, otherPlayerData);
-	}
+
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
 	std::vector<Vector3<float>> pathNodes;
 	pathNodes.push_back(playerData.plan.node->GetPosition());
@@ -5186,21 +5174,8 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		return;
 
 	PlayerData playerData, otherPlayerData;
-	if (gameDecision.evaluation.type == ET_GUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerData);
-	}
-	else if (gameDecision.evaluation.type == ET_AWARENESS)
-	{
-		aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, otherPlayerData);
-		aiManager->GetPlayerOutput(gameDecision.evaluation.otherPlayerOutput, otherPlayerData);
-	}
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
+	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
 	unsigned int time = Timer::GetRealTime();
 
@@ -5298,7 +5273,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
 
 		int weaponIdx = 0;
-		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		pPlayerActor->GetState().weapon = playerData.weapon;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
@@ -5342,7 +5317,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
 
 		int weaponIdx = 0;
-		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		pPlayerActor->GetState().weapon = otherPlayerData.weapon;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")

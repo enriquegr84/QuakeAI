@@ -23,7 +23,7 @@
 		abm_time_budget="0.2" nodetimer_interval="0.2" debug_log_level="action" debug_log_size_max="50" chat_log_level="error" 
 		num_emerge_threads="1" emergequeue_limit_total="1024" emergequeue_limit_diskonly="128" emergequeue_limit_generate="128"
 		disable_escape_sequences="false" strip_color_codes="false" />
-	<Graphics show_debug="true" fsaa="0" fps_max="120" fps_max_unfocused="120" viewing_range="190" screen_width="1024" screen_height="600" 
+	<Graphics show_debug="true" fsaa="0" fps_max="200" fps_max_unfocused="200" viewing_range="190" screen_width="1024" screen_height="600" 
 		autosave_screensize="true" fullscreen="false" fullscreen_bpp="24" vsync="false" fov="72" video_driver="direct3d11"
 		high_precision_fpu="true" enable_console="false" screen_dpi="72" />
 	<Visual undersampling="0" world_aligned_mode="enable" autoscale_mode="disable" enable_fog="true" fog_start="0.4" mode3d="none" 

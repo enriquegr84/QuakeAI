@@ -1189,17 +1189,40 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 				PathingArcVec::iterator itArc = mCurrentPlayerData.plan.path.begin();
 				for (; itArc != mCurrentPlayerData.plan.path.end(); itArc++)
 				{
-					path.push_back((*itArc));
-					if ((*itArc)->GetNode() == playerView.simulation.plan.node)
+					//search for the specific arc
+					if ((*itArc) == *playerView.simulation.plan.path.begin())
 					{
 						updatedActionPlan = true;
 						break;
 					}
 
+					path.push_back((*itArc));
 					if (currentWeight + (*itArc)->GetWeight() > 1.f)
 						break;
 
 					currentWeight += (*itArc)->GetWeight();
+				}
+
+				if (!updatedActionPlan)
+				{
+					path.clear();
+					currentWeight = -aiManager->CalculatePathWeight(mCurrentPlayerData);
+					PathingArcVec::iterator itArc = mCurrentPlayerData.plan.path.begin();
+					for (; itArc != mCurrentPlayerData.plan.path.end(); itArc++)
+					{
+						path.push_back((*itArc));
+						//search for the node regardless which arc comes from
+						if ((*itArc)->GetNode() == playerView.simulation.plan.node)
+						{
+							updatedActionPlan = true;
+							break;
+						}
+
+						if (currentWeight + (*itArc)->GetWeight() > 1.f)
+							break;
+
+						currentWeight += (*itArc)->GetWeight();
+					}
 				}
 			}
 			else updatedActionPlan = true;
@@ -1689,8 +1712,8 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					Matrix4x4<float> pitchRotation = Rotation<4, float>(
 						AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), mPitch * (float)GE_C_DEG_TO_RAD));
 
-					//smoothing rotation
-					float rotationDegrees = 60.f * (deltaMs / 1000.f);
+					//smooth rotation
+					float rotationDegrees = 20.f * (deltaMs / 1000.f);
 					if (abs(mYawSmooth - mYaw) < 90)
 					{
 						if (mYaw - mYawSmooth > 180)
