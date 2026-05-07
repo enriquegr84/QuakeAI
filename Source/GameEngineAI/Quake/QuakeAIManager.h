@@ -1097,8 +1097,8 @@ protected:
 
 	int GetNewPlanID(void) { return ++mLastPlanId; }
 
-	float CalculatePathWeight(const PlayerData& playerData);
-	Vector3<float> CalculatePathPosition(const PlayerData& playerData);
+	float CalculatePathingWeight(const PlayerData& playerData);
+	Vector3<float> CalculatePathingPosition(const PlayerData& playerData);
 
 	//status is calculated based on health and armor
 	float CalculatePlayerStatus(const PlayerData& playerData);

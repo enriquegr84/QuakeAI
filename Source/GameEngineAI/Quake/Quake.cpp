@@ -2397,6 +2397,9 @@ void QuakeLogic::UpdateGameAIAnalysisSimulation(unsigned short playerIndex, unsi
 		return;
 
 	PlayerData playerData, otherPlayerData;
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData);
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerGuessInput, otherPlayerData);
+
 	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
 	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
@@ -2464,6 +2467,9 @@ void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsi
 		return;
 
 	PlayerData playerData, otherPlayerData;
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData);
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerGuessInput, otherPlayerData);
+
 	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
 	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 

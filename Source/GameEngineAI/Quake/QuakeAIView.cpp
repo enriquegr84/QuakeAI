@@ -705,7 +705,7 @@ void QuakeAIView::UpdatePlayerWeapon(const PlayerView& playerView)
 			Vector3<float> playerPosition = pPlayerPhysicComponent->GetPosition();
 
 			const PlayerGuessView& playerGuessView = playerView.guessViews.at(playerView.simulation.target);
-			Vector3<float> playerGuessPosition = aiManager->CalculatePathPosition(playerGuessView.data);
+			Vector3<float> playerGuessPosition = aiManager->CalculatePathingPosition(playerGuessView.data);
 			float playerDistance = Length(playerPosition - playerGuessPosition);
 
 			//check if the selected weapon in the simulation is optimal
@@ -1107,7 +1107,7 @@ bool QuakeAIView::CanUpdateActionPlan(const PlayerData& player)
 		std::shared_ptr<PlayerActor> pPlayerActor(
 			std::dynamic_pointer_cast<PlayerActor>(gameLogic->GetActor(player.player).lock()));
 
-		float currentPathWeight = -aiManager->CalculatePathWeight(mCurrentPlayerData);
+		float currentPathWeight = -aiManager->CalculatePathingWeight(mCurrentPlayerData);
 		if (mCurrentPlanArc && mCurrentPlanArc->GetType() != AT_MOVE)
 			currentPathWeight = -mCurrentPlanArc->GetWeight();
 		for (auto& pathingArc : mCurrentPlayerData.plan.path)
@@ -1185,7 +1185,7 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 			if (currentNode != playerView.simulation.plan.node)
 			{
 				path.clear();
-				currentWeight = -aiManager->CalculatePathWeight(mCurrentPlayerData);
+				currentWeight = -aiManager->CalculatePathingWeight(mCurrentPlayerData);
 				PathingArcVec::iterator itArc = mCurrentPlayerData.plan.path.begin();
 				for (; itArc != mCurrentPlayerData.plan.path.end(); itArc++)
 				{
@@ -1206,7 +1206,7 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 				if (!updatedActionPlan)
 				{
 					path.clear();
-					currentWeight = -aiManager->CalculatePathWeight(mCurrentPlayerData);
+					currentWeight = -aiManager->CalculatePathingWeight(mCurrentPlayerData);
 					PathingArcVec::iterator itArc = mCurrentPlayerData.plan.path.begin();
 					for (; itArc != mCurrentPlayerData.plan.path.end(); itArc++)
 					{

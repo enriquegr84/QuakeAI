@@ -1990,7 +1990,7 @@ void QuakeAIManager::BuildExpandedActorPath(
 		//lets try to add surrounding clusters
 		std::map<PathingCluster*, PathingArcVec> pathingClusters;
 		std::multimap<float, PathingCluster*, std::less<float>> pathingClusterWeights;
-		actorPathNode->GetClusters(AT_MOVE, 20, pathingClusters, pathingClusterWeights);
+		actorPathNode->GetClusters(AT_MOVE, 50, pathingClusters, pathingClusterWeights);
 		for (auto itCluster = pathingClusterWeights.begin(); itCluster != pathingClusterWeights.end(); ++itCluster)
 		{
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode((*itCluster).second->GetTarget()->GetCluster());
@@ -2075,7 +2075,7 @@ void QuakeAIManager::BuildExpandedActorPath(
 		//lets try to add surrounding clusters
 		std::map<PathingCluster*, PathingArcVec> pathingClusters;
 		std::multimap<float, PathingCluster*, std::less<float>> pathingClusterWeights;
-		actorPathNode->GetClusters(AT_MOVE, 20, pathingClusters, pathingClusterWeights);
+		actorPathNode->GetClusters(AT_MOVE, 50, pathingClusters, pathingClusterWeights);
 		for (auto itCluster = pathingClusterWeights.begin(); itCluster != pathingClusterWeights.end(); ++itCluster)
 		{
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode((*itCluster).second->GetTarget()->GetCluster());
@@ -6293,7 +6293,7 @@ bool QuakeAIManager::IsCloseAIGuessing()
 		return false;
 
 	PathingNode* aiNode = aiView.data.plan.node;
-	float aiWeight = CalculatePathWeight(aiView.data);
+	float aiWeight = CalculatePathingWeight(aiView.data);
 	if (aiWeight)
 	{
 		PathingArc* aiArc = *aiView.data.plan.path.begin();
@@ -6301,7 +6301,7 @@ bool QuakeAIManager::IsCloseAIGuessing()
 		aiWeight = 0.f;
 	}
 	PathingNode* aiGuessNode = playerGuessView.guessPlayers[mPlayers[GV_AI]].plan.node;
-	float aiGuessWeight = CalculatePathWeight(playerGuessView.guessPlayers[mPlayers[GV_AI]]);
+	float aiGuessWeight = CalculatePathingWeight(playerGuessView.guessPlayers[mPlayers[GV_AI]]);
 	if (aiGuessWeight)
 	{
 		PathingArc* aiGuessArc = *playerGuessView.guessPlayers[mPlayers[GV_AI]].plan.path.begin();
@@ -6352,7 +6352,7 @@ bool QuakeAIManager::IsCloseHumanGuessing()
 		return false;
 
 	PathingNode* playerNode = playerView.data.plan.node;
-	float playerWeight = CalculatePathWeight(playerView.data);
+	float playerWeight = CalculatePathingWeight(playerView.data);
 	if (playerWeight)
 	{
 		PathingArc* playerArc = *playerView.data.plan.path.begin();
@@ -6360,7 +6360,7 @@ bool QuakeAIManager::IsCloseHumanGuessing()
 		playerWeight = 0.f;
 	}
 	PathingNode* playerGuessNode = aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].plan.node;
-	float playerGuessWeight = CalculatePathWeight(aiGuessView.guessPlayers[mPlayers[GV_HUMAN]]);
+	float playerGuessWeight = CalculatePathingWeight(aiGuessView.guessPlayers[mPlayers[GV_HUMAN]]);
 	if (playerGuessWeight)
 	{
 		PathingArc* playerGuessArc = *aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].plan.path.begin();
@@ -6423,7 +6423,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	PrintInfo("\nAI Guessing AI player input before: ");
 	PrintPlayerData(aiView.data);
 
-	float aiPathWeightOffset = CalculatePathWeight(aiView.data);
+	float aiPathWeightOffset = CalculatePathingWeight(aiView.data);
 	float playerGuessPathWeightOffset = playerGuessView.data.planWeight > 0.f ? playerGuessView.data.planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
@@ -6460,14 +6460,15 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
-	if (aiView.data.plan.node)
+
+	if (aiSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the ai player
 		for (auto const& aiGuessItem : aiView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6476,7 +6477,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -6559,7 +6560,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	PrintInfo("\nAI Decision AI player input before: ");
 	PrintPlayerData(aiView.data);
 
-	float aiPathWeightOffset = CalculatePathWeight(aiView.data);
+	float aiPathWeightOffset = CalculatePathingWeight(aiView.data);
 	float playerGuessPathWeightOffset = playerGuessView.data.planWeight > 0.f ? playerGuessView.data.planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (max 0.1 seg)
@@ -6593,14 +6594,15 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
-	if (aiView.data.plan.node)
+
+	if (aiSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the ai player
 		for (auto const& aiGuessItem : aiView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6609,7 +6611,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -6684,7 +6686,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	PrintInfo("\nAI Decision AI player input before: ");
 	PrintPlayerData(aiView.data);
 
-	float aiPathWeightOffset = CalculatePathWeight(aiView.data);
+	float aiPathWeightOffset = CalculatePathingWeight(aiView.data);
 	float playerGuessPathWeightOffset = playerGuessView.data.planWeight > 0.f ? playerGuessView.data.planWeight : 0.f;
 	float aiGuessPathWeightOffset = 
 		playerGuessView.guessPlayers[mPlayers[GV_AI]].planWeight > 0.f ? playerGuessView.guessPlayers[mPlayers[GV_AI]].planWeight : 0.f;
@@ -6732,14 +6734,15 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerGuessView.items;
-	if (playerGuessView.data.plan.node)
+
+	if (playerGuessSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken
 		for (auto const& guessItem : playerGuessView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
 			if (itemPickup)
-				if (!playerGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[guessItem.first] = guessItem.second;
 		}
 
@@ -6748,14 +6751,14 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 		for (auto const& aiGuessItem : playerGuessView.guessItems[mPlayers[GV_AI]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -6765,14 +6768,15 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	gameItems = aiView.gameItems;
-	if (aiView.data.plan.node)
+
+	if (aiDecisionSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the ai player
 		for (auto const& aiGuessItem : aiView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6781,7 +6785,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -6889,7 +6893,7 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	PrintInfo("\nAI Decision AI player input before: ");
 	PrintPlayerData(aiView.data);
 
-	float aiPathWeightOffset = CalculatePathWeight(aiView.data);
+	float aiPathWeightOffset = CalculatePathingWeight(aiView.data);
 	float playerGuessPathWeightOffset = playerGuessView.data.planWeight > 0.f ? playerGuessView.data.planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
@@ -6933,14 +6937,15 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
-	if (aiView.data.plan.node)
+
+	if (aiDecisionSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the ai player
 		for (auto const& aiGuessItem : aiView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6949,7 +6954,7 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -7031,7 +7036,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	PrintInfo("\nHuman Guessing Human player input before: ");
 	PrintPlayerData(playerView.data);
 
-	float playerPathWeightOffset = CalculatePathWeight(playerView.data);
+	float playerPathWeightOffset = CalculatePathingWeight(playerView.data);
 	float aiGuessPathWeightOffset = aiGuessView.data.planWeight > 0.f ? aiGuessView.data.planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
@@ -7068,14 +7073,15 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
-	if (playerView.data.plan.node)
+
+	if (playerSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the human player
 		for (auto const& humanGuessItem : playerView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7084,7 +7090,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -7166,7 +7172,7 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	PrintInfo("\nHuman Decision Human player input before: ");
 	PrintPlayerData(playerView.data);
 
-	float playerPathWeightOffset = CalculatePathWeight(playerView.data);
+	float playerPathWeightOffset = CalculatePathingWeight(playerView.data);
 	float aiGuessPathWeightOffset = aiGuessView.data.planWeight > 0.f ? aiGuessView.data.planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (max 0.1 seg)
@@ -7200,14 +7206,15 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
-	if (playerView.data.plan.node)
+
+	if (playerSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the human player
 		for (auto const& humanGuessItem : playerView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7216,7 +7223,7 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -7291,7 +7298,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	PrintInfo("\nHuman Decision Human player input before: ");
 	PrintPlayerData(playerView.data);
 
-	float playerPathWeightOffset = CalculatePathWeight(playerView.data);
+	float playerPathWeightOffset = CalculatePathingWeight(playerView.data);
 	float aiGuessPathWeightOffset = aiGuessView.data.planWeight > 0.f ? aiGuessView.data.planWeight : 0.f;
 	float playerGuessPathWeightOffset = 
 		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].planWeight > 0.f ? aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].planWeight : 0.f;
@@ -7339,14 +7346,15 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiGuessView.items;
-	if (aiGuessView.data.plan.node)
+
+	if (aiGuessSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken
 		for (auto const& guessItem : aiGuessView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
 			if (itemPickup)
-				if (!aiGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[guessItem.first] = guessItem.second;
 		}
 
@@ -7355,14 +7363,14 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 		for (auto const& humanGuessItem : aiGuessView.guessItems[mPlayers[GV_HUMAN]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiGuessView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -7372,14 +7380,15 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	gameItems = playerView.gameItems;
-	if (playerView.data.plan.node)
+
+	if (playerDecisionSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the human player
 		for (auto const& humanGuessItem : playerView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7388,7 +7397,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -7496,7 +7505,7 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	PrintInfo("\nHuman Decision Human player input before: ");
 	PrintPlayerData(playerView.data);
 
-	float playerPathWeightOffset = CalculatePathWeight(playerView.data);
+	float playerPathWeightOffset = CalculatePathingWeight(playerView.data);
 	float aiGuessPathWeightOffset = aiGuessView.data.planWeight > 0.f ? aiGuessView.data.planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
@@ -7540,14 +7549,15 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	// update the guess items from the world
 	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
-	if (playerView.data.plan.node)
+
+	if (playerDecisionSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the human player
 		for (auto const& humanGuessItem : playerView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7556,7 +7566,7 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerView.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -8831,7 +8841,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 				//ammo
 				score = (maxAmmo - ammo) / (float)maxAmmo;
-				score *= 0.5f; //how important is this ammo
+				score *= 0.8f; //how important is this weapon
 
 				//relation based on item score and distance traversed
 				heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8844,7 +8854,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 				//ammo
 				score = (maxAmmo - ammo) / (float)maxAmmo;
-				score *= 0.4f; //how important is this ammo
+				score *= 0.6f; //how important is this weapon
 
 				//relation based on item score and distance traversed
 				heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8857,7 +8867,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 				//ammo
 				score = (maxAmmo - ammo) / (float)maxAmmo;
-				score *= 0.2f; //how important is this ammo
+				score *= 0.2f; //how important is this weapon
 
 				//relation based on item score and distance traversed
 				heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8870,7 +8880,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 				//ammo
 				score = (maxAmmo - ammo) / (float)maxAmmo;
-				score *= 0.275f; //how important is this ammo
+				score *= 0.3f; //how important is this weapon
 
 				//relation based on item score and distance traversed
 				heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8883,7 +8893,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 				//ammo
 				score = (maxAmmo - ammo) / (float)maxAmmo;
-				score *= 0.f; //how important is this ammo
+				score *= 0.f; //how important is this weapon
 
 				//relation based on item score and distance traversed
 				heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8896,7 +8906,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 				//ammo
 				score = (maxAmmo - ammo) / (float)maxAmmo;
-				score *= 0.35f; //how important is this ammo
+				score *= 0.5f; //how important is this weapon
 
 				//relation based on item score and distance traversed
 				heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8909,7 +8919,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 				//ammo
 				score = (maxAmmo - ammo) / (float)maxAmmo;
-				score *= 0.5f; //how important is this ammo
+				score *= 0.8f; //how important is this weapon
 
 				//relation based on item score and distance traversed
 				heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8929,7 +8939,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.5f; //how important is this ammo
+					score *= 0.8f; //how important is this ammo
 
 					//relation based on item score and distance traversed
 					heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8944,7 +8954,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.4f; //how important is this ammo
+					score *= 0.6f; //how important is this ammo
 
 					//relation based on item score and distance traversed
 					heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -8974,7 +8984,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.275f; //how important is this ammo
+					score *= 0.3f; //how important is this ammo
 
 					//relation based on item score and distance traversed
 					heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -9004,7 +9014,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.35f; //how important is this ammo
+					score *= 0.5f; //how important is this ammo
 
 					//relation based on item score and distance traversed
 					heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -9019,7 +9029,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.5f; //how important is this ammo
+					score *= 0.8f; //how important is this ammo
 
 					//relation based on item score and distance traversed
 					heuristic = score * (1.0f - (weight / (float)maxWeight));
@@ -9031,10 +9041,6 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 	{
 		if (itemPickup->GetMaximum() > playerData.stats[STAT_ARMOR])
 		{
-			//ammo
-			score = (maxAmmo - ammo) / (float)maxAmmo;
-			score *= 0.5f; //how important is this ammo
-
 			score = (itemPickup->GetMaximum() - playerData.stats[STAT_ARMOR]) / (float)itemPickup->GetMaximum();
 			if (itemPickup->GetCode() == 1) //armor body
 				score *= 0.4f;
@@ -9100,7 +9106,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.5f; //how important is this ammo
+					score *= 0.8f; //how important is this weapon
 
 					weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9117,7 +9123,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.4f; //how important is this ammo
+					score *= 0.6f; //how important is this weapon
 
 					weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9134,7 +9140,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.2f; //how important is this ammo
+					score *= 0.2f; //how important is this weapon
 
 					weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9151,7 +9157,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.275f; //how important is this ammo
+					score *= 0.3f; //how important is this weapon
 
 					weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9168,7 +9174,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.f; //how important is this ammo
+					score *= 0.f; //how important is this weapon
 
 					weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9185,7 +9191,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.35f; //how important is this ammo
+					score *= 0.5f; //how important is this weapon
 
 					weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9202,7 +9208,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 					//ammo
 					score = (maxAmmo - ammo) / (float)maxAmmo;
-					score *= 0.5f; //how important is this ammo
+					score *= 0.8f; //how important is this weapon
 
 					weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9226,7 +9232,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 						//ammo
 						score = (maxAmmo - ammo) / (float)maxAmmo;
-						score *= 0.5f; //how important is this ammo
+						score *= 0.8f; //how important is this ammo
 
 						weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9245,7 +9251,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 						//ammo
 						score = (maxAmmo - ammo) / (float)maxAmmo;
-						score *= 0.4f; //how important is this ammo
+						score *= 0.6f; //how important is this ammo
 
 						weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9283,7 +9289,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 						//ammo
 						score = (maxAmmo - ammo) / (float)maxAmmo;
-						score *= 0.275f; //how important is this ammo
+						score *= 0.3f; //how important is this ammo
 
 						weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9321,7 +9327,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 						//ammo
 						score = (maxAmmo - ammo) / (float)maxAmmo;
-						score *= 0.35f; //how important is this ammo
+						score *= 0.5f; //how important is this ammo
 
 						weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -9340,7 +9346,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 
 						//ammo
 						score = (maxAmmo - ammo) / (float)maxAmmo;
-						score *= 0.5f; //how important is this ammo
+						score *= 0.8f; //how important is this ammo
 
 						weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
 
@@ -10208,7 +10214,7 @@ void QuakeAIManager::CalculateVisibility(
 	}
 }
 
-float QuakeAIManager::CalculatePathWeight(const PlayerData& playerData)
+float QuakeAIManager::CalculatePathingWeight(const PlayerData& playerData)
 {
 	float closestWeight = 0.f;
 	if (playerData.plan.path.size())
@@ -10239,7 +10245,7 @@ float QuakeAIManager::CalculatePathWeight(const PlayerData& playerData)
 	return closestWeight;
 }
 
-Vector3<float> QuakeAIManager::CalculatePathPosition(const PlayerData& playerData)
+Vector3<float> QuakeAIManager::CalculatePathingPosition(const PlayerData& playerData)
 {
 	float pathingWeight = 0.f;
 	PathingNode* pathingNode = playerData.plan.node;
@@ -10296,36 +10302,51 @@ void QuakeAIManager::PerformGuessingMaking(
 		}
 	}
 
-	//lets assign a probability to each opponent Guessing based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each opponent Guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> otherPlayerGuessingProbabilities;
 	if (!otherPlayerGuessingHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
 			//calculate avg
 			otherPlayerGuessingHeuristic.second /= (float)playerGuessingHeuristics.size();
-			if (otherPlayerGuessingHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = otherPlayerGuessingHeuristic.second;
+			if (otherPlayerGuessingHeuristic.second < minHeuristicValue)
+				minHeuristicValue = otherPlayerGuessingHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> otherPlayerGuessingExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
 
-			otherPlayerGuessingExps[otherClusterCode] = std::exp(otherPlayerGuessingHeuristic.second - maxHeuristicValue);
-			sumExp += otherPlayerGuessingExps[otherClusterCode];
+			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingHeuristic.second + shift;
+			sumTotal += otherPlayerGuessingProbabilities[otherClusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& otherPlayerGuessingExp : otherPlayerGuessingExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long otherClusterCode = otherPlayerGuessingExp.first;
-			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
+				otherPlayerGuessingProbabilities[otherClusterCode] /= sumTotal;
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
+				otherPlayerGuessingProbabilities[otherClusterCode] /= (float)otherPlayerGuessingProbabilities.size();
+			}
 		}
 	}
 
@@ -10442,36 +10463,51 @@ void QuakeAIManager::PerformGuessingMaking(
 		for (auto const& simulation : playerGuessingSimulation->simulations)
 			playerGuessingHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
 
-	//lets assign a probability to each player Guessing based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each player Guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerGuessingProbabilities;
 	if (!playerGuessingHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
 			//calculate avg
 			playerGuessingHeuristic.second /= (float)otherPlayerGuessingHeuristics.size();
-			if (playerGuessingHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = playerGuessingHeuristic.second;
+			if (playerGuessingHeuristic.second < minHeuristicValue)
+				minHeuristicValue = playerGuessingHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> playerGuessingExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
 			unsigned long long clusterCode = playerGuessingHeuristic.first;
 
-			playerGuessingExps[clusterCode] = std::exp(playerGuessingHeuristic.second - maxHeuristicValue);
-			sumExp += playerGuessingExps[clusterCode];
+			playerGuessingProbabilities[clusterCode] = playerGuessingHeuristic.second + shift;
+			sumTotal += playerGuessingProbabilities[clusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& playerGuessingExp : playerGuessingExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long clusterCode = playerGuessingExp.first;
-			playerGuessingProbabilities[clusterCode] = playerGuessingExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& playerGuessingProb : playerGuessingProbabilities)
+			{
+				unsigned long long clusterCode = playerGuessingProb.first;
+				playerGuessingProbabilities[clusterCode] /= sumTotal;
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& playerGuessingProb : playerGuessingProbabilities)
+			{
+				unsigned long long clusterCode = playerGuessingProb.first;
+				playerGuessingProbabilities[clusterCode] /= (float)playerGuessingProbabilities.size();
+			}
 		}
 	}
 
@@ -10562,36 +10598,51 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a probability to each opponent decision based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each opponent Decision based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> otherPlayerDecisionProbabilities;
 	if (!otherPlayerDecisionHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
 			//calculate avg
 			otherPlayerDecisionHeuristic.second /= (float)playerDecisionHeuristics.size();
-			if (otherPlayerDecisionHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = otherPlayerDecisionHeuristic.second;
+			if (otherPlayerDecisionHeuristic.second < minHeuristicValue)
+				minHeuristicValue = otherPlayerDecisionHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> otherPlayerDecisionExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
 
-			otherPlayerDecisionExps[otherClusterCode] = std::exp(otherPlayerDecisionHeuristic.second - maxHeuristicValue);
-			sumExp += otherPlayerDecisionExps[otherClusterCode];
+			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionHeuristic.second + shift;
+			sumTotal += otherPlayerDecisionProbabilities[otherClusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& otherPlayerDecisionExp : otherPlayerDecisionExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long otherClusterCode = otherPlayerDecisionExp.first;
-			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
+				otherPlayerDecisionProbabilities[otherClusterCode] /= sumTotal;
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
+				otherPlayerDecisionProbabilities[otherClusterCode] /= (float)otherPlayerDecisionProbabilities.size();
+			}
 		}
 	}
 
@@ -10718,36 +10769,51 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a probability to each player decision based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each player Decision based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerDecisionProbabilities;
 	if (!playerDecisionHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
 			//calculate avg
 			playerDecisionHeuristic.second /= (float)otherPlayerDecisionHeuristics.size();
-			if (playerDecisionHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = playerDecisionHeuristic.second;
+			if (playerDecisionHeuristic.second < minHeuristicValue)
+				minHeuristicValue = playerDecisionHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> playerDecisionExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
 			unsigned long long clusterCode = playerDecisionHeuristic.first;
 
-			playerDecisionExps[clusterCode] = std::exp(playerDecisionHeuristic.second - maxHeuristicValue);
-			sumExp += playerDecisionExps[clusterCode];
+			playerDecisionProbabilities[clusterCode] = playerDecisionHeuristic.second + shift;
+			sumTotal += playerDecisionProbabilities[clusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& playerDecisionExp : playerDecisionExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long clusterCode = playerDecisionExp.first;
-			playerDecisionProbabilities[clusterCode] = playerDecisionExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& playerDecisionProb : playerDecisionProbabilities)
+			{
+				unsigned long long clusterCode = playerDecisionProb.first;
+				playerDecisionProbabilities[clusterCode] /= sumTotal;
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& playerDecisionProb : playerDecisionProbabilities)
+			{
+				unsigned long long clusterCode = playerDecisionProb.first;
+				playerDecisionProbabilities[clusterCode] /= (float)playerDecisionProbabilities.size();
+			}
 		}
 	}
 
@@ -10845,36 +10911,51 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a probability to each opponent guessing based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each opponent Guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> otherPlayerGuessingProbabilities;
 	if (!otherPlayerGuessingHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
 			//calculate avg
 			otherPlayerGuessingHeuristic.second /= (float)playerGuessingHeuristics.size();
-			if (otherPlayerGuessingHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = otherPlayerGuessingHeuristic.second;
+			if (otherPlayerGuessingHeuristic.second < minHeuristicValue)
+				minHeuristicValue = otherPlayerGuessingHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> otherPlayerGuessingExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
 
-			otherPlayerGuessingExps[otherClusterCode] = std::exp(otherPlayerGuessingHeuristic.second - maxHeuristicValue);
-			sumExp += otherPlayerGuessingExps[otherClusterCode];
+			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingHeuristic.second + shift;
+			sumTotal += otherPlayerGuessingProbabilities[otherClusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& otherPlayerGuessingExp : otherPlayerGuessingExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long otherClusterCode = otherPlayerGuessingExp.first;
-			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
+				otherPlayerGuessingProbabilities[otherClusterCode] /= sumTotal;
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
+				otherPlayerGuessingProbabilities[otherClusterCode] /= (float)otherPlayerGuessingProbabilities.size();
+			}
 		}
 	}
 
@@ -11000,36 +11081,51 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a probability to each player guessing based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each player Guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerGuessingProbabilities;
 	if (!playerGuessingHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
 			//calculate avg
 			playerGuessingHeuristic.second /= (float)otherPlayerGuessingHeuristics.size();
-			if (playerGuessingHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = playerGuessingHeuristic.second;
+			if (playerGuessingHeuristic.second < minHeuristicValue)
+				minHeuristicValue = playerGuessingHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> playerGuessingExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
 			unsigned long long clusterCode = playerGuessingHeuristic.first;
 
-			playerGuessingExps[clusterCode] = std::exp(playerGuessingHeuristic.second - maxHeuristicValue);
-			sumExp += playerGuessingExps[clusterCode];
+			playerGuessingProbabilities[clusterCode] = playerGuessingHeuristic.second + shift;
+			sumTotal += playerGuessingProbabilities[clusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& playerGuessingExp : playerGuessingExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long clusterCode = playerGuessingExp.first;
-			playerGuessingProbabilities[clusterCode] = playerGuessingExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& playerGuessingProb : playerGuessingProbabilities)
+			{
+				unsigned long long clusterCode = playerGuessingProb.first;
+				playerGuessingProbabilities[clusterCode] /= sumTotal;
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& playerGuessingProb : playerGuessingProbabilities)
+			{
+				unsigned long long clusterCode = playerGuessingProb.first;
+				playerGuessingProbabilities[clusterCode] /= (float)playerGuessingProbabilities.size();
+			}
 		}
 	}
 
@@ -11121,36 +11217,57 @@ void QuakeAIManager::PerformDecisionMaking(
 		}
 	}
 
-	//lets assign a probability to each opponent Decision based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each opponent Decision based on the calculated average heuristics
+	std::multimap<float, unsigned long long, std::greater<float>> sortedOtherPlayerDecisionHeuristics;
+	std::multimap<float, unsigned long long, std::greater<float>> sortedOtherPlayerDecisionProbabilities;
 	std::unordered_map<unsigned long long, float> otherPlayerDecisionProbabilities;
 	if (!otherPlayerDecisionHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
 			//calculate avg
 			otherPlayerDecisionHeuristic.second /= (float)playerDecisionHeuristics.size();
-			if (otherPlayerDecisionHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = otherPlayerDecisionHeuristic.second;
+			if (otherPlayerDecisionHeuristic.second < minHeuristicValue)
+				minHeuristicValue = otherPlayerDecisionHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> otherPlayerDecisionExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
 
-			otherPlayerDecisionExps[otherClusterCode] = std::exp(otherPlayerDecisionHeuristic.second - maxHeuristicValue);
-			sumExp += otherPlayerDecisionExps[otherClusterCode];
+			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionHeuristic.second + shift;
+			sumTotal += otherPlayerDecisionProbabilities[otherClusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& otherPlayerDecisionExp : otherPlayerDecisionExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long otherClusterCode = otherPlayerDecisionExp.first;
-			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
+				otherPlayerDecisionProbabilities[otherClusterCode] /= sumTotal;
+				sortedOtherPlayerDecisionHeuristics.insert({ otherPlayerDecisionHeuristics[otherClusterCode], otherClusterCode });
+				sortedOtherPlayerDecisionProbabilities.insert({ otherPlayerDecisionProbabilities[otherClusterCode], otherClusterCode });
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
+			{
+				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
+				otherPlayerDecisionProbabilities[otherClusterCode] /= (float)otherPlayerDecisionProbabilities.size();
+				sortedOtherPlayerDecisionHeuristics.insert({ otherPlayerDecisionHeuristics[otherClusterCode], otherClusterCode });
+				sortedOtherPlayerDecisionProbabilities.insert({ otherPlayerDecisionProbabilities[otherClusterCode], otherClusterCode });
+			}
 		}
 	}
 
@@ -11266,36 +11383,51 @@ void QuakeAIManager::PerformDecisionMaking(
 		for (auto const& simulation : playerDecisionSimulation->simulations)
 			playerDecisionHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
 
-	//lets assign a probability to each player Decision based on the calculated average heuristics using the softmax function
+	//lets assign a proportional probability to each player Decision based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerDecisionProbabilities;
 	if (!playerDecisionHeuristics.empty())
 	{
-		// Find the maximum value for numerical stability
-		float maxHeuristicValue = -FLT_MAX;
+		// 1. Find minimum to handle negative values safely
+		float epsilon = 1e-6f;
+		float minHeuristicValue = FLT_MAX;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
 			//calculate avg
 			playerDecisionHeuristic.second /= (float)otherPlayerDecisionHeuristics.size();
-			if (playerDecisionHeuristic.second > maxHeuristicValue)
-				maxHeuristicValue = playerDecisionHeuristic.second;
+			if (playerDecisionHeuristic.second < minHeuristicValue)
+				minHeuristicValue = playerDecisionHeuristic.second;
 		}
 
-		// Compute exp(heuristic_i - max_val) and the sum
-		float sumExp = 0.f;
-		std::unordered_map<unsigned long long, float> playerDecisionExps;
+		// 2. Shift everything so all values are strictly positive
+		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
+
+		// Compute linear proportional probabilities and the sum
+		float sumTotal = 0.f;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
 			unsigned long long clusterCode = playerDecisionHeuristic.first;
 
-			playerDecisionExps[clusterCode] = std::exp(playerDecisionHeuristic.second - maxHeuristicValue);
-			sumExp += playerDecisionExps[clusterCode];
+			playerDecisionProbabilities[clusterCode] = playerDecisionHeuristic.second + shift;
+			sumTotal += playerDecisionProbabilities[clusterCode];
 		}
 
-		// Normalize to probabilities
-		for (auto& playerDecisionExp : playerDecisionExps)
+		if (sumTotal >= epsilon)
 		{
-			unsigned long long clusterCode = playerDecisionExp.first;
-			playerDecisionProbabilities[clusterCode] = playerDecisionExp.second / sumExp;
+			// Normalize to probabilities
+			for (auto& playerDecisionProb : playerDecisionProbabilities)
+			{
+				unsigned long long clusterCode = playerDecisionProb.first;
+				playerDecisionProbabilities[clusterCode] /= sumTotal;
+			}
+		}
+		else
+		{
+			// Handle the degenerate case (all values were identical)
+			for (auto& playerDecisionProb : playerDecisionProbabilities)
+			{
+				unsigned long long clusterCode = playerDecisionProb.first;
+				playerDecisionProbabilities[clusterCode] /= (float)playerDecisionProbabilities.size();
+			}
 		}
 	}
 
@@ -11536,7 +11668,7 @@ void QuakeAIManager::UpdatePlayerGuessPlan(std::shared_ptr<PlayerActor> playerAc
 		//we take the current player plan
 		playerGuessData = PlayerData(playerActor);
 		playerGuessData.plan = playerData.plan;
-		playerGuessData.planWeight = CalculatePathWeight(playerGuessData);
+		playerGuessData.planWeight = CalculatePathingWeight(playerGuessData);
 
 		playerGuessData.items = playerData.items;
 		playerGuessData.itemAmount = playerData.itemAmount;

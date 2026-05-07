@@ -5096,7 +5096,15 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		std::vector<std::shared_ptr<MD3Mesh>> meshes;
 		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
 
+		pPlayerActor->GetState().stats[STAT_HEALTH] = playerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = playerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = playerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = playerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = playerData.ammo[wp];
+
 		int weaponIdx = 0;
+		pPlayerActor->ChangeWeapon(playerData.weapon);
 		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
@@ -5135,12 +5143,20 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 			pTransformComponent->SetRotation(yawRotation * rollRotation);
 		}
 
+		pPlayerActor->GetState().stats[STAT_HEALTH] = otherPlayerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = otherPlayerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = otherPlayerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = otherPlayerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = otherPlayerData.ammo[wp];
+
 		std::shared_ptr<AnimatedMeshNode> animatedNode = std::dynamic_pointer_cast<AnimatedMeshNode>(pPlayerNode);
 		std::shared_ptr<AnimateMeshMD3> animMeshMD3 = std::dynamic_pointer_cast<AnimateMeshMD3>(animatedNode->GetMesh());
 		std::vector<std::shared_ptr<MD3Mesh>> meshes;
 		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
 
 		int weaponIdx = 0;
+		pPlayerActor->ChangeWeapon(otherPlayerData.weapon);
 		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
@@ -5174,6 +5190,9 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		return;
 
 	PlayerData playerData, otherPlayerData;
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData);
+	aiManager->GetPlayerInput(gameDecision.evaluation.playerGuessInput, otherPlayerData);
+
 	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
 	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
@@ -5272,8 +5291,16 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		std::vector<std::shared_ptr<MD3Mesh>> meshes;
 		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
 
+		pPlayerActor->GetState().stats[STAT_HEALTH] = playerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = playerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = playerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = playerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = playerData.ammo[wp];
+
 		int weaponIdx = 0;
-		pPlayerActor->GetState().weapon = playerData.weapon;
+		pPlayerActor->ChangeWeapon(playerData.weapon);
+		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
@@ -5316,8 +5343,16 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 		std::vector<std::shared_ptr<MD3Mesh>> meshes;
 		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
 
+		pPlayerActor->GetState().stats[STAT_HEALTH] = otherPlayerData.stats[STAT_HEALTH];
+		pPlayerActor->GetState().stats[STAT_ARMOR] = otherPlayerData.stats[STAT_ARMOR];
+		pPlayerActor->GetState().persistant[STAT_SCORE] = otherPlayerData.stats[STAT_SCORE];
+		pPlayerActor->GetState().stats[STAT_WEAPONS] = otherPlayerData.stats[STAT_WEAPONS];
+		for (unsigned int wp = 0; wp < MAX_WEAPONS; wp++)
+			pPlayerActor->GetState().ammo[wp] = otherPlayerData.ammo[wp];
+
 		int weaponIdx = 0;
-		pPlayerActor->GetState().weapon = otherPlayerData.weapon;
+		pPlayerActor->ChangeWeapon(otherPlayerData.weapon);
+		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
