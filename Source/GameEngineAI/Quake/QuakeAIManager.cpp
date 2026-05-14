@@ -6281,124 +6281,6 @@ bool QuakeAIManager::SimulateClusterPathing(
 	return true;
 }
 
-bool QuakeAIManager::IsCloseAIGuessing()
-{
-	PlayerView aiView;
-	GetPlayerView(mPlayers[GV_AI], aiView);
-	if (aiView.guessViews.find(mPlayers[GV_HUMAN]) == aiView.guessViews.end())
-		return false;
-
-	PlayerGuessView& playerGuessView = aiView.guessViews[mPlayers[GV_HUMAN]];
-	if (aiView.data.plan.node == NULL || playerGuessView.guessPlayers[mPlayers[GV_AI]].plan.node == NULL)
-		return false;
-
-	PathingNode* aiNode = aiView.data.plan.node;
-	float aiWeight = CalculatePathingWeight(aiView.data);
-	if (aiWeight)
-	{
-		PathingArc* aiArc = *aiView.data.plan.path.begin();
-		aiNode = aiArc->GetNode();
-		aiWeight = 0.f;
-	}
-	PathingNode* aiGuessNode = playerGuessView.guessPlayers[mPlayers[GV_AI]].plan.node;
-	float aiGuessWeight = CalculatePathingWeight(playerGuessView.guessPlayers[mPlayers[GV_AI]]);
-	if (aiGuessWeight)
-	{
-		PathingArc* aiGuessArc = *playerGuessView.guessPlayers[mPlayers[GV_AI]].plan.path.begin();
-		aiGuessNode = aiGuessArc->GetNode();
-		aiGuessWeight = 0.f;
-	}
-	if (aiNode->GetCluster() == aiGuessNode->GetCluster())
-		return true;
-
-	PathingCluster* pathingCluster = aiNode->FindCluster(AT_JUMP, aiGuessNode->GetCluster());
-	while (aiNode != pathingCluster->GetTarget())
-	{
-		PathingCluster* aiCluster = aiNode->FindCluster(AT_JUMP, pathingCluster->GetTarget());
-		PathingArc* aiArc = aiNode->FindArc(aiCluster->GetNode());
-
-		aiWeight += aiArc->GetWeight();
-		aiNode = aiArc->GetNode();
-	}
-	// threshold to accept close guessing players
-	if (aiWeight < 1.6f)
-		return true;
-
-	pathingCluster = aiGuessNode->FindCluster(AT_JUMP, aiNode->GetCluster());
-	while (aiGuessNode != pathingCluster->GetTarget())
-	{
-		PathingCluster* aiGuessCluster = aiGuessNode->FindCluster(AT_JUMP, pathingCluster->GetTarget());
-		PathingArc* aiGuessArc = aiGuessNode->FindArc(aiGuessCluster->GetNode());
-
-		aiGuessWeight += aiGuessArc->GetWeight();
-		aiGuessNode = aiGuessArc->GetNode();
-	}
-	// threshold to accept close guessing players
-	if (aiGuessWeight < 1.6f)
-		return true;
-
-	return false;
-}
-
-bool QuakeAIManager::IsCloseHumanGuessing()
-{
-	PlayerView playerView;
-	GetPlayerView(mPlayers[GV_HUMAN], playerView);
-	if (playerView.guessViews.find(mPlayers[GV_AI]) == playerView.guessViews.end())
-		return false;
-
-	PlayerGuessView& aiGuessView = playerView.guessViews[mPlayers[GV_AI]];
-	if (playerView.data.plan.node == NULL || aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].plan.node == NULL)
-		return false;
-
-	PathingNode* playerNode = playerView.data.plan.node;
-	float playerWeight = CalculatePathingWeight(playerView.data);
-	if (playerWeight)
-	{
-		PathingArc* playerArc = *playerView.data.plan.path.begin();
-		playerNode = playerArc->GetNode();
-		playerWeight = 0.f;
-	}
-	PathingNode* playerGuessNode = aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].plan.node;
-	float playerGuessWeight = CalculatePathingWeight(aiGuessView.guessPlayers[mPlayers[GV_HUMAN]]);
-	if (playerGuessWeight)
-	{
-		PathingArc* playerGuessArc = *aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].plan.path.begin();
-		playerGuessNode = playerGuessArc->GetNode();
-		playerGuessWeight = 0.f;
-	}
-	if (playerNode->GetCluster() == playerGuessNode->GetCluster())
-		return true;
-
-	PathingCluster* pathingCluster = playerNode->FindCluster(AT_JUMP, playerGuessNode->GetCluster());
-	while (playerNode != pathingCluster->GetTarget())
-	{
-		PathingCluster* playerCluster = playerNode->FindCluster(AT_JUMP, pathingCluster->GetTarget());
-		PathingArc* playerArc = playerNode->FindArc(playerCluster->GetNode());
-
-		playerWeight += playerArc->GetWeight();
-		playerNode = playerArc->GetNode();
-	}
-	// threshold to accept close guessing players
-	if (playerWeight < 1.6f)
-		return true;
-
-	pathingCluster = playerGuessNode->FindCluster(AT_JUMP, playerNode->GetCluster());
-	while (playerGuessNode != pathingCluster->GetTarget())
-	{
-		PathingCluster* playerGuessCluster = playerGuessNode->FindCluster(AT_JUMP, pathingCluster->GetTarget());
-		PathingArc* playerGuessArc = playerGuessNode->FindArc(playerGuessCluster->GetNode());
-
-		playerGuessWeight += playerGuessArc->GetWeight();
-		playerGuessNode = playerGuessArc->GetNode();
-	}
-	// threshold to accept close guessing players
-	if (playerGuessWeight < 1.6f)
-		return true;
-
-	return false;
-}
-
 bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 {
 	mMutex.lock();
@@ -7665,12 +7547,6 @@ void QuakeAIManager::RunAIFastDecision()
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
-				//lets sleep the process if the execution took less than 100 ms 
-				/*
-				unsigned int minimumTime = 100;
-				if (diffTime < minimumTime)
-					Sleep(minimumTime - diffTime);
-				*/
 				UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
@@ -7706,85 +7582,36 @@ void QuakeAIManager::RunAIGuessing()
 
 			unsigned int time = Timer::GetRealTime();
 
-			if (IsCloseAIGuessing())
+
+			PlayerView aiView;
+			bool isAIGuessing = MakeAIGuessing(aiView);
+			if (isAIGuessing)
 			{
-				PlayerView aiView;
-				bool isAIGuessing = MakeAIGuessing(aiView);
-				if (isAIGuessing)
+				//we enable ai view only if got a plan
+				GameApplication* gameApp = (GameApplication*)Application::App;
+				const GameViewList& gameViews = gameApp->GetGameViews();
+				for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
 				{
-					//we enable ai view only if got a plan
-					GameApplication* gameApp = (GameApplication*)Application::App;
-					const GameViewList& gameViews = gameApp->GetGameViews();
-					for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-					{
-						std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
-						if (pAiView)
-							pAiView->SetEnabled(true);
-					}
-
-					unsigned int diffTime = Timer::GetRealTime() - time;
-					std::stringstream ss;
-					ss << "\n ai close guessing total elapsed time " << diffTime;
-					PrintInfo(ss.str());
-					printf(ss.str().c_str());
-
-					//lets sleep the process if the execution took less than 300 ms 
-					/*
-					unsigned int minimumTime = 300;
-					if (diffTime < minimumTime)
-						Sleep(minimumTime - diffTime);
-					*/
-
-					PlayerGuessView& playerGuessView = aiView.guessViews[mPlayers[GV_HUMAN]];
-
-					UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);  //update playerView
-					UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
-
-					//lets wait to give some time for the AI Manager and AI Views update its status
-					Sleep(40);
-					//printf("\n Iteration AI Guessing %u", iteration);
-					//iteration++;
+					std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+					if (pAiView)
+						pAiView->SetEnabled(true);
 				}
-			}
-			else
-			{
-				PlayerView aiView;
-				bool isAIDecision = MakeAIGuessingDecision(aiView);
-				if (isAIDecision)
-				{
-					//we enable ai view only if got a plan
-					GameApplication* gameApp = (GameApplication*)Application::App;
-					const GameViewList& gameViews = gameApp->GetGameViews();
-					for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-					{
-						std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
-						if (pAiView)
-							pAiView->SetEnabled(true);
-					}
 
-					unsigned int diffTime = Timer::GetRealTime() - time;
-					std::stringstream ss;
-					ss << "\n ai guessing decision total elapsed time " << diffTime;
-					PrintInfo(ss.str());
-					printf(ss.str().c_str());
+				unsigned int diffTime = Timer::GetRealTime() - time;
+				std::stringstream ss;
+				ss << "\n ai close guessing total elapsed time " << diffTime;
+				PrintInfo(ss.str());
+				printf(ss.str().c_str());
 
-					//lets sleep the process if the execution took less than 300 ms 
-					/*
-					unsigned int minimumTime = 300;
-					if (diffTime < minimumTime)
-						Sleep(minimumTime - diffTime);
-					*/
+				PlayerGuessView& playerGuessView = aiView.guessViews[mPlayers[GV_HUMAN]];
 
-					PlayerGuessView& playerGuessView = aiView.guessViews[mPlayers[GV_HUMAN]];
+				UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);  //update playerView
+				UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
 
-					UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);  //update playerView
-					UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
-
-					//lets wait to give some time for the AI Manager and AI Views update its status
-					Sleep(40);
-					//printf("\n Iteration AI Guessing Decision %u", iteration);
-					//iteration++;
-				}
+				//lets wait to give some time for the AI Manager and AI Views update its status
+				Sleep(40);
+				//printf("\n Iteration AI Guessing %u", iteration);
+				//iteration++;
 			}
 
 			SetEnable(true);
@@ -7833,13 +7660,6 @@ void QuakeAIManager::RunAIAwareDecision()
 				ss << "\n ai aware decision total elapsed time " << diffTime;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
-
-				//lets sleep the process if the execution took less than 300 ms 
-				/*
-				unsigned int minimumTime = 300;
-				if (diffTime < minimumTime)
-					Sleep(minimumTime - diffTime);
-				*/
 
 				PlayerGuessView& playerGuessView = aiView.guessViews[mPlayers[GV_HUMAN]];
 
@@ -7902,13 +7722,6 @@ void QuakeAIManager::RunHumanFastDecision()
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
-				//lets sleep the process if the execution took less than 100 ms 
-				/*
-				unsigned int minimumTime = 100;
-				if (diffTime < minimumTime)
-					Sleep(minimumTime - diffTime);
-				*/
-
 				PlayerGuessView& aiGuessView = playerView.guessViews[mPlayers[GV_AI]];
 
 				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], playerView);
@@ -7946,86 +7759,37 @@ void QuakeAIManager::RunHumanGuessing()
 
 			unsigned int time = Timer::GetRealTime();
 
-			if (IsCloseHumanGuessing())
+			PlayerView playerView;
+			bool isHumanDecision = MakeHumanGuessing(playerView);
+			if (isHumanDecision)
 			{
-				PlayerView playerView;
-				bool isHumanDecision = MakeHumanGuessing(playerView);
-				if (isHumanDecision)
+				//we enable ai view only if got a plan
+				GameApplication* gameApp = (GameApplication*)Application::App;
+				const GameViewList& gameViews = gameApp->GetGameViews();
+				for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
 				{
-					//we enable ai view only if got a plan
-					GameApplication* gameApp = (GameApplication*)Application::App;
-					const GameViewList& gameViews = gameApp->GetGameViews();
-					for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-					{
-						std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
-						if (pAiView)
-							pAiView->SetEnabled(true);
-					}
-
-					unsigned int diffTime = Timer::GetRealTime() - time;
-					std::stringstream ss;
-					ss << "\n human close guessing total elapsed time " << diffTime;
-					PrintInfo(ss.str());
-					printf(ss.str().c_str());
-
-					//lets sleep the process if the execution took less than 300 ms 
-					/*
-					unsigned int minimumTime = 300;
-					if (diffTime < minimumTime)
-						Sleep(minimumTime - diffTime);
-					*/
-
-					PlayerGuessView& aiGuessView = playerView.guessViews[mPlayers[GV_AI]];
-
-					UpdatePlayerSimulationView(mPlayers[GV_HUMAN], playerView); //update playerView
-					UpdatePlayerSimulationView(mPlayers[GV_HUMAN], aiGuessView); //update guessView
-
-					//lets wait to give some time for the AI Manager and AI Views update its status
-					Sleep(40);
-					//printf("\n Iteration Human Guessing %u", iteration);
-					//iteration++;
+					std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+					if (pAiView)
+						pAiView->SetEnabled(true);
 				}
+
+				unsigned int diffTime = Timer::GetRealTime() - time;
+				std::stringstream ss;
+				ss << "\n human close guessing total elapsed time " << diffTime;
+				PrintInfo(ss.str());
+				printf(ss.str().c_str());
+
+				PlayerGuessView& aiGuessView = playerView.guessViews[mPlayers[GV_AI]];
+
+				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], playerView); //update playerView
+				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], aiGuessView); //update guessView
+
+				//lets wait to give some time for the AI Manager and AI Views update its status
+				Sleep(40);
+				//printf("\n Iteration Human Guessing %u", iteration);
+				//iteration++;
 			}
-			else
-			{
-				PlayerView playerView;
-				bool isHumanDecision = MakeHumanGuessingDecision(playerView);
-				if (isHumanDecision)
-				{
-					//we enable ai view only if got a plan
-					GameApplication* gameApp = (GameApplication*)Application::App;
-					const GameViewList& gameViews = gameApp->GetGameViews();
-					for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
-					{
-						std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
-						if (pAiView)
-							pAiView->SetEnabled(true);
-					}
-
-					unsigned int diffTime = Timer::GetRealTime() - time;
-					std::stringstream ss;
-					ss << "\n human guessing decision total elapsed time " << diffTime;
-					PrintInfo(ss.str());
-					printf(ss.str().c_str());
-
-					//lets sleep the process if the execution took less than 300 ms 
-					/*
-					unsigned int minimumTime = 300;
-					if (diffTime < minimumTime)
-						Sleep(minimumTime - diffTime);
-					*/
-
-					PlayerGuessView& aiGuessView = playerView.guessViews[mPlayers[GV_AI]];
-
-					UpdatePlayerSimulationView(mPlayers[GV_HUMAN], playerView); //update playerView
-					UpdatePlayerSimulationView(mPlayers[GV_HUMAN], aiGuessView); //update guessView
-
-					//lets wait to give some time for the AI Manager and AI Views update its status
-					Sleep(40);
-					//printf("\n Iteration Human Guessing Decision %u", iteration);
-					//iteration++;
-				}
-			}
+			
 			SetEnable(true);
 		}
 	}
@@ -8072,13 +7836,6 @@ void QuakeAIManager::RunHumanAwareDecision()
 				ss << "\n human aware decision total elapsed time " << diffTime;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
-
-				//lets sleep the process if the execution took less than 300 ms 
-				/*
-				unsigned int minimumTime = 300;
-				if (diffTime < minimumTime)
-					Sleep(minimumTime - diffTime);
-				*/
 
 				PlayerGuessView& aiGuessView = playerView.guessViews[mPlayers[GV_AI]];
 
@@ -9990,6 +9747,7 @@ void QuakeAIManager::CalculateVisibility(
 	auto otherVisibilityIt = otherPlayerVisibility.begin();
 
 	totalWeight = 0.f;
+	float totalVisibleWeight = 0.f;
 	//lets calculate the visibility for simultaneous path travelling.
 	if (otherCurrentArc != NULL)
 	{
@@ -10005,55 +9763,52 @@ void QuakeAIManager::CalculateVisibility(
 			for (; index < transitionPositions.get().size(); index++)
 			{
 				float currentWeight = currentArc->GetTransition()->GetWeights()[index];
-
-				//we only do ray casting for players which are either standing or moving (not jumping, falling...)
-				if (otherPathPlanEnd || currentArc->GetType() == AT_MOVE || otherCurrentArc->GetType() == AT_MOVE)
+				if (transitionNodes.get()[index]->IsVisibleNode(otherTransitionNodes.get()[otherIndex]))
+				//if (RayCollisionDetection(transitionPositions[index], otherTransitionPositions[otherIndex]) == NULL)
 				{
-					if (transitionNodes.get()[index]->IsVisibleNode(otherTransitionNodes.get()[otherIndex]))
-						//if (RayCollisionDetection(transitionPositions[index], otherTransitionPositions[otherIndex]) == NULL)
+					if (currentArc->GetType() == AT_MOVE)
 					{
-						if (currentArc->GetType() == AT_MOVE)
+						for (auto visIt = std::next(visibilityIt); visIt != playerVisibility.end(); visIt++)
 						{
-							for (auto visIt = std::next(visibilityIt); visIt != playerVisibility.end(); visIt++)
-							{
-								if (visIt->first > totalWeight)
-									break;
+							if (visIt->first > totalWeight)
+								break;
 
-								visibilityIt++;
-							}
-
-							//lets check that we are in the visibile time frame
-							if (visibilityIt != playerVisibility.end() && visibilityIt->first >= playerVisibleTime)
-							{
-								visibilityIt->second.moveDistance += Length(
-									otherTransitionPositions.get()[otherIndex] - transitionPositions.get()[index]) * currentWeight;
-								visibilityIt->second.moveHeight +=
-									(transitionPositions.get()[index][AXIS_Y] - otherTransitionPositions.get()[otherIndex][AXIS_Y]) * currentWeight;
-								visibilityIt->second.moveTime += currentWeight;
-							}
+							visibilityIt++;
 						}
 
-						if (otherPathPlanEnd || otherCurrentArc->GetType() == AT_MOVE)
+						//lets check that we are in the visibile time frame
+						if (visibilityIt != playerVisibility.end() && visibilityIt->first >= playerVisibleTime)
 						{
-							for (auto otherVisIt = std::next(otherVisibilityIt); otherVisIt != otherPlayerVisibility.end(); otherVisIt++)
-							{
-								if (otherVisIt->first > totalWeight)
-									break;
-
-								otherVisibilityIt++;
-							}
-
-							//lets check that we are in the visibile time frame
-							if (otherVisibilityIt != otherPlayerVisibility.end() && otherVisibilityIt->first >= otherPlayerVisibleTime)
-							{
-								otherVisibilityIt->second.moveDistance += Length(
-									otherTransitionPositions.get()[otherIndex] - transitionPositions.get()[index]) * currentWeight;
-								otherVisibilityIt->second.moveHeight +=
-									(otherTransitionPositions.get()[otherIndex][AXIS_Y] - transitionPositions.get()[index][AXIS_Y]) * currentWeight;
-								otherVisibilityIt->second.moveTime += currentWeight;
-							}
+							visibilityIt->second.moveDistance += Length(
+								otherTransitionPositions.get()[otherIndex] - transitionPositions.get()[index]) * currentWeight;
+							visibilityIt->second.moveHeight +=
+								(transitionPositions.get()[index][AXIS_Y] - otherTransitionPositions.get()[otherIndex][AXIS_Y]) * currentWeight;
+							visibilityIt->second.moveTime += currentWeight;
 						}
 					}
+
+					if (otherPathPlanEnd || otherCurrentArc->GetType() == AT_MOVE)
+					{
+						for (auto otherVisIt = std::next(otherVisibilityIt); otherVisIt != otherPlayerVisibility.end(); otherVisIt++)
+						{
+							if (otherVisIt->first > totalWeight)
+								break;
+
+							otherVisibilityIt++;
+						}
+
+						//lets check that we are in the visibile time frame
+						if (otherVisibilityIt != otherPlayerVisibility.end() && otherVisibilityIt->first >= otherPlayerVisibleTime)
+						{
+							otherVisibilityIt->second.moveDistance += Length(
+								otherTransitionPositions.get()[otherIndex] - transitionPositions.get()[index]) * currentWeight;
+							otherVisibilityIt->second.moveHeight +=
+								(otherTransitionPositions.get()[otherIndex][AXIS_Y] - transitionPositions.get()[index][AXIS_Y]) * currentWeight;
+							otherVisibilityIt->second.moveTime += currentWeight;
+						}
+					}
+
+					totalVisibleWeight += currentWeight;
 				}
 
 				while (totalArcWeight <= totalWeight)
@@ -10100,9 +9855,6 @@ void QuakeAIManager::CalculateVisibility(
 			for (; index < transitionPositions.size(); index++)
 			{
 				float currentWeight = currentArc->GetTransition()->GetWeights()[index];
-
-				//we only do ray casting for players which are either standing or moving (not jumping, falling...)
-
 				if (transitionNodes[index]->IsVisibleNode(otherCurrentNode))
 					//if (RayCollisionDetection(transitionPositions[index], otherTransitionPositions[otherIndex]) == NULL)
 				{
@@ -10144,6 +9896,8 @@ void QuakeAIManager::CalculateVisibility(
 							(otherCurrentNode->GetPosition()[AXIS_Y] - transitionPositions[index][AXIS_Y]) * currentWeight;
 						otherVisibilityIt->second.moveTime += currentWeight;
 					}
+
+					totalVisibleWeight += currentWeight;
 				}
 
 				totalWeight += currentWeight;
@@ -10156,10 +9910,6 @@ void QuakeAIManager::CalculateVisibility(
 			index = 0;
 		}
 	}
-
-	float totalVisibleWeight= 0.f;
-	for (auto& visibility : playerVisibility)
-		totalVisibleWeight += visibility.second.moveTime;
 
 	if (totalVisibleWeight < 2.f)
 	{
@@ -10302,12 +10052,11 @@ void QuakeAIManager::PerformGuessingMaking(
 		}
 	}
 
-	//lets assign a proportional probability to each opponent Guessing based on the calculated average heuristics
+	//lets assign a strong proportional probability to each opponent guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> otherPlayerGuessingProbabilities;
 	if (!otherPlayerGuessingHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
@@ -10317,36 +10066,31 @@ void QuakeAIManager::PerformGuessingMaking(
 				minHeuristicValue = otherPlayerGuessingHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
 
-			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingHeuristic.second + shift;
+			// Shift to positive
+			float shifted = otherPlayerGuessingHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			otherPlayerGuessingProbabilities[otherClusterCode] = std::pow(shifted, power);
 			sumTotal += otherPlayerGuessingProbabilities[otherClusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)otherPlayerGuessingProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
-				otherPlayerGuessingProbabilities[otherClusterCode] /= sumTotal;
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
-				otherPlayerGuessingProbabilities[otherClusterCode] /= (float)otherPlayerGuessingProbabilities.size();
-			}
+			unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
+			otherPlayerGuessingProbabilities[otherClusterCode] /= sumTotal;
 		}
 	}
 
@@ -10463,12 +10207,11 @@ void QuakeAIManager::PerformGuessingMaking(
 		for (auto const& simulation : playerGuessingSimulation->simulations)
 			playerGuessingHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
 
-	//lets assign a proportional probability to each player Guessing based on the calculated average heuristics
+	//lets assign a strong proportional probability to each player guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerGuessingProbabilities;
 	if (!playerGuessingHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
@@ -10478,36 +10221,31 @@ void QuakeAIManager::PerformGuessingMaking(
 				minHeuristicValue = playerGuessingHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
 			unsigned long long clusterCode = playerGuessingHeuristic.first;
 
-			playerGuessingProbabilities[clusterCode] = playerGuessingHeuristic.second + shift;
+			// Shift to positive
+			float shifted = playerGuessingHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			playerGuessingProbabilities[clusterCode] = std::pow(shifted, power);
 			sumTotal += playerGuessingProbabilities[clusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)playerGuessingProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& playerGuessingProb : playerGuessingProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& playerGuessingProb : playerGuessingProbabilities)
-			{
-				unsigned long long clusterCode = playerGuessingProb.first;
-				playerGuessingProbabilities[clusterCode] /= sumTotal;
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& playerGuessingProb : playerGuessingProbabilities)
-			{
-				unsigned long long clusterCode = playerGuessingProb.first;
-				playerGuessingProbabilities[clusterCode] /= (float)playerGuessingProbabilities.size();
-			}
+			unsigned long long clusterCode = playerGuessingProb.first;
+			playerGuessingProbabilities[clusterCode] /= sumTotal;
 		}
 	}
 
@@ -10598,12 +10336,11 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a proportional probability to each opponent Decision based on the calculated average heuristics
+	//lets assign a strong proportional probability to each opponent decision based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> otherPlayerDecisionProbabilities;
 	if (!otherPlayerDecisionHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
@@ -10613,36 +10350,31 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 				minHeuristicValue = otherPlayerDecisionHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
 
-			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionHeuristic.second + shift;
+			// Shift to positive
+			float shifted = otherPlayerDecisionHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			otherPlayerDecisionProbabilities[otherClusterCode] = std::pow(shifted, power);
 			sumTotal += otherPlayerDecisionProbabilities[otherClusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)otherPlayerDecisionProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
-				otherPlayerDecisionProbabilities[otherClusterCode] /= sumTotal;
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
-				otherPlayerDecisionProbabilities[otherClusterCode] /= (float)otherPlayerDecisionProbabilities.size();
-			}
+			unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
+			otherPlayerDecisionProbabilities[otherClusterCode] /= sumTotal;
 		}
 	}
 
@@ -10769,12 +10501,11 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a proportional probability to each player Decision based on the calculated average heuristics
+	//lets assign a strong proportional probability to each player decision based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerDecisionProbabilities;
 	if (!playerDecisionHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
@@ -10784,36 +10515,31 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 				minHeuristicValue = playerDecisionHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
 			unsigned long long clusterCode = playerDecisionHeuristic.first;
 
-			playerDecisionProbabilities[clusterCode] = playerDecisionHeuristic.second + shift;
+			// Shift to positive
+			float shifted = playerDecisionHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			playerDecisionProbabilities[clusterCode] = std::pow(shifted, power);
 			sumTotal += playerDecisionProbabilities[clusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)playerDecisionProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& playerDecisionProb : playerDecisionProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& playerDecisionProb : playerDecisionProbabilities)
-			{
-				unsigned long long clusterCode = playerDecisionProb.first;
-				playerDecisionProbabilities[clusterCode] /= sumTotal;
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& playerDecisionProb : playerDecisionProbabilities)
-			{
-				unsigned long long clusterCode = playerDecisionProb.first;
-				playerDecisionProbabilities[clusterCode] /= (float)playerDecisionProbabilities.size();
-			}
+			unsigned long long clusterCode = playerDecisionProb.first;
+			playerDecisionProbabilities[clusterCode] /= sumTotal;
 		}
 	}
 
@@ -10911,12 +10637,11 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a proportional probability to each opponent Guessing based on the calculated average heuristics
+	//lets assign a strong proportional probability to each opponent guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> otherPlayerGuessingProbabilities;
 	if (!otherPlayerGuessingHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
@@ -10926,36 +10651,31 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 				minHeuristicValue = otherPlayerGuessingHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerGuessingHeuristic.first;
 
-			otherPlayerGuessingProbabilities[otherClusterCode] = otherPlayerGuessingHeuristic.second + shift;
+			// Shift to positive
+			float shifted = otherPlayerGuessingHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			otherPlayerGuessingProbabilities[otherClusterCode] = std::pow(shifted, power);
 			sumTotal += otherPlayerGuessingProbabilities[otherClusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)otherPlayerGuessingProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
-				otherPlayerGuessingProbabilities[otherClusterCode] /= sumTotal;
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& otherPlayerGuessingProb : otherPlayerGuessingProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
-				otherPlayerGuessingProbabilities[otherClusterCode] /= (float)otherPlayerGuessingProbabilities.size();
-			}
+			unsigned long long otherClusterCode = otherPlayerGuessingProb.first;
+			otherPlayerGuessingProbabilities[otherClusterCode] /= sumTotal;
 		}
 	}
 
@@ -11081,12 +10801,11 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 		}
 	}
 
-	//lets assign a proportional probability to each player Guessing based on the calculated average heuristics
+	//lets assign a strong proportional probability to each player guessing based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerGuessingProbabilities;
 	if (!playerGuessingHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
@@ -11096,36 +10815,31 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 				minHeuristicValue = playerGuessingHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& playerGuessingHeuristic : playerGuessingHeuristics)
 		{
 			unsigned long long clusterCode = playerGuessingHeuristic.first;
 
-			playerGuessingProbabilities[clusterCode] = playerGuessingHeuristic.second + shift;
+			// Shift to positive
+			float shifted = playerGuessingHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			playerGuessingProbabilities[clusterCode] = std::pow(shifted, power);
 			sumTotal += playerGuessingProbabilities[clusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)playerGuessingProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& playerGuessingProb : playerGuessingProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& playerGuessingProb : playerGuessingProbabilities)
-			{
-				unsigned long long clusterCode = playerGuessingProb.first;
-				playerGuessingProbabilities[clusterCode] /= sumTotal;
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& playerGuessingProb : playerGuessingProbabilities)
-			{
-				unsigned long long clusterCode = playerGuessingProb.first;
-				playerGuessingProbabilities[clusterCode] /= (float)playerGuessingProbabilities.size();
-			}
+			unsigned long long clusterCode = playerGuessingProb.first;
+			playerGuessingProbabilities[clusterCode] /= sumTotal;
 		}
 	}
 
@@ -11217,14 +10931,13 @@ void QuakeAIManager::PerformDecisionMaking(
 		}
 	}
 
-	//lets assign a proportional probability to each opponent Decision based on the calculated average heuristics
+	//lets assign a strong proportional probability to each opponent decision based on the calculated average heuristics
 	std::multimap<float, unsigned long long, std::greater<float>> sortedOtherPlayerDecisionHeuristics;
 	std::multimap<float, unsigned long long, std::greater<float>> sortedOtherPlayerDecisionProbabilities;
 	std::unordered_map<unsigned long long, float> otherPlayerDecisionProbabilities;
 	if (!otherPlayerDecisionHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
@@ -11234,40 +10947,33 @@ void QuakeAIManager::PerformDecisionMaking(
 				minHeuristicValue = otherPlayerDecisionHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& otherPlayerDecisionHeuristic : otherPlayerDecisionHeuristics)
 		{
 			unsigned long long otherClusterCode = otherPlayerDecisionHeuristic.first;
 
-			otherPlayerDecisionProbabilities[otherClusterCode] = otherPlayerDecisionHeuristic.second + shift;
+			// Shift to positive
+			float shifted = otherPlayerDecisionHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			otherPlayerDecisionProbabilities[otherClusterCode] = std::pow(shifted, power);
 			sumTotal += otherPlayerDecisionProbabilities[otherClusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)otherPlayerDecisionProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
-				otherPlayerDecisionProbabilities[otherClusterCode] /= sumTotal;
-				sortedOtherPlayerDecisionHeuristics.insert({ otherPlayerDecisionHeuristics[otherClusterCode], otherClusterCode });
-				sortedOtherPlayerDecisionProbabilities.insert({ otherPlayerDecisionProbabilities[otherClusterCode], otherClusterCode });
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& otherPlayerDecisionProb : otherPlayerDecisionProbabilities)
-			{
-				unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
-				otherPlayerDecisionProbabilities[otherClusterCode] /= (float)otherPlayerDecisionProbabilities.size();
-				sortedOtherPlayerDecisionHeuristics.insert({ otherPlayerDecisionHeuristics[otherClusterCode], otherClusterCode });
-				sortedOtherPlayerDecisionProbabilities.insert({ otherPlayerDecisionProbabilities[otherClusterCode], otherClusterCode });
-			}
+			unsigned long long otherClusterCode = otherPlayerDecisionProb.first;
+			otherPlayerDecisionProbabilities[otherClusterCode] /= sumTotal;
+			sortedOtherPlayerDecisionHeuristics.insert({ otherPlayerDecisionHeuristics[otherClusterCode], otherClusterCode });
+			sortedOtherPlayerDecisionProbabilities.insert({ otherPlayerDecisionProbabilities[otherClusterCode], otherClusterCode });
 		}
 	}
 
@@ -11383,12 +11089,11 @@ void QuakeAIManager::PerformDecisionMaking(
 		for (auto const& simulation : playerDecisionSimulation->simulations)
 			playerDecisionHeuristics[simulation->playerSimulation.code] += simulation->playerSimulation.heuristic;
 
-	//lets assign a proportional probability to each player Decision based on the calculated average heuristics
+	//lets assign a strong proportional probability to each player decision based on the calculated average heuristics
 	std::unordered_map<unsigned long long, float> playerDecisionProbabilities;
 	if (!playerDecisionHeuristics.empty())
 	{
-		// 1. Find minimum to handle negative values safely
-		float epsilon = 1e-6f;
+		// Find minimum to handle negative values safely
 		float minHeuristicValue = FLT_MAX;
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
@@ -11398,36 +11103,31 @@ void QuakeAIManager::PerformDecisionMaking(
 				minHeuristicValue = playerDecisionHeuristic.second;
 		}
 
-		// 2. Shift everything so all values are strictly positive
-		float shift = (minHeuristicValue < 0.f) ? -minHeuristicValue + epsilon : 0.f;
-
 		// Compute linear proportional probabilities and the sum
+		float epsilon = 1e-6f;
 		float sumTotal = 0.f;
+		float power = 5.f; // Adjust this power to make the distribution more or less peaked
 		for (auto& playerDecisionHeuristic : playerDecisionHeuristics)
 		{
 			unsigned long long clusterCode = playerDecisionHeuristic.first;
 
-			playerDecisionProbabilities[clusterCode] = playerDecisionHeuristic.second + shift;
+			// Shift to positive
+			float shifted = playerDecisionHeuristic.second - minHeuristicValue + epsilon;
+
+			// Apply power to make best moves stand out much more
+			playerDecisionProbabilities[clusterCode] = std::pow(shifted, power);
 			sumTotal += playerDecisionProbabilities[clusterCode];
 		}
 
-		if (sumTotal >= epsilon)
+		// Avoid division by zero
+		if (sumTotal < epsilon)
+			sumTotal = (float)playerDecisionProbabilities.size();
+
+		// Normalize to probabilities
+		for (auto& playerDecisionProb : playerDecisionProbabilities)
 		{
-			// Normalize to probabilities
-			for (auto& playerDecisionProb : playerDecisionProbabilities)
-			{
-				unsigned long long clusterCode = playerDecisionProb.first;
-				playerDecisionProbabilities[clusterCode] /= sumTotal;
-			}
-		}
-		else
-		{
-			// Handle the degenerate case (all values were identical)
-			for (auto& playerDecisionProb : playerDecisionProbabilities)
-			{
-				unsigned long long clusterCode = playerDecisionProb.first;
-				playerDecisionProbabilities[clusterCode] /= (float)playerDecisionProbabilities.size();
-			}
+			unsigned long long clusterCode = playerDecisionProb.first;
+			playerDecisionProbabilities[clusterCode] /= sumTotal;
 		}
 	}
 

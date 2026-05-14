@@ -1248,9 +1248,6 @@ protected:
 		mPlayerEvaluations[aid] = ET_GUESSING;
 	}
 
-	bool IsCloseAIGuessing();
-	bool IsCloseHumanGuessing();
-
 	bool MakeAIGuessing(PlayerView& aiView);
 	bool MakeAIFastDecision(PlayerView& aiView);
 	bool MakeAIGuessingDecision(PlayerView& aiView);

@@ -1810,8 +1810,11 @@ void PhysX::SetVelocity(ActorId actorId, const Vector3<float>& vel)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
-		PxControllerFilters filters;
-		PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
+		if (Length(vel) > 0.f)
+		{
+			PxControllerFilters filters;
+			PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
+		}
 	}
 	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{
@@ -1842,8 +1845,11 @@ void PhysX::SetAngularVelocity(ActorId actorId, const Vector3<float>& vel)
 {
 	if (PxController* const controller = dynamic_cast<PxController*>(FindPhysXController(actorId)))
 	{
-		PxControllerFilters filters;
-		PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
+		if (Length(vel) > 0.f)
+		{
+			PxControllerFilters filters;
+			PxU32 flags = controller->move(Vector3ToPxVector3(vel), 0.001f, 0.f, filters);
+		}
 	}
 	else if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
 	{

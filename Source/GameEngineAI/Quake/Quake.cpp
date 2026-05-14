@@ -1744,27 +1744,17 @@ void QuakeLogic::SpawnActorDelegate(BaseEventDataPtr pEventData)
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		if (pPhysicComponent)
 		{
-			//fix for PhysX
-			AxisAngle<4, float> localRotation;
-			spawnTransform.GetRotation(localRotation);
-			float yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
-			EventManager::Get()->TriggerEvent(
-				std::make_shared<EventDataRotateActor>(pPlayerActor->GetId(), yaw, 0.f));
-
-			std::shared_ptr<BaseGamePhysic> gamePhysics = GetGamePhysics();
-			gamePhysics->OnUpdate(0.01f);
-
 			if (spawnTransform.IsIdentity())
 			{
 				SelectSpawnPoint(pPhysicComponent->GetPosition(), spawnTransform);
 
+				AxisAngle<4, float> localRotation;
 				spawnTransform.GetRotation(localRotation);
-				yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
+				float yaw = localRotation.mAngle * localRotation.mAxis[AXIS_Y] * (float)GE_C_RAD_TO_DEG;
 				EventManager::Get()->TriggerEvent(
 					std::make_shared<EventDataRotateActor>(pPlayerActor->GetId(), yaw, 0.f));
 			}
 			pPhysicComponent->SetTransform(spawnTransform);
-			gamePhysics->OnUpdate(0.01f);
 
 			GameApplication* gameApp = (GameApplication*)Application::App;
 			const GameViewList& gameViews = gameApp->GetGameViews();
