@@ -1315,8 +1315,6 @@ private:
 	void RemoveAllDelegates(void);
 
 	void UpdatePlayerItems(ActorId playerId, PlayerView& playerView);
-	void UpdatePlayerGuessItems(PlayerGuessView& playerGuessView);
-	void UpdatePlayerGuessItems(ActorId playerId, PlayerGuessView& playerGuessView);
 	void UpdatePlayerGuessItems(unsigned long deltaMs, ActorId playerId, PlayerGuessView& playerGuessView);
 
 	void UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessView& playerGuessView);

@@ -8225,9 +8225,9 @@ void QuakeAIManager::SpawnActor(ActorId playerId)
 					playerGuessView.guessSimulations[pPlayerActor->GetId()].plan = NodePlan(guessSpawnNode, PathingArcVec());
 
 					//update game items
-					UpdatePlayerGuessItems(playerGuessView);
-					UpdatePlayerGuessItems(pPlayerActor->GetId(), playerGuessView);
-					UpdatePlayerGuessItems(pOtherPlayerActor->GetId(), playerGuessView);
+					playerGuessView.items.clear();
+					playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+					playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
 					playerView.guessViews[pOtherPlayerActor->GetId()] = playerGuessView;
 				}
@@ -8580,7 +8580,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 {
 	float score = 0.f;
 	float heuristic = 0.f;
-	float maxWeight = 10.0f;
+	float maxWeight = 6.0f;
 	float weight = 0.f;
 	int maxAmmo = 0;
 	int ammo = 0;
@@ -8839,7 +8839,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 {
 	float score = 0.f;
-	float maxWeight = 10.0f;
+	float maxWeight = 6.0f;
 	float weight = 0.f;
 	int maxAmmo = 0;
 	int ammo = 0;
@@ -11713,6 +11713,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					// add ammo
 					playerGuessView.data.ammo[pWeaponPickup->GetCode()] += playerGuessView.data.itemAmount[itemId];
 
+					playerGuessView.items[itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
@@ -11722,6 +11723,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					std::shared_ptr<AmmoPickup> pAmmoPickup = pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
 					playerGuessView.data.ammo[pAmmoPickup->GetCode()] += playerGuessView.data.itemAmount[itemId];
 
+					playerGuessView.items[itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
@@ -11731,6 +11733,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					std::shared_ptr<ArmorPickup> pArmorPickup = pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
 					playerGuessView.data.stats[STAT_ARMOR] += playerGuessView.data.itemAmount[itemId];
 
+					playerGuessView.items[itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
@@ -11740,6 +11743,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					std::shared_ptr<HealthPickup> pHealthPickup = pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
 					playerGuessView.data.stats[STAT_HEALTH] += playerGuessView.data.itemAmount[itemId];
 
+					playerGuessView.items[itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
@@ -11913,169 +11917,26 @@ void QuakeAIManager::UpdatePlayerItems(ActorId playerId, PlayerView& playerView)
 	}
 }
 
-void QuakeAIManager::UpdatePlayerGuessItems(PlayerGuessView& playerGuessView)
-{
-	//for the moment we take perfect information but the goal is to have
-	//an accurate system to predict items availability and respawning time estimation
-	GameApplication* gameApp = (GameApplication*)Application::App;
-	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-
-	std::vector<std::shared_ptr<Actor>> searchActors;
-	game->GetAmmoActors(searchActors);
-	game->GetWeaponActors(searchActors);
-	game->GetHealthActors(searchActors);
-	game->GetArmorActors(searchActors);
-	for (std::shared_ptr<Actor> pItemActor : searchActors)
-	{
-		if (pItemActor->GetType() == "Weapon")
-		{
-			std::shared_ptr<WeaponPickup> pWeaponPickup = pItemActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
-			playerGuessView.items[pItemActor->GetId()] = pWeaponPickup->mRespawnTime / 1000.f;
-		}
-		else if (pItemActor->GetType() == "Ammo")
-		{
-			std::shared_ptr<AmmoPickup> pAmmoPickup = pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
-			playerGuessView.items[pItemActor->GetId()] = pAmmoPickup->mRespawnTime / 1000.f;
-		}
-		else if (pItemActor->GetType() == "Armor")
-		{
-			std::shared_ptr<ArmorPickup> pArmorPickup = pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
-			playerGuessView.items[pItemActor->GetId()] = pArmorPickup->mRespawnTime / 1000.f;
-		}
-		else if (pItemActor->GetType() == "Health")
-		{
-			std::shared_ptr<HealthPickup> pHealthPickup = pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
-			playerGuessView.items[pItemActor->GetId()] = pHealthPickup->mRespawnTime / 1000.f;
-		}
-	}
-}
-
-void QuakeAIManager::UpdatePlayerGuessItems(ActorId playerId, PlayerGuessView& playerGuessView)
-{
-	//for the moment we take perfect information but the goal is to have
-	//an accurate system to predict items availability and respawning time estimation
-	GameApplication* gameApp = (GameApplication*)Application::App;
-	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-
-	std::vector<std::shared_ptr<Actor>> searchActors;
-	game->GetAmmoActors(searchActors);
-	game->GetWeaponActors(searchActors);
-	game->GetHealthActors(searchActors);
-	game->GetArmorActors(searchActors);
-	for (std::shared_ptr<Actor> pItemActor : searchActors)
-	{
-		if (pItemActor->GetType() == "Health" ||
-			pItemActor->GetType() == "Weapon" ||
-			pItemActor->GetType() == "Armor" ||
-			pItemActor->GetType() == "Ammo")
-		{
-			playerGuessView.guessItems[playerId][pItemActor->GetId()] = 0.f;
-		}
-	}
-}
-
 void QuakeAIManager::UpdatePlayerGuessItems(unsigned long deltaMs, ActorId playerId, PlayerGuessView& playerGuessView)
 {
-	//for the moment we take perfect information but the goal is to have
-	//an accurate system to predict items availability and respawning time estimation
-	GameApplication* gameApp = (GameApplication*)Application::App;
-	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-
-	std::vector<std::shared_ptr<Actor>> searchActors;
-	game->GetAmmoActors(searchActors);
-	game->GetWeaponActors(searchActors);
-	game->GetHealthActors(searchActors);
-	game->GetArmorActors(searchActors);
-	for (std::shared_ptr<Actor> pItemActor : searchActors)
+	for (auto const& item : playerGuessView.items)
 	{
-		if (pItemActor->GetType() == "Weapon")
-		{
-			std::shared_ptr<WeaponPickup> pWeaponPickup = pItemActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+		std::shared_ptr<Actor> pItemActor(GameLogic::Get()->GetActor(item.first).lock());
+		playerGuessView.items[pItemActor->GetId()] -= deltaMs / 1000.f;
+		if (playerGuessView.items[pItemActor->GetId()] < 0)
+			playerGuessView.items[pItemActor->GetId()] = 0.f;
 
-			if (playerGuessView.data.items.find(pItemActor->GetId()) != playerGuessView.data.items.end())
-			{
-				if (playerGuessView.data.items[pItemActor->GetId()] <= 0)
-					playerGuessView.items[pItemActor->GetId()] = pWeaponPickup->mRespawnTime / 1000.f;
-				else
-					playerGuessView.items[pItemActor->GetId()] -= deltaMs / 1000.f;
-			}
-			else playerGuessView.items[pItemActor->GetId()] = pWeaponPickup->mRespawnTime / 1000.f;
-			if (playerGuessView.items[pItemActor->GetId()] < 0)
-				playerGuessView.items[pItemActor->GetId()] = 0.f;
+		playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] -= deltaMs / 1000.f;
+		if (playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] < 0)
+			playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] = 0.f;
+	}
 
-			playerGuessView.guessItems[playerId][pItemActor->GetId()] -= deltaMs / 1000.f;
-			playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] -= deltaMs / 1000.f;
-			if (playerGuessView.guessItems[playerId][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerId][pItemActor->GetId()] = 0.f;
-			if (playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] = 0.f;
-		}
-		else if (pItemActor->GetType() == "Ammo")
-		{
-			std::shared_ptr<AmmoPickup> pAmmoPickup = pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
-
-			if (playerGuessView.data.items.find(pItemActor->GetId()) != playerGuessView.data.items.end())
-			{
-				if (playerGuessView.data.items[pItemActor->GetId()] <= 0)
-					playerGuessView.items[pItemActor->GetId()] = pAmmoPickup->mRespawnTime / 1000.f;
-				else
-					playerGuessView.items[pItemActor->GetId()] -= deltaMs / 1000.f;
-			}
-			else playerGuessView.items[pItemActor->GetId()] = pAmmoPickup->mRespawnTime / 1000.f;
-			if (playerGuessView.items[pItemActor->GetId()] < 0)
-				playerGuessView.items[pItemActor->GetId()] = 0.f;
-
-			playerGuessView.guessItems[playerId][pItemActor->GetId()] -= deltaMs / 1000.f;
-			playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] -= deltaMs / 1000.f;
-			if (playerGuessView.guessItems[playerId][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerId][pItemActor->GetId()] = 0.f;
-			if (playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] = 0.f;
-		}
-		else if (pItemActor->GetType() == "Armor")
-		{
-			std::shared_ptr<ArmorPickup> pArmorPickup = pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
-
-			if (playerGuessView.data.items.find(pItemActor->GetId()) != playerGuessView.data.items.end())
-			{
-				if (playerGuessView.data.items[pItemActor->GetId()] <= 0)
-					playerGuessView.items[pItemActor->GetId()] = pArmorPickup->mRespawnTime / 1000.f;
-				else
-					playerGuessView.items[pItemActor->GetId()] -= deltaMs / 1000.f;
-			}
-			else playerGuessView.items[pItemActor->GetId()] = pArmorPickup->mRespawnTime / 1000.f;
-			if (playerGuessView.items[pItemActor->GetId()] < 0)
-				playerGuessView.items[pItemActor->GetId()] = 0.f;
-
-			playerGuessView.guessItems[playerId][pItemActor->GetId()] -= deltaMs / 1000.f;
-			playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] -= deltaMs / 1000.f;
-			if (playerGuessView.guessItems[playerId][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerId][pItemActor->GetId()] = 0.f;
-			if (playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] = 0.f;
-		}
-		else if (pItemActor->GetType() == "Health")
-		{
-			std::shared_ptr<HealthPickup> pHealthPickup = pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
-
-			if (playerGuessView.data.items.find(pItemActor->GetId()) != playerGuessView.data.items.end())
-			{
-				if (playerGuessView.data.items[pItemActor->GetId()] <= 0)
-					playerGuessView.items[pItemActor->GetId()] = pHealthPickup->mRespawnTime / 1000.f;
-				else
-					playerGuessView.items[pItemActor->GetId()] -= deltaMs / 1000.f;
-			}
-			else playerGuessView.items[pItemActor->GetId()] = pHealthPickup->mRespawnTime / 1000.f;
-			if (playerGuessView.items[pItemActor->GetId()] < 0)
-				playerGuessView.items[pItemActor->GetId()] = 0.f;
-
-			playerGuessView.guessItems[playerId][pItemActor->GetId()] -= deltaMs / 1000.f;
-			playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] -= deltaMs / 1000.f;
-			if (playerGuessView.guessItems[playerId][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerId][pItemActor->GetId()] = 0.f;
-			if (playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] < 0)
-				playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] = 0.f;
-		}
+	for (auto const& item : playerGuessView.guessItems[playerId])
+	{
+		std::shared_ptr<Actor> pItemActor(GameLogic::Get()->GetActor(item.first).lock());
+		playerGuessView.guessItems[playerId][pItemActor->GetId()] -= deltaMs / 1000.f;
+		if (playerGuessView.guessItems[playerId][pItemActor->GetId()] < 0)
+			playerGuessView.guessItems[playerId][pItemActor->GetId()] = 0.f;
 	}
 }
 
@@ -12101,7 +11962,10 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 	for (std::shared_ptr<PlayerActor> pPlayerActor : playerActors)
 	{
 		if (pPlayerActor->GetState().moveType == PM_DEAD)
+		{
+			SavePlayerView(pPlayerActor->GetId(), PlayerView());
 			continue;
+		}
 
 		PlayerView playerView; 
 		GetPlayerView(pPlayerActor->GetId(), playerView);
@@ -12114,8 +11978,8 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 		//aware decision making
 		bool runAwareDecision = false;
 
-		std::shared_ptr<TransformComponent> pPlayerTransformComponent(
-			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		for (std::shared_ptr<PlayerActor> pOtherPlayerActor : playerActors)
 		{
 			if (pPlayerActor->GetId() == pOtherPlayerActor->GetId())
@@ -12151,28 +12015,28 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 				}
 			}
 
-			if (pPlayerTransformComponent)
+			if (pPlayerPhysicComponent)
 			{
-				PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerTransformComponent->GetPosition(), false);
+				PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerPhysicComponent->GetPosition(), false);
 				if (playerNode)
 				{
 					bool resetGuessItem = CheckPlayerGuessItems(playerNode, playerGuessView, pPlayerActor->GetId());
 
-					std::shared_ptr<TransformComponent> pOtherPlayerTransformComponent(
-						pOtherPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-					if (pOtherPlayerTransformComponent)
+					std::shared_ptr<PhysicComponent> pOtherPlayerPhysicComponent(
+						pOtherPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+					if (pOtherPlayerPhysicComponent)
 					{
-						PathingNode* otherPlayerNode = mPathingGraph->FindClosestNode(pOtherPlayerTransformComponent->GetPosition(), false);
+						PathingNode* otherPlayerNode = mPathingGraph->FindClosestNode(pOtherPlayerPhysicComponent->GetPosition(), false);
 						bool resetOtherGuessItem = CheckPlayerGuessItems(otherPlayerNode, playerGuessView);
 
 						if (playerNode->IsVisibleNode(otherPlayerNode))
-							//if (RayCollisionDetection(currentPosition, pOtherPlayerTransformComponent->GetPosition()) == NULL)
+							//if (RayCollisionDetection(currentPosition, pOtherPlayerPhysicComponent->GetPosition()) == NULL)
 						{
 							//distrust the guessing plan and reset guess player
 							playerGuessView.isUpdated = false;
-							UpdatePlayerGuessItems(playerGuessView);
-							UpdatePlayerGuessItems(pPlayerActor->GetId(), playerGuessView);
-							UpdatePlayerGuessItems(pOtherPlayerActor->GetId(), playerGuessView);
+							playerGuessView.items.clear();
+							playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+							playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
 							std::stringstream updatePlayer;
 							updatePlayer << "\n visible nodes for both players ";
@@ -12194,8 +12058,8 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 							{
 								//distrust the guessing plan and reset guess player 
 								playerGuessView.isUpdated = false;
-								UpdatePlayerGuessItems(playerGuessView);
-								UpdatePlayerGuessItems(pPlayerActor->GetId(), playerGuessView);
+								playerGuessView.items.clear();
+								playerGuessView.guessItems[pPlayerActor->GetId()].clear();
 
 								std::stringstream updatePlayer;
 								updatePlayer << "\n reset items for player guess: " << pPlayerActor->GetId() << " ";
@@ -12209,8 +12073,8 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 							{
 								//distrust the guessing plan and reset guess player node
 								playerGuessView.isUpdated = false;
-								UpdatePlayerGuessItems(playerGuessView);
-								UpdatePlayerGuessItems(pOtherPlayerActor->GetId(), playerGuessView);
+								playerGuessView.items.clear();
+								playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
 								std::stringstream updatePlayer;
 								updatePlayer << "\n visible node for player guess: " << pOtherPlayerActor->GetId() << " ";
@@ -12224,8 +12088,8 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 							{
 								//distrust the guessing plan and reset guess player 
 								playerGuessView.isUpdated = false;
-								UpdatePlayerGuessItems(playerGuessView);
-								UpdatePlayerGuessItems(pOtherPlayerActor->GetId(), playerGuessView);
+								playerGuessView.items.clear();
+								playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
 								std::stringstream updatePlayer;
 								updatePlayer << "\n reset other items for player guess: " << pOtherPlayerActor->GetId() << " ";
@@ -12239,8 +12103,8 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 							{
 								//distrust the guessing plan and reset guess player
 								playerGuessView.isUpdated = false;
-								UpdatePlayerGuessItems(playerGuessView);
-								UpdatePlayerGuessItems(pPlayerActor->GetId(), playerGuessView);
+								playerGuessView.items.clear();
+								playerGuessView.guessItems[pPlayerActor->GetId()].clear();
 
 								std::stringstream updatePlayer;
 								updatePlayer << "\n visible other node for player guess: " << pPlayerActor->GetId() << " ";
@@ -12351,12 +12215,13 @@ void QuakeAIManager::LogEvents(unsigned long deltaMs)
 		{
 			std::shared_ptr<TransformComponent> transformComponent(
 				actor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+			Transform actorTransform = transformComponent->GetTransform();
 
 			EulerAngles<float> viewAngles;
 			viewAngles.mAxis[1] = 1;
 			viewAngles.mAxis[2] = 2;
-			transformComponent->GetTransform().GetRotation(viewAngles);
-			Vector3<float> position = transformComponent->GetTransform().GetTranslation();
+			actorTransform.GetRotation(viewAngles);
+			Vector3<float> position = actorTransform.GetTranslation();
 			float yaw = viewAngles.mAngle[AXIS_Y];
 			float pitch = viewAngles.mAngle[AXIS_Z];
 
@@ -12405,6 +12270,8 @@ void QuakeAIManager::LogEvents(unsigned long deltaMs)
 	{
 		std::shared_ptr<TransformComponent> pTransformComponent(
 			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+		std::shared_ptr<PhysicComponent> pPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 
 		PlayerView playerView;
 		GetPlayerView(pPlayerActor->GetId(), playerView);
@@ -12413,7 +12280,7 @@ void QuakeAIManager::LogEvents(unsigned long deltaMs)
 		viewAngles.mAxis[1] = 1;
 		viewAngles.mAxis[2] = 2;
 		pTransformComponent->GetTransform().GetRotation(viewAngles);
-		Vector3<float> position = pTransformComponent->GetTransform().GetTranslation();
+		Vector3<float> position = pPhysicComponent->GetPosition();
 		float yaw = viewAngles.mAngle[AXIS_Y];
 		float pitch = viewAngles.mAngle[AXIS_Z];
 

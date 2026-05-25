@@ -149,6 +149,12 @@ void QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, f
 	if (pPlayerTarget->GetState().stats[STAT_HEALTH] <= 0)
 		return;
 
+	std::shared_ptr<QuakeAIView> aiView;
+	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+	for (std::shared_ptr<BaseGameView> gameView : gameViews)
+		if (gameView->GetType() == GV_AI && gameView->GetActorId() == playerId)
+			aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
+
 	QuakeLogic* quake = dynamic_cast<QuakeLogic*>(GameLogic::Get());
 	PxExtendedVec3 footPosition = controller->getFootPosition();
 	std::vector<std::shared_ptr<Actor>> triggers;
@@ -162,18 +168,45 @@ void QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, f
 			BoundingBox<float> triggerBB = GameLogic::Get()->GetGamePhysics()->GetBoundingBox(trigger->GetId());
 			if (triggerBB.IsPointInside(Vector3<float>{(float)footPosition.x, (float)footPosition.y, (float)footPosition.z}))
 			{
-				std::shared_ptr<EventDataPhysTriggerEnter> pEvent(new EventDataPhysTriggerEnter(trigger->GetId(), playerId));
-				BaseEventManager::Get()->TriggerEvent(pEvent);
+				if (enableUpdateState)
+				{
+					if (aiView)
+						aiView->UpdateActionPlan(AT_PUSH);
+
+					Vector3<float> targetPosition = pTriggerPushComponent->GetTarget().GetTranslation();
+					Vector3<float> playerPosition = transform.GetTranslation();
+					Vector3<float> direction = targetPosition - playerPosition;
+					Vector3<float> fall = Vector3<float>::Zero();
+					Vector3<float> velocity = Vector3<float>::Zero();
+
+					float push = mPushSpeed[playerId][AXIS_Y] + direction[AXIS_Y] * 0.004f;
+
+					direction[AXIS_Y] = 0;
+					Normalize(direction);
+					if (aiView)
+					{
+						float yaw = atan2(direction[AXIS_Z], direction[AXIS_X]) * (float)GE_C_RAD_TO_DEG;
+						aiView->SetYaw(yaw, true);
+					}
+
+					velocity[AXIS_X] = direction[AXIS_X] * mPushSpeed[playerId][AXIS_X];
+					velocity[AXIS_Z] = direction[AXIS_Z] * mPushSpeed[playerId][AXIS_Z];
+					velocity[AXIS_Y] = push;
+
+					fall[AXIS_X] = direction[AXIS_X] * mMaxFallSpeed[playerId][AXIS_X];
+					fall[AXIS_Z] = direction[AXIS_Z] * mMaxFallSpeed[playerId][AXIS_Z];
+					fall[AXIS_Y] = -mMaxFallSpeed[playerId][AXIS_Y];
+
+					BaseEventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataPhysTriggerEnter>(trigger->GetId(), playerId));
+					EventManager::Get()->TriggerEvent(
+						std::make_shared<EventDataJumpActor>(playerId, velocity, fall));
+				}
+
 				return;
 			}
 		}
 	}
-
-	std::shared_ptr<QuakeAIView> aiView;
-	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
-	for (std::shared_ptr<BaseGameView> gameView : gameViews)
-		if (gameView->GetType() == GV_AI && gameView->GetActorId() == playerId)
-			aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
 
 	if (aiView && aiView->GetPathingGraph())
 	{

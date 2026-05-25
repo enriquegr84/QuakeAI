@@ -1171,20 +1171,11 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 			//lets search for closest nodes (around 1 sec of the new path plan)
 			PathingNodeVec searchNodes;
 
-			//find the current node and calculate its weight
 			PathingArcVec path;
-			float currentWeight = 0.f;
+			float currentWeight;
 			PathingNode* currentNode = mCurrentPlayerData.plan.node;
-			if (mCurrentPlanArc && mCurrentPlanArc->GetNode() != currentNode)
+			if (mCurrentPlanArc)
 			{
-				//currentWeight = mCurrentPlanArc->GetWeight();
-				currentNode = mCurrentPlanArc->GetNode();
-				path.push_back(mCurrentPlanArc);
-			}
-
-			if (currentNode != playerView.simulation.plan.node)
-			{
-				path.clear();
 				currentWeight = -aiManager->CalculatePathingWeight(mCurrentPlayerData);
 				PathingArcVec::iterator itArc = mCurrentPlayerData.plan.path.begin();
 				for (; itArc != mCurrentPlayerData.plan.path.end(); itArc++)
@@ -1202,8 +1193,20 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 
 					currentWeight += (*itArc)->GetWeight();
 				}
+			}
 
-				if (!updatedActionPlan)
+			if (!updatedActionPlan)
+			{
+				path.clear();
+				currentWeight = 0.f;
+				if (mCurrentPlanArc && mCurrentPlanArc->GetNode() != currentNode)
+				{
+					//currentWeight = mCurrentPlanArc->GetWeight();
+					currentNode = mCurrentPlanArc->GetNode();
+					path.push_back(mCurrentPlanArc);
+				}
+
+				if (currentNode != playerView.simulation.plan.node)
 				{
 					path.clear();
 					currentWeight = -aiManager->CalculatePathingWeight(mCurrentPlayerData);
@@ -1224,8 +1227,8 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 						currentWeight += (*itArc)->GetWeight();
 					}
 				}
+				else updatedActionPlan = true;
 			}
-			else updatedActionPlan = true;
 
 			if (updatedActionPlan)
 			{
@@ -1488,16 +1491,8 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 				{
 					UpdateActionPlan(AT_PUSH);
 
-#if defined(PHYSX) && defined(_WIN64)
-
-					mFallSpeed = mMaxFallSpeed;
-
-#else
-
 					mFallSpeed = Vector3<float>{
 						PUSHTRIGGER_FALL_SPEED_XZ, PUSHTRIGGER_FALL_SPEED_XZ, PUSHTRIGGER_FALL_SPEED_Y };
-
-#endif
 
 					std::shared_ptr<Actor> pItemActor(std::dynamic_pointer_cast<Actor>(
 						GameLogic::Get()->GetActor(pPlayerActor->GetAction().triggerPush).lock()));
@@ -1508,16 +1503,8 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					Vector3<float> playerPosition = pPhysicComponent->GetPosition();
 					Vector3<float> direction = targetPosition - playerPosition;
 
-					float push = mPushSpeed[AXIS_Y];
-#if defined(PHYSX) && defined(_WIN64)
+					float push = mPushSpeed[AXIS_Y] + direction[AXIS_Y] * 0.01f;
 
-					push += direction[AXIS_Y] * 0.004f;
-
-#else
-
-					push += direction[AXIS_Y] * 0.01f;
-
-#endif
 					direction[AXIS_Y] = 0;
 					Normalize(direction);
 					mYaw = mYawSmooth = atan2(direction[AXIS_Z], direction[AXIS_X]) * (float)GE_C_RAD_TO_DEG;
@@ -1923,7 +1910,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 									if (closestCollisionId == pPlayerTarget->GetId())
 									{
-										if (!pPlayerActor->IsChangingWeapon() && mReactionTime >= 0.2f)
+										if (!pPlayerActor->IsChangingWeapon() && mReactionTime >= 0.1f)
 										{
 											pPlayerActor->GetAction().actionType |= ACTION_ATTACK;
 
@@ -2025,8 +2012,6 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 	}
 	else
 	{
-		aiManager->SavePlayerView(pPlayerActor->GetId(), PlayerView());
-
 		ResetActionPlan();
 
 		mRespawnTimeMs += deltaMs;

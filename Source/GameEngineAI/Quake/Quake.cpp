@@ -869,63 +869,63 @@ void QuakeLogic::UpdateGameAI(float deltaMs)
 
 						switch (evt.weapon)
 						{
-						case WP_SHOTGUN:
-							initTransform.SetTranslation(evtCollision);
-							CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
-							break;
-						case WP_MACHINEGUN:
-							initTransform.SetTranslation(evtCollision);
-							CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
-							break;
-						case WP_GRENADE_LAUNCHER:
-							initTransform.SetRotation(yawRotation * pitchRotation);
-							initTransform.SetTranslation(evtCollision);
-							gameActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &initTransform);
-							gameActor->RemoveComponent(GrenadeFire::Name);
-							gameActors[evt.actor] = gameActor->GetId();
-							mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
-							break;
-						case WP_ROCKET_LAUNCHER:
-							initTransform.SetRotation(yawRotation * pitchRotation);
-							initTransform.SetTranslation(evtCollision);
-							gameActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &initTransform);
-							gameActor->RemoveComponent(RocketFire::Name);
-							gameActors[evt.actor] = gameActor->GetId();
-							mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
-							break;
-						case WP_PLASMAGUN:
-							initTransform.SetRotation(yawRotation * pitchRotation);
-							initTransform.SetTranslation(evtCollision);
-							gameActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &initTransform);
-							gameActor->RemoveComponent(PlasmaFire::Name);
-							gameActors[evt.actor] = gameActor->GetId();
-							mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
-							break;
-						case WP_RAILGUN:
-							yawRotation = Rotation<4, float>(
-								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
-							pitchRotation = Rotation<4, float>(
-								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
+							case WP_SHOTGUN:
+								initTransform.SetTranslation(evtCollision);
+								CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
+								break;
+							case WP_MACHINEGUN:
+								initTransform.SetTranslation(evtCollision);
+								CreateActor("actors/quake/effects/bulletexplosion.xml", nullptr, &initTransform);
+								break;
+							case WP_GRENADE_LAUNCHER:
+								initTransform.SetRotation(yawRotation * pitchRotation);
+								initTransform.SetTranslation(evtCollision);
+								gameActor = CreateActor("actors/quake/effects/grenadelauncherfire.xml", nullptr, &initTransform);
+								gameActor->RemoveComponent(GrenadeFire::Name);
+								gameActors[evt.actor] = gameActor->GetId();
+								mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
+								break;
+							case WP_ROCKET_LAUNCHER:
+								initTransform.SetRotation(yawRotation * pitchRotation);
+								initTransform.SetTranslation(evtCollision);
+								gameActor = CreateActor("actors/quake/effects/rocketlauncherfire.xml", nullptr, &initTransform);
+								gameActor->RemoveComponent(RocketFire::Name);
+								gameActors[evt.actor] = gameActor->GetId();
+								mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
+								break;
+							case WP_PLASMAGUN:
+								initTransform.SetRotation(yawRotation * pitchRotation);
+								initTransform.SetTranslation(evtCollision);
+								gameActor = CreateActor("actors/quake/effects/plasmagunfire.xml", nullptr, &initTransform);
+								gameActor->RemoveComponent(PlasmaFire::Name);
+								gameActors[evt.actor] = gameActor->GetId();
+								mPhysics->SetGravity(gameActor->GetId(), Vector3<float>::Zero());
+								break;
+							case WP_RAILGUN:
+								yawRotation = Rotation<4, float>(
+									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+								pitchRotation = Rotation<4, float>(
+									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
 
-							initTransform.SetRotation(yawRotation * pitchRotation);
-							initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
-							initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
-							CreateActor("actors/quake/effects/railgunfire.xml", nullptr, &initTransform);
-							break;
-						case WP_LIGHTNING:
-							yawRotation = Rotation<4, float>(
-								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
-							pitchRotation = Rotation<4, float>(
-								AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
+								initTransform.SetRotation(yawRotation * pitchRotation);
+								initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
+								initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
+								CreateActor("actors/quake/effects/railgunfire.xml", nullptr, &initTransform);
+								break;
+							case WP_LIGHTNING:
+								yawRotation = Rotation<4, float>(
+									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), atan2(direction[1], direction[0])));
+								pitchRotation = Rotation<4, float>(
+									AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Z), -asin(direction[2])));
 
-							initTransform.SetRotation(yawRotation * pitchRotation);
-							initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
-							initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
-							CreateActor("actors/quake/effects/lightningfire.xml", nullptr, &initTransform);
-							break;
-						default:
-							// FIXME Error( "Bad ent->state->weapon" );
-							break;
+								initTransform.SetRotation(yawRotation * pitchRotation);
+								initTransform.SetScale(Vector3<float>{scale, 4.f, 4.f});
+								initTransform.SetTranslation(muzzle + (evtCollision - muzzle) / 2.f);
+								CreateActor("actors/quake/effects/lightningfire.xml", nullptr, &initTransform);
+								break;
+							default:
+								// FIXME Error( "Bad ent->state->weapon" );
+								break;
 						}
 					}
 				}
