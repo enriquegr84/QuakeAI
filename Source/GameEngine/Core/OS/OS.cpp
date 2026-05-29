@@ -109,6 +109,24 @@ void Timer::InitTimer(bool usePerformanceTimer)
 	InitVirtualTimer();
 }
 
+void Timer::Sleep(double milliseconds)
+{
+    if (milliseconds <= 0) return;
+
+    auto start = std::chrono::steady_clock::now();
+    const auto target = std::chrono::duration<double, std::milli>(milliseconds);
+
+    // Sleep most of the time
+    if (milliseconds > 3.0) {
+        std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(milliseconds - 2.0));
+    }
+
+    // Spin the remaining time for high accuracy
+    while (std::chrono::steady_clock::now() - start < target) {
+        std::this_thread::yield();  // Optional: be nicer to other threads
+    }
+}
+
 
 unsigned int Timer::GetRealTime()
 {

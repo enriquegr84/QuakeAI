@@ -208,8 +208,8 @@ namespace AIAnalyzer
 		if (fpsTimings->busyTime + fpsTimings->sleepTime < frameTimeMin)
 		{
 			fpsTimings->sleepTime = frameTimeMin - fpsTimings->busyTime - fpsTimings->sleepTime;
-			//Sleep(fpsTimings->sleepTime);
-			Sleep(1);
+			Timer::Sleep(fpsTimings->sleepTime);
+			//Sleep(1);
 		}
 		else fpsTimings->sleepTime = 0;
 
@@ -5193,8 +5193,8 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData);
 	aiManager->GetPlayerInput(gameDecision.evaluation.playerGuessInput, otherPlayerData);
 
-	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
-	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
+	//aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
+	//aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
 	unsigned int time = Timer::GetRealTime();
 

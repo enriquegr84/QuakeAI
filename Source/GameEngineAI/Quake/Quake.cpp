@@ -1646,6 +1646,9 @@ void QuakeLogic::JumpActorDelegate(BaseEventDataPtr pEventData)
 			{
 				pPlayerActor->GetState().jumpTime = 200;
 
+				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+				aiManager->DetectPlayer(pPlayerActor);
+
 				std::shared_ptr<CameraNode> camera = GameApplication::Get()->GetHumanView()->mCamera;
 				Transform cameraTransform = camera->GetAbsoluteTransform();
 
@@ -1691,6 +1694,13 @@ void QuakeLogic::TeleportActorDelegate(BaseEventDataPtr pEventData)
 			direction[AXIS_Y] = 0.f;
 			Normalize(direction);
 
+#if defined(PHYSX) && defined(_WIN64)
+
+			pPhysicComponent->KinematicMove(direction);
+			pPhysicComponent->SetTransform(pTeleporterTrigger->GetTarget());
+			pPhysicComponent->SetVelocity(Settings::Get()->GetVector3("default_gravity"));
+
+#else
 			pPhysicComponent->SetVelocity(Vector3<float>::Zero());
 			pPhysicComponent->SetTransform(pTeleporterTrigger->GetTarget());
 			pPhysicComponent->KinematicMove(direction);
@@ -1702,6 +1712,8 @@ void QuakeLogic::TeleportActorDelegate(BaseEventDataPtr pEventData)
 			direction[AXIS_Y] = -fallSpeed[AXIS_Y];
 
 			pPhysicComponent->KinematicFall(direction);
+
+#endif
 		}
 
 		if (GameApplication::Get()->GetHumanView()->mCamera->GetTarget() &&
@@ -2267,9 +2279,12 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 		aiManager->BuildPlayerPath(simulation->otherPlayerSimulation,
 			otherPlayer.plan.node, otherPlayerOffset.plan.weight, otherPlayerPath);
 
+		//threat level in seconds determine the time spent in visibility/damage calculation.
+		float threatTime = 4.f;
+
 		aiManager->Simulation(
 			(EvaluationType)evaluation.type, gameItems,
-			player, playerPath, playerOffset.plan.weight,
+			threatTime, player, playerPath, playerOffset.plan.weight,
 			otherPlayer, otherPlayerPath, otherPlayerOffset.plan.weight);
 
 		printf("\ndebug simulation %u", mGameDecision);
@@ -2460,8 +2475,8 @@ void QuakeLogic::UpdateGameAIAnalysisPrediction(unsigned short playerIndex, unsi
 	aiManager->GetPlayerInput(gameDecision.evaluation.playerInput, playerData);
 	aiManager->GetPlayerInput(gameDecision.evaluation.playerGuessInput, otherPlayerData);
 
-	aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
-	aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
+	//aiManager->GetPlayerOutput(gameDecision.evaluation.playerOutput, playerData);
+	//aiManager->GetPlayerOutput(gameDecision.evaluation.playerGuessOutput, otherPlayerData);
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
 		std::dynamic_pointer_cast<PlayerActor>(GetActor(playerData.player).lock()));
@@ -4128,7 +4143,7 @@ void QuakeLogic::Die(
 	LookAtKiller(inflictor, player, attacker);
 
 	// remove powerups
-	memset(player->GetState().powerups, 0, sizeof(player->GetState().powerups));
+	player->GetState().powerups.fill(0);
 
 	// never gib in a nodrop
 	int anim = BOTH_DEATH1;

@@ -1176,6 +1176,24 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 			PathingNode* currentNode = mCurrentPlayerData.plan.node;
 			if (mCurrentPlanArc)
 			{
+				/*
+				//first we check that there is no useful item nearby in the current plan
+				currentWeight = -aiManager->CalculatePathingWeight(mCurrentPlayerData);
+				PathingArcVec::iterator itArc = mCurrentPlayerData.plan.path.begin();
+				for (; itArc != playerView.simulation.plan.path.end(); itArc++)
+				{
+					//if it is an item in the current plan but not in the new plan then we don't update to the new plan
+					ActorId itemId = (*itArc)->GetNode()->GetActorId();
+					if (mCurrentPlayerData.items.find(itemId) != mCurrentPlayerData.items.end())
+						if (playerView.simulation.items.find(itemId) == playerView.simulation.items.end())
+							return false;
+
+					if (currentWeight + (*itArc)->GetWeight() > 0.5f)
+						break;
+
+					currentWeight += (*itArc)->GetWeight();
+				}
+				*/
 				currentWeight = -aiManager->CalculatePathingWeight(mCurrentPlayerData);
 				PathingArcVec::iterator itArc = mCurrentPlayerData.plan.path.begin();
 				for (; itArc != mCurrentPlayerData.plan.path.end(); itArc++)
@@ -1295,7 +1313,7 @@ bool QuakeAIView::UpdateActionPlan(bool findPath)
 
 						//if it is an item in the planning we need to include it
 						ActorId itemId = (*itArc)->GetNode()->GetActorId();
-						if (playerView.simulation.itemAmount.find(itemId) != playerView.simulation.itemAmount.end())
+						if (playerView.simulation.items.find(itemId) != playerView.simulation.items.end())
 							break;
 					}
 				}

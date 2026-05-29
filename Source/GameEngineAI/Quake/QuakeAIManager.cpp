@@ -727,7 +727,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 	mPathingGraph = std::make_shared<PathingGraph>();
 
 	std::map<unsigned int, PathingNode*> pathingGraph;
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short clusterId = node.clusterid;
 		unsigned short pathNodeId = node.id;
@@ -743,7 +743,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 		pathingGraph[pathNodeId] = pathNode;
 	}
 
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short pathNodeId = node.id;
 		PathingNode* pathNode = pathingGraph[pathNodeId];
@@ -756,7 +756,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 			
 		}
 
-		for (AIMap::ArcNode arc : node.arcs)
+		for (auto const& arc : node.arcs)
 		{
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
@@ -770,15 +770,15 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 			std::vector<float> weights;
 			std::vector<PathingNode*> nodes;
 			std::vector<Vector3<float>> positions;
-			for (int nodeid : arc.nodes)
+			for (auto const& nodeid : arc.nodes)
 			{
 				nodes.push_back(pathingGraph[nodeid]);
 			}
-			for (float weight : arc.weights)
+			for (auto const& weight : arc.weights)
 			{
 				weights.push_back(weight * weightConversion);
 			}
-			for (AIMap::Vec3 position : arc.positions)
+			for (auto const& position : arc.positions)
 			{
 				positions.push_back(Vector3<float>{(float)position.x, (float)position.y, (float)position.z});
 			}
@@ -790,7 +790,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 			}
 		}
 
-		for (AIMap::ClusterNode cluster : node.clusters)
+		for (auto const& cluster : node.clusters)
 		{
 			int pathingType = cluster.type;
 			int clusterNode = cluster.nodeid;
@@ -801,7 +801,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 			pathNode->AddCluster(pathCluster);
 		}
 
-		for (AIMap::ActorNode actor : node.actors)
+		for (auto const& actor : node.actors)
 		{
 			int pathingType = actor.type;
 			int actorId = actor.actorid;
@@ -815,7 +815,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 	}
 
 	std::map<unsigned int, Cluster*> clusterGraph;
-	for (AIMap::GraphCluster cluster : data.clusters)
+	for (auto const& cluster : data.clusters)
 	{
 		Cluster* pCluster = new Cluster(cluster.id, pathingGraph[cluster.node]);
 
@@ -830,7 +830,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, float weightConversion)
 		clusterGraph[pCluster->GetId()] = pCluster;
 	}
 
-	for (AIMap::GraphCluster cluster : data.clusters)
+	for (auto const& cluster : data.clusters)
 	{
 		for (auto const& clusterVisible : cluster.visibles)
 		{
@@ -863,7 +863,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 	mLastNodeId = 0;
 
 	std::map<unsigned int, PathingNode*> pathingGraph;
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short clusterId = node.clusterid;
 		unsigned short pathNodeId = node.id;
@@ -879,19 +879,19 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 		pathingGraph[pathNodeId] = pathNode;
 	}
 
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short pathNodeId = node.id;
 		PathingNode* pathNode = pathingGraph[pathNodeId];
 
-		for (AIMap::VisibleNode visibleNode : node.visibles)
+		for (auto const& visibleNode : node.visibles)
 		{
 			PathingNode* visibilityNode = pathingGraph[visibleNode.id];
 			pathNode->AddVisibleNode(
 				visibilityNode, Length(visibilityNode->GetPosition() - pathNode->GetPosition()));
 		}
 
-		for (AIMap::ArcNode arc : node.arcs)
+		for (auto const& arc : node.arcs)
 		{
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
@@ -905,15 +905,15 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 			std::vector<float> weights;
 			std::vector<PathingNode*> nodes;
 			std::vector<Vector3<float>> positions;
-			for (int nodeid : arc.nodes)
+			for (auto const& nodeid : arc.nodes)
 			{
 				nodes.push_back(pathingGraph[nodeid]);
 			}
-			for (float weight : arc.weights)
+			for (auto const& weight : arc.weights)
 			{
 				weights.push_back(weight * weightConversion);
 			}
-			for (AIMap::Vec3 position : arc.positions)
+			for (auto const& position : arc.positions)
 			{
 				positions.push_back(Vector3<float>{(float)position.x, (float)position.y, (float)position.z});
 			}
@@ -925,7 +925,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 			}
 		}
 
-		for (AIMap::ClusterNode cluster : node.clusters)
+		for (auto const& cluster : node.clusters)
 		{
 			int pathingType = cluster.type;
 			int clusterNode = cluster.nodeid;
@@ -936,7 +936,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 			pathNode->AddCluster(pathCluster);
 		}
 
-		for (AIMap::ActorNode actor : node.actors)
+		for (auto const& actor : node.actors)
 		{
 			int pathingType = actor.type;
 			int actorId = actor.actorid;
@@ -950,7 +950,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 	}
 
 	std::map<unsigned int, Cluster*> clusterGraph;
-	for (AIMap::GraphCluster cluster : data.clusters)
+	for (auto const& cluster : data.clusters)
 	{
 		Cluster* pCluster = new Cluster(cluster.id, pathingGraph[cluster.node]);
 
@@ -965,7 +965,7 @@ void QuakeAIManager::LoadGraph(const std::wstring& path, std::shared_ptr<Pathing
 		clusterGraph[pCluster->GetId()] = pCluster;
 	}
 
-	for (AIMap::GraphCluster cluster : data.clusters)
+	for (auto const& cluster : data.clusters)
 	{
 		for (auto const& clusterVisible : cluster.visibles)
 			clusterGraph[cluster.id]->AddVisibleCluster(clusterVisible.first, pathingGraph[clusterVisible.second]);
@@ -997,7 +997,7 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, float weightConver
 	mPathingGraph = std::make_shared<PathingGraph>();
 
 	std::map<unsigned int, PathingNode*> pathingGraph;
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short clusterId = node.clusterid;
 		unsigned short pathNodeId = node.id;
@@ -1013,12 +1013,12 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, float weightConver
 		pathingGraph[pathNodeId] = pathNode;
 	}
 
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short pathNodeId = node.id;
 		PathingNode* pathNode = pathingGraph[pathNodeId];
 
-		for (AIMap::ArcNode arc : node.arcs)
+		for (auto const& arc : node.arcs)
 		{
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
@@ -1032,15 +1032,15 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, float weightConver
 			std::vector<float> weights;
 			std::vector<PathingNode*> nodes;
 			std::vector<Vector3<float>> positions;
-			for (int nodeid : arc.nodes)
+			for (auto const& nodeid : arc.nodes)
 			{
 				nodes.push_back(pathingGraph[nodeid]);
 			}
-			for (float weight : arc.weights)
+			for (auto const& weight : arc.weights)
 			{
 				weights.push_back(weight * weightConversion);
 			}
-			for (AIMap::Vec3 position : arc.positions)
+			for (auto const& position : arc.positions)
 			{
 				positions.push_back(Vector3<float>{(float)position.x, (float)position.y, (float)position.z});
 			}
@@ -1053,7 +1053,7 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, float weightConver
 		}
 	}
 
-	for (AIMap::GraphCluster cluster : data.clusters)
+	for (auto const& cluster : data.clusters)
 	{
 		Cluster* pCluster = new Cluster(cluster.id, pathingGraph[cluster.node]);
 
@@ -1090,7 +1090,7 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<Pa
 	mLastNodeId = 0;
 
 	std::map<unsigned int, PathingNode*> pathingGraph;
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short clusterId = node.clusterid;
 		unsigned short pathNodeId = node.id;
@@ -1106,12 +1106,12 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<Pa
 		pathingGraph[pathNodeId] = pathNode;
 	}
 
-	for (AIMap::GraphNode node : data.nodes)
+	for (auto const& node : data.nodes)
 	{
 		unsigned short pathNodeId = node.id;
 		PathingNode* pathNode = pathingGraph[pathNodeId];
 
-		for (AIMap::ArcNode arc : node.arcs)
+		for (auto const& arc : node.arcs)
 		{
 			unsigned int arcId = arc.id;
 			unsigned short arcType = arc.type;
@@ -1125,15 +1125,15 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<Pa
 			std::vector<float> weights;
 			std::vector<PathingNode*> nodes;
 			std::vector<Vector3<float>> positions;
-			for (int nodeid : arc.nodes)
+			for (auto const& nodeid : arc.nodes)
 			{
 				nodes.push_back(pathingGraph[nodeid]);
 			}
-			for (float weight : arc.weights)
+			for (auto const& weight : arc.weights)
 			{
 				weights.push_back(weight * weightConversion);
 			}
-			for (AIMap::Vec3 position : arc.positions)
+			for (auto const& position : arc.positions)
 			{
 				positions.push_back(Vector3<float>{(float)position.x, (float)position.y, (float)position.z});
 			}
@@ -1146,7 +1146,7 @@ void QuakeAIManager::LoadPathingMap(const std::wstring& path, std::shared_ptr<Pa
 		}
 	}
 
-	for (AIMap::GraphCluster cluster : data.clusters)
+	for (auto const& cluster : data.clusters)
 	{
 		Cluster* pCluster = new Cluster(cluster.id, pathingGraph[cluster.node]);
 
@@ -1244,7 +1244,7 @@ void QuakeAIManager::RemovePlayerSimulations(AIAnalysis::GameEvaluation& gameEva
 // AI Decision Making
 //
 void QuakeAIManager::Simulation(
-	EvaluationType evaluation, const std::map<ActorId, float>& gameItems,
+	EvaluationType evaluation, const std::map<ActorId, float>& gameItems, float threatTime,
 	PlayerData& playerData, const PathingArcVec& playerPathPlan, float playerPathOffset,
 	PlayerData& otherPlayerData, const PathingArcVec& otherPlayerPathPlan, float otherPlayerPathOffset)
 {
@@ -1336,7 +1336,7 @@ void QuakeAIManager::Simulation(
 		playerVisibility[otherPlayerData.plan.weight - otherPlayerPathOffset] = VisibilityData();
 		playerVisibility[playerData.plan.weight - playerPathOffset] = VisibilityData();
 
-		CalculateVisibility(
+		CalculateVisibility(threatTime, 
 			otherPlayerData.plan.node, otherPlayerPathOffset, otherPlayerVisibleTime, otherPlayerPathPlan, otherPlayerVisibility,
 			playerData.plan.node, playerPathOffset, playerVisibleTime, playerPathPlan, playerVisibility);
 	}
@@ -1352,7 +1352,7 @@ void QuakeAIManager::Simulation(
 		otherPlayerVisibility[otherPlayerData.plan.weight - otherPlayerPathOffset] = VisibilityData();
 		otherPlayerVisibility[playerData.plan.weight - playerPathOffset] = VisibilityData();
 
-		CalculateVisibility(playerData.plan.node, playerPathOffset, playerVisibleTime, playerPathPlan, playerVisibility,
+		CalculateVisibility(threatTime, playerData.plan.node, playerPathOffset, playerVisibleTime, playerPathPlan, playerVisibility,
 			otherPlayerData.plan.node, otherPlayerPathOffset, otherPlayerVisibleTime, otherPlayerPathPlan, otherPlayerVisibility);
 	}
 
@@ -1383,7 +1383,7 @@ void QuakeAIManager::Simulation(
 }
 
 bool QuakeAIManager::BuildPath(
-	std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
+	float& threatTime, std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
@@ -1455,7 +1455,6 @@ bool QuakeAIManager::BuildPath(
 		}
 	}
 
-	std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights, otherClosestClusterPathWeights;
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>> visibleClusters;
 	Concurrency::parallel_for_each(begin(pathingClusterNodes), end(pathingClusterNodes), [&](auto& pathingClusterNode)
 	//for (auto& pathingClusterNode : pathingClusterNodes)
@@ -1481,6 +1480,50 @@ bool QuakeAIManager::BuildPath(
 	//add paths if there is at least one visible node 
 	if (visibleClusters.size())
 	{
+		bool foundVisibleCluster = false;
+		std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights, otherClosestClusterPathWeights;
+		for (auto& clusterPathWeight : clusterPathWeights)
+			closestClusterPathWeights.insert({ clusterPathWeight.second, clusterPathWeight.first });
+		for (auto& otherClusterPathWeight : otherClusterPathWeights)
+			otherClosestClusterPathWeights.insert({ otherClusterPathWeight.second, otherClusterPathWeight.first });
+		for (size_t maxClusters = 30; maxClusters <= 90; maxClusters += 30)
+		{
+			auto itClusterWeightEnd = std::next(closestClusterPathWeights.begin(), std::min(maxClusters, closestClusterPathWeights.size()));
+			auto itOtherClusterWeightEnd = std::next(otherClosestClusterPathWeights.begin(), std::min(maxClusters, otherClosestClusterPathWeights.size()));
+
+			for (auto itClusterWeight = closestClusterPathWeights.begin(); itClusterWeight != itClusterWeightEnd; ++itClusterWeight)
+			{
+				unsigned int clusterCode = itClusterWeight->second->GetType() << 28 | itClusterWeight->second->GetTarget()->GetId();
+				for (auto itOtherClusterWeight = otherClosestClusterPathWeights.begin(); itOtherClusterWeight != itOtherClusterWeightEnd; ++itOtherClusterWeight)
+				{
+					unsigned int otherClusterCode = itOtherClusterWeight->second->GetType() << 28 | itOtherClusterWeight->second->GetTarget()->GetId();
+					if (visibleClusters.find(((unsigned long long)clusterCode << 32 | (unsigned long long)otherClusterCode)) != visibleClusters.end())
+					{
+						foundVisibleCluster = true;
+						break;
+					}
+				}
+				if (foundVisibleCluster)
+					break;
+			}
+			/*
+			Concurrency::parallel_for_each(begin(closestClusterPathWeights), itClusterWeightEnd, [&](auto& closestClusterPathWeight)
+			{
+				unsigned int clusterCode = closestClusterPathWeight.second->GetType() << 28 | closestClusterPathWeight.second->GetTarget()->GetId();
+				Concurrency::parallel_for_each(begin(otherClosestClusterPathWeights), itOtherClusterWeightEnd, [&](auto& otherClosestClusterPathWeight)
+				{
+					unsigned int otherClusterCode = otherClosestClusterPathWeight.second->GetType() << 28 | otherClosestClusterPathWeight.second->GetTarget()->GetId();
+					if (visibleClusters.find(((unsigned long long)clusterCode << 32 | (unsigned long long)otherClusterCode)) != visibleClusters.end())
+						foundVisibleCluster = true;
+				});
+			});
+			*/
+			if (foundVisibleCluster)
+				break;
+
+			threatTime--;
+		}
+
 		for (auto& clusterPath : clusterPaths)
 		{
 			PathingCluster* pathingCluster = clusterPath.first;
@@ -1518,6 +1561,8 @@ bool QuakeAIManager::BuildPath(
 		}
 
 		//we will only expand those clusters which are visibles from both players
+		closestClusterPathWeights.clear();
+		otherClosestClusterPathWeights.clear();
 		for (auto& visibleCluster : visibleClusters)
 		{
 			closestClusterPathWeights.insert({ clusterPathWeights[visibleCluster.second.first], visibleCluster.second.first });
@@ -1546,6 +1591,7 @@ bool QuakeAIManager::BuildPath(
 		BuildExpandedPath(graph, maxPathingClusters, otherClusterNodeStart,
 			otherClusterPaths, otherClosestClusterPaths, otherClusterPathings, otherClusterNodePathPlans);
 	}
+	else threatTime = 1.f; //minimum threat level if there is no visible cluster
 	 
 	return visibleClusters.size();
 }
@@ -1990,7 +2036,7 @@ void QuakeAIManager::BuildExpandedActorPath(
 		//lets try to add surrounding clusters
 		std::map<PathingCluster*, PathingArcVec> pathingClusters;
 		std::multimap<float, PathingCluster*, std::less<float>> pathingClusterWeights;
-		actorPathNode->GetClusters(AT_MOVE, 50, pathingClusters, pathingClusterWeights);
+		actorPathNode->GetClusters(AT_MOVE, 40, pathingClusters, pathingClusterWeights);
 		for (auto itCluster = pathingClusterWeights.begin(); itCluster != pathingClusterWeights.end(); ++itCluster)
 		{
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode((*itCluster).second->GetTarget()->GetCluster());
@@ -2075,7 +2121,7 @@ void QuakeAIManager::BuildExpandedActorPath(
 		//lets try to add surrounding clusters
 		std::map<PathingCluster*, PathingArcVec> pathingClusters;
 		std::multimap<float, PathingCluster*, std::less<float>> pathingClusterWeights;
-		actorPathNode->GetClusters(AT_MOVE, 50, pathingClusters, pathingClusterWeights);
+		actorPathNode->GetClusters(AT_MOVE, 40, pathingClusters, pathingClusterWeights);
 		for (auto itCluster = pathingClusterWeights.begin(); itCluster != pathingClusterWeights.end(); ++itCluster)
 		{
 			PathingNode* pathingClusterNodeEnd = graph->FindClusterNode((*itCluster).second->GetTarget()->GetCluster());
@@ -2351,6 +2397,9 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans;
@@ -2432,7 +2481,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -2475,7 +2524,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, playerPathPlan, playerPathOffset,
+				threatTime, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset );
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -2556,7 +2605,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation(
+					(EvaluationType)gameEvaluation.type, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -2576,7 +2626,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation(
+					(EvaluationType)gameEvaluation.type, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -2596,7 +2647,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems,
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -2614,7 +2665,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems,
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -2705,13 +2756,16 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatTime, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -2887,7 +2941,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -2914,7 +2968,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -2970,7 +3024,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, playerPathPlan, playerPathOffset,
+				threatTime, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -2998,7 +3052,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, playerPathPlan, playerPathOffset, 
+				threatTime, player, playerPathPlan, playerPathOffset, 
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -3091,7 +3145,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
 				Simulation((EvaluationType)gameEvaluation.type, gameItems,
-					player, itClusterNodePathPlan->second, playerPathOffset,
+					threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -3111,7 +3165,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
 				Simulation((EvaluationType)gameEvaluation.type, gameItems,
-					player, itClusterNodePathPlan->second, playerPathOffset,
+					threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -3136,7 +3190,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems,
-				player, playerPathPlan, playerPathOffset, otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
+				threatTime, player, playerPathPlan, playerPathOffset, 
+				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
 			otherPlayer.weaponTime = 0.f;
@@ -3154,7 +3209,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems,
-				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
+				threatTime, player, playerPathPlan, playerPathOffset, 
+				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
 			player.weapon = playerWeapon;
@@ -3238,13 +3294,16 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatTime, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -3303,7 +3362,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			[&] {
 				//other player
 				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
+					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics); }
 		);
 	}
 	else
@@ -3421,7 +3480,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -3451,7 +3510,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -3508,7 +3567,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, playerPathPlan, playerPathOffset,
+				threatTime, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -3539,7 +3598,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, playerPathPlan, playerPathOffset, 
+				threatTime, player, playerPathPlan, playerPathOffset, 
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -3674,7 +3733,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
 				Simulation((EvaluationType)gameEvaluation.type, gameItems,
-					player, itClusterNodePathPlan->second, playerPathOffset,
+					threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -3693,7 +3752,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatTime, 
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -3719,7 +3778,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems,
-				player, playerPathPlan, playerPathOffset, otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
+				threatTime, player, playerPathPlan, playerPathOffset, 
+				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
 			otherPlayer.weaponTime = 0.f;
@@ -3737,7 +3797,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems,
-				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
+				threatTime, player, playerPathPlan, playerPathOffset, 
+				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
 			player.weapon = playerWeapon;
@@ -3830,13 +3891,16 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatTime, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -4013,7 +4077,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -4043,7 +4107,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -4101,7 +4165,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, playerPathPlan, playerPathOffset,
+				threatTime, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -4132,7 +4196,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, playerPathPlan, playerPathOffset,
+				threatTime, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -4266,7 +4330,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
 				Simulation((EvaluationType)gameEvaluation.type, gameItems,
-					player, itClusterNodePathPlan->second, playerPathOffset,
+					threatTime, player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -4285,7 +4349,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -4311,7 +4375,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems,
-				player, playerPathPlan, playerPathOffset, otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
+				threatTime, player, playerPathPlan, playerPathOffset, 
+				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
 			otherPlayer.weaponTime = 0.f;
@@ -4329,7 +4394,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems,
-				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
+				threatTime, player, playerPathPlan, playerPathOffset, 
+				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
 			player.weapon = playerWeapon;
@@ -4441,6 +4507,9 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans;
@@ -4528,7 +4597,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
@@ -4554,7 +4623,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
@@ -4599,7 +4668,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -4635,7 +4704,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerClusterCode], otherPlayerPathOffset);
 
@@ -4654,7 +4723,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -4750,13 +4819,16 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatTime, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -4937,7 +5009,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -4951,7 +5023,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -4986,7 +5058,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -4999,7 +5071,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset, 
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5045,7 +5117,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems,
+				Simulation(evaluation, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5065,7 +5137,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems,
+				Simulation(evaluation, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5090,7 +5162,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5109,7 +5181,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5199,13 +5271,16 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatTime, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -5386,7 +5461,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5400,7 +5475,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5435,7 +5510,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5448,7 +5523,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset, 
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5494,7 +5569,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems,
+				Simulation(evaluation, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5514,7 +5589,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems,
+				Simulation(evaluation, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5539,7 +5614,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5558,7 +5633,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5653,13 +5728,16 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatTime, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -5832,7 +5910,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5846,7 +5924,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5874,7 +5952,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5887,7 +5965,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5929,7 +6007,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems,
+				Simulation(evaluation, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5949,7 +6027,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems,
+				Simulation(evaluation, gameItems, threatTime,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5974,7 +6052,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5993,7 +6071,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatTime,
 				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -6093,13 +6171,16 @@ bool QuakeAIManager::SimulateClusterPathing(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level in seconds determine the time spent in visibility/damage calculation.
+	float threatTime = 4.f;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatTime, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -7550,7 +7631,7 @@ void QuakeAIManager::RunAIFastDecision()
 				UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
-				Sleep(40);
+				Timer::Sleep(30);
 				//printf("\n Iteration AI Fast Decision %u", iteration);
 				//iteration++;
 			}
@@ -7609,7 +7690,7 @@ void QuakeAIManager::RunAIGuessing()
 				UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
-				Sleep(40);
+				Timer::Sleep(30);
 				//printf("\n Iteration AI Guessing %u", iteration);
 				//iteration++;
 			}
@@ -7667,7 +7748,7 @@ void QuakeAIManager::RunAIAwareDecision()
 				UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
-				Sleep(40);
+				Timer::Sleep(30);
 				//printf("\n Iteration AI Aware Decision %u", iteration);
 				//iteration++;
 			}
@@ -7727,7 +7808,7 @@ void QuakeAIManager::RunHumanFastDecision()
 				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], playerView);
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
-				Sleep(40);
+				Timer::Sleep(30);
 				//printf("\n Iteration Human Decision %u", iteration);
 				//iteration++;
 			}
@@ -7785,7 +7866,7 @@ void QuakeAIManager::RunHumanGuessing()
 				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], aiGuessView); //update guessView
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
-				Sleep(40);
+				Timer::Sleep(30);
 				//printf("\n Iteration Human Guessing %u", iteration);
 				//iteration++;
 			}
@@ -7843,7 +7924,7 @@ void QuakeAIManager::RunHumanAwareDecision()
 				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], aiGuessView); //update guessView
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
-				Sleep(40);
+				Timer::Sleep(30);
 				//printf("\n Iteration Human Aware Decision %u", iteration);
 				//iteration++;
 			}
@@ -8272,28 +8353,132 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 		// take into consideration within a certain radius
 		std::shared_ptr<TransformComponent> pActorTransform(
 			pItemActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-		if (Length(pActorTransform->GetPosition() - playerGuessView.data.plan.node->GetPosition()) > 700.f)
+		if (Length(pActorTransform->GetPosition() - playerGuessView.data.plan.node->GetPosition()) > 500.f)
 			continue;
 
-		std::shared_ptr<TransformComponent> pPlayerTransformComponent(
-			pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-		PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerTransformComponent->GetPosition(), false);
-
-		std::shared_ptr<TransformComponent> pOtherPlayerTransformComponent(
-			pOtherPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-		PathingNode* otherPlayerNode =
-			mPathingGraph->FindClosestNode(pOtherPlayerTransformComponent->GetPosition(), false);
+		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerPhysicComponent->GetPosition(), false);
 
 		//if the noise is detected within a range then we reset the guess players status.
 		std::stringstream playerInfo;
-		playerInfo << "\n NOISE DETECTED by player: " << pPlayerActor->GetId() << " ";
+		playerInfo << "\n ITEM NOISE MADE by player: " << pPlayerActor->GetId() << " ";
 		PrintInfo(playerInfo.str());
 
 		playerGuessView.isUpdated = false;
-		//we update the players path plan based on current position. This is actually not right and it should be predicted
-		UpdatePlayerGuessPlan(pOtherPlayerActor, aiViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
+		playerGuessView.items.clear();
+		playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
-		UpdatePlayerGuessView(pPlayerActor->GetId(), playerGuessView, false);
+		//we update the players path plan based on current position.
+		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
+
+		UpdatePlayerGuessView(pPlayerActor->GetId(), playerGuessView, true);
+
+		//we also update the other player's guess view about this player in case that the noise is within range.
+		PlayerView otherPlayerView;
+		GetPlayerView(pOtherPlayerActor->GetId(), otherPlayerView);
+
+		if (otherPlayerView.guessViews.find(pPlayerActor->GetId()) == otherPlayerView.guessViews.end())
+			continue;
+
+		PlayerGuessView& otherPlayerGuessView = otherPlayerView.guessViews[pPlayerActor->GetId()];
+		if (!otherPlayerGuessView.data.plan.node)
+			continue;
+
+		// take into consideration within a certain radius
+		if (Length(pActorTransform->GetPosition() - otherPlayerView.data.plan.node->GetPosition()) > 500.f)
+			continue;
+
+		otherPlayerGuessView.isUpdated = false;
+		otherPlayerGuessView.items.clear();
+		otherPlayerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		otherPlayerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+
+		//we update the players path plan based on current position.
+		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], otherPlayerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
+
+		UpdatePlayerGuessView(pOtherPlayerActor->GetId(), otherPlayerGuessView, true);
+	}
+}
+
+void QuakeAIManager::DetectPlayer(std::shared_ptr<PlayerActor> pPlayerActor)
+{
+	GameApplication* gameApp = (GameApplication*)Application::App;
+	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
+
+	std::map<ActorId, PlayerData> aiViews;
+	const GameViewList& gameViews = gameApp->GetGameViews();
+	for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+	{
+		std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+		if (pAiView)
+			aiViews[pAiView->GetActorId()] = pAiView->GetActionPlayer();
+	}
+
+	PlayerView playerView;
+	GetPlayerView(pPlayerActor->GetId(), playerView);
+
+	std::vector<std::shared_ptr<PlayerActor>> playerActors;
+	game->GetPlayerActors(playerActors);
+	for (std::shared_ptr<PlayerActor> pOtherPlayerActor : playerActors)
+	{
+		if (pPlayerActor->GetId() == pOtherPlayerActor->GetId())
+			continue;
+
+		if (playerView.guessViews.find(pOtherPlayerActor->GetId()) == playerView.guessViews.end())
+			continue;
+
+		PlayerGuessView& playerGuessView = playerView.guessViews[pOtherPlayerActor->GetId()];
+		if (!playerGuessView.data.plan.node)
+			continue;
+
+		// take into consideration within a certain radius
+		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		if (Length(pPlayerPhysicComponent->GetPosition() - playerGuessView.data.plan.node->GetPosition()) > 500.f)
+			continue;
+		PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerPhysicComponent->GetPosition(), false);
+
+		//if the noise is detected within a range then we reset the guess players status.
+		std::stringstream playerInfo;
+		playerInfo << "\n NOISE MADE by player: " << pPlayerActor->GetId() << " ";
+		PrintInfo(playerInfo.str());
+
+		playerGuessView.isUpdated = false;
+		playerGuessView.items.clear();
+		playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+
+		//we update the players path plan based on current position.
+		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
+
+		UpdatePlayerGuessView(pPlayerActor->GetId(), playerGuessView, true);
+
+		//we also update the other player's guess view about this player in case that the noise is within range.
+		PlayerView otherPlayerView;
+		GetPlayerView(pOtherPlayerActor->GetId(), otherPlayerView);
+
+		if (otherPlayerView.guessViews.find(pPlayerActor->GetId()) == otherPlayerView.guessViews.end())
+			continue;
+
+		PlayerGuessView& otherPlayerGuessView = otherPlayerView.guessViews[pPlayerActor->GetId()];
+		if (!otherPlayerGuessView.data.plan.node)
+			continue;
+
+		// take into consideration within a certain radius
+		if (Length(pPlayerPhysicComponent->GetPosition() - otherPlayerView.data.plan.node->GetPosition()) > 500.f)
+			continue;
+
+		otherPlayerGuessView.isUpdated = false;
+		otherPlayerGuessView.items.clear();
+		otherPlayerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		otherPlayerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+
+		//we update the players path plan based on current position.
+		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], otherPlayerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
+
+		UpdatePlayerGuessView(pOtherPlayerActor->GetId(), otherPlayerGuessView, true);
 	}
 }
 
@@ -8332,11 +8517,8 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 					//ammo
 					searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
 					searchItem.second *= 0.8f;
-
-					if (searchItem.second > 0.1f)
-						searchItem.second = searchItem.second < 0.6f ? searchItem.second : 0.6f; //threshold based on item importance
-					else
-						searchItem.second = 0.1f;
+					if (searchItem.second < 0.15f)
+						searchItem.second = 0.15f;
 					break;
 				case WP_SHOTGUN:
 					maxAmmo = 20;
@@ -8346,12 +8528,9 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 					//ammo
 					searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-					searchItem.second *= 0.6f;
-
-					if (searchItem.second > 0.1f)
-						searchItem.second = searchItem.second < 0.45f ? searchItem.second : 0.45f; //threshold based on item importance
-					else
-						searchItem.second = 0.1f;
+					searchItem.second *= 0.8f;
+					if (searchItem.second < 0.15f)
+						searchItem.second = 0.15f;
 					break;
 				case WP_MACHINEGUN:
 					maxAmmo = 200;
@@ -8361,12 +8540,9 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 					//ammo
 					searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-					searchItem.second *= 0.4f;
-
-					if (searchItem.second > 0.1f)
-						searchItem.second = searchItem.second < 0.3f ? searchItem.second : 0.3f; //threshold based on item importance
-					else
-						searchItem.second = 0.1f;
+					searchItem.second *= 0.6f;
+					if (searchItem.second < 0.15f)
+						searchItem.second = 0.15f;
 					break;
 				case WP_PLASMAGUN:
 					maxAmmo = 120;
@@ -8376,12 +8552,9 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 					//ammo
 					searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-					searchItem.second *= 0.5f;
-
-					if (searchItem.second > 0.1f)
-						searchItem.second = searchItem.second < 0.35f ? searchItem.second : 0.35f; //threshold based on item importance
-					else
-						searchItem.second = 0.1f;
+					searchItem.second *= 0.6f;
+					if (searchItem.second < 0.15f)
+						searchItem.second = 0.15f;
 					break;
 				case WP_GRENADE_LAUNCHER:
 					maxAmmo = 20;
@@ -8397,12 +8570,9 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 					//ammo
 					searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-					searchItem.second *= 0.6f;
-
-					if (searchItem.second > 0.1f)
-						searchItem.second = searchItem.second < 0.45f ? searchItem.second : 0.45f; //threshold based on item importance
-					else
-						searchItem.second = 0.1f;
+					searchItem.second *= 0.8f;
+					if (searchItem.second < 0.15f)
+						searchItem.second = 0.15f;
 					break;
 				case WP_RAILGUN:
 					maxAmmo = 20;
@@ -8413,11 +8583,8 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 					//ammo
 					searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
 					searchItem.second *= 0.8f;
-
-					if (searchItem.second > 0.1f)
-						searchItem.second = searchItem.second < 0.6f ? searchItem.second : 0.6f; //threshold based on item importance
-					else
-						searchItem.second = 0.1f;
+					if (searchItem.second < 0.15f)
+						searchItem.second = 0.15f;
 					break;
 			}
 		}
@@ -8435,13 +8602,10 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 						//ammo
 						searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
 						searchItem.second *= 0.8f;
-
-						if (searchItem.second > 0.1f)
-							searchItem.second = searchItem.second < 0.6f ? searchItem.second : 0.6f; //threshold based on item importance
-						else
-							searchItem.second = 0.1f;
+						if (searchItem.second < 0.15f)
+							searchItem.second = 0.15f;
 					}
-					else searchItem.second = 0.1f;
+					else searchItem.second = 0.15f;
 					break;
 				case WP_SHOTGUN:
 					maxAmmo = 20;
@@ -8452,14 +8616,11 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 						//ammo
 						searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-						searchItem.second *= 0.6f;
-
-						if (searchItem.second > 0.1f)
-							searchItem.second = searchItem.second < 0.45f ? searchItem.second : 0.45f; //threshold based on item importance
-						else
-							searchItem.second = 0.1f;
+						searchItem.second *= 0.8f;
+						if (searchItem.second < 0.15f)
+							searchItem.second = 0.15f;
 					}
-					else searchItem.second = 0.1f;
+					else searchItem.second = 0.15f;
 					break;
 				case WP_MACHINEGUN:
 					maxAmmo = 200;
@@ -8470,14 +8631,11 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 						//ammo
 						searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-						searchItem.second *= 0.4f;
-
-						if (searchItem.second > 0.1f)
-							searchItem.second = searchItem.second < 0.3f ? searchItem.second : 0.3f; //threshold based on item importance
-						else
-							searchItem.second = 0.1f;
+						searchItem.second *= 0.6f;
+						if (searchItem.second < 0.15f)
+							searchItem.second = 0.15f;
 					}
-					else searchItem.second = 0.1f;
+					else searchItem.second = 0.15f;
 					break;
 				case WP_PLASMAGUN:
 					maxAmmo = 120;
@@ -8488,14 +8646,11 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 						//ammo
 						searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-						searchItem.second *= 0.5f;
-
-						if (searchItem.second > 0.1f)
-							searchItem.second = searchItem.second < 0.35f ? searchItem.second : 0.35f; //threshold based on item importance
-						else
-							searchItem.second = 0.1f;
+						searchItem.second *= 0.6f;
+						if (searchItem.second < 0.15f)
+							searchItem.second = 0.15f;
 					}
-					else searchItem.second = 0.1f;
+					else searchItem.second = 0.15f;
 					break;
 				case WP_GRENADE_LAUNCHER:
 					//lets calculate the item weight based on the player status
@@ -8510,14 +8665,11 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 
 						//ammo
 						searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
-						searchItem.second *= 0.6f;
-
-						if (searchItem.second > 0.1f)
-							searchItem.second = searchItem.second < 0.45f ? searchItem.second : 0.45f; //threshold based on item importance
-						else
-							searchItem.second = 0.1f;
+						searchItem.second *= 0.8f;
+						if (searchItem.second < 0.15f)
+							searchItem.second = 0.15f;
 					}
-					else searchItem.second = 0.1f;
+					else searchItem.second = 0.15f;
 					break;
 				case WP_RAILGUN:
 					maxAmmo = 20;
@@ -8529,49 +8681,51 @@ void QuakeAIManager::CalculateWeightItems(const PlayerData& playerData, std::map
 						//ammo
 						searchItem.second = (maxAmmo - ammo) / (float)maxAmmo;
 						searchItem.second *= 0.8f;
-
-						if (searchItem.second > 0.1f)
-							searchItem.second = searchItem.second < 0.6f ? searchItem.second : 0.6f; //threshold based on item importance
-						else
-							searchItem.second = 0.1f;
+						if (searchItem.second < 0.15f)
+							searchItem.second = 0.15f;
 					}
-					else searchItem.second = 0.1f;
+					else searchItem.second = 0.15f;
 					break;
+			}
+		}
+		else if (itemPickup->GetType() == "Health")
+		{
+			if (itemPickup->GetCode() != 3)
+			{
+				int maxHealth = itemPickup->GetMaximum();
+				int health = playerData.stats[STAT_HEALTH] < maxHealth ? maxHealth - playerData.stats[STAT_HEALTH] : 0;
+
+				//lets calculate the item weight based on the player status
+				searchItem.second = health / (float)maxHealth;
+				searchItem.second *= 0.8f;
+
+				if (itemPickup->GetCode() == 4 || searchItem.second < 0.15f)
+					searchItem.second = 0.15f;
+			}
+			else
+			{
+				int maxHealth = 100;
+				int health = playerData.stats[STAT_HEALTH] < maxHealth ? maxHealth : itemPickup->GetMaximum() - playerData.stats[STAT_HEALTH];
+
+				//lets calculate the item weight based on the player status
+				searchItem.second = health / (float)maxHealth;
+				searchItem.second *= 0.8f;
+
+				if (searchItem.second < 0.15f)
+					searchItem.second = 0.15f;
 			}
 		}
 		else if (itemPickup->GetType() == "Armor")
 		{
 			int maxArmor = 100;
+			int armor = playerData.stats[STAT_ARMOR] < maxArmor ? maxArmor : itemPickup->GetMaximum() - playerData.stats[STAT_ARMOR];
 
 			//lets calculate the item weight based on the player status
-			searchItem.second = (itemPickup->GetMaximum() - playerData.stats[STAT_ARMOR]) / (float)maxArmor;
+			searchItem.second = armor / (float)maxArmor;
 			searchItem.second *= 0.8f;
 
-			if (searchItem.second > 0.1f)
-			{
-				if (itemPickup->GetCode() != 3) //any armor item
-					searchItem.second = searchItem.second < 0.6f ? searchItem.second : 0.6f; //threshold based on item importance
-				else //armor shard
-					searchItem.second = 0.1f; //threshold based on item importance
-			}
-			else searchItem.second = 0.1f;
-		}
-		else if (itemPickup->GetType() == "Health")
-		{
-			int maxHealth = 100;
-
-			//lets calculate the item weight based on the player status
-			searchItem.second = (itemPickup->GetMaximum() - playerData.stats[STAT_HEALTH]) / (float)maxHealth;
-			searchItem.second *= 0.8f;
-
-			if (searchItem.second > 0.1f)
-			{
-				if (itemPickup->GetCode() != 4) //any health item
-					searchItem.second = searchItem.second < 0.8f ? searchItem.second : 0.8f; //threshold based on item importance
-				else //health small
-					searchItem.second = 0.1f; //threshold based on item importance
-			}
-			else searchItem.second = 0.1f;
+			if (itemPickup->GetCode() == 3 || searchItem.second < 0.15f)
+				searchItem.second = 0.15f;
 		}
 	}
 }
@@ -8796,7 +8950,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 	}
 	else if (itemPickup->GetType() == "Armor")
 	{
-		if (itemPickup->GetMaximum() > playerData.stats[STAT_ARMOR])
+		if ((int)itemPickup->GetMaximum() > playerData.stats[STAT_ARMOR])
 		{
 			score = (itemPickup->GetMaximum() - playerData.stats[STAT_ARMOR]) / (float)itemPickup->GetMaximum();
 			if (itemPickup->GetCode() == 1) //armor body
@@ -8814,7 +8968,7 @@ float QuakeAIManager::CalculateHeuristicItem(const PlayerData& playerData, Actor
 	}
 	else if (itemPickup->GetType() == "Health")
 	{
-		if (itemPickup->GetMaximum() > playerData.stats[STAT_HEALTH])
+		if ((int)itemPickup->GetMaximum() > playerData.stats[STAT_HEALTH])
 		{
 			score = (itemPickup->GetMaximum() - playerData.stats[STAT_HEALTH]) / (float)itemPickup->GetMaximum();
 			if (itemPickup->GetCode() == 1) //health
@@ -9115,16 +9269,31 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 					break;
 			}
 		}
-		else if (itemPickup->GetType() == "Armor")
+		else if (itemPickup->GetType() == "Health")
 		{
 			if (playerData.itemAmount.at(item.first))
 			{
-				score = (itemPickup->GetMaximum() - playerData.stats[STAT_ARMOR]) / (float)itemPickup->GetMaximum();
-				if (itemPickup->GetCode() == 1) //armor body
-					score *= 0.4f;
-				else if (itemPickup->GetCode() == 2) //armor combat
+				if (itemPickup->GetCode() != 3)
+				{
+					int maxHealth = itemPickup->GetMaximum();
+					int health = playerData.stats[STAT_HEALTH] < maxHealth ? maxHealth - playerData.stats[STAT_HEALTH] : 0;
+
+					score = health / (float)maxHealth;
+				}
+				else
+				{
+					int maxHealth = 100;
+					int health = playerData.stats[STAT_HEALTH] < maxHealth ? maxHealth : itemPickup->GetMaximum() - playerData.stats[STAT_HEALTH];
+
+					score = health / (float)maxHealth;
+				}
+				if (itemPickup->GetCode() == 1) //health
 					score *= 0.3f;
-				else //armor shard
+				else if (itemPickup->GetCode() == 2) //health large
+					score *= 0.4f;
+				else if (itemPickup->GetCode() == 3) //health mega
+					score *= 0.5f;
+				else //health small
 					score *= 0.02f;
 
 				weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
@@ -9135,18 +9304,19 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 					bestItem = item.first;
 			}
 		}
-		else if (itemPickup->GetType() == "Health")
+		else if (itemPickup->GetType() == "Armor")
 		{
 			if (playerData.itemAmount.at(item.first))
 			{
-				score = (itemPickup->GetMaximum() - playerData.stats[STAT_HEALTH]) / (float)itemPickup->GetMaximum();
-				if (itemPickup->GetCode() == 1) //health
-					score *= 0.3f;
-				else if (itemPickup->GetCode() == 2) //health large
+				int maxArmor = 100;
+				int armor = playerData.stats[STAT_ARMOR] < maxArmor ? maxArmor : itemPickup->GetMaximum() - playerData.stats[STAT_ARMOR];
+
+				score = armor / (float)maxArmor;
+				if (itemPickup->GetCode() == 1) //armor body
 					score *= 0.4f;
-				else if (itemPickup->GetCode() == 3) //health mega
-					score *= 0.5f;
-				else //health small
+				else if (itemPickup->GetCode() == 2) //armor combat
+					score *= 0.3f;
+				else //armor shard
 					score *= 0.02f;
 
 				weight = (playerData.itemWeight.at(item.first) < maxWeight) ? playerData.itemWeight.at(item.first) : maxWeight;
@@ -9674,7 +9844,7 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 	}
 }
 
-void QuakeAIManager::CalculateVisibility(
+void QuakeAIManager::CalculateVisibility(float threatTime,
 	PathingNode* playerNode, float playerPathOffset, float playerVisibleTime,
 	const PathingArcVec& playerPathPlan, std::map<float, VisibilityData>& playerVisibility, 
 	PathingNode* otherPlayerNode, float otherPlayerPathOffset, float otherPlayerVisibleTime,
@@ -9808,7 +9978,8 @@ void QuakeAIManager::CalculateVisibility(
 						}
 					}
 
-					totalVisibleWeight += currentWeight;
+					if (visibilityIt->first >= playerVisibleTime && otherVisibilityIt->first >= otherPlayerVisibleTime)
+						totalVisibleWeight += currentWeight;
 				}
 
 				while (totalArcWeight <= totalWeight)
@@ -9825,7 +9996,6 @@ void QuakeAIManager::CalculateVisibility(
 
 							otherIndex = 0;
 							otherCurrentNode = otherPlayerPathPlan[otherPathIndex]->GetNode();
-
 						}
 						else
 						{
@@ -9836,8 +10006,8 @@ void QuakeAIManager::CalculateVisibility(
 					else otherIndex++;
 				}
 				totalWeight += currentWeight;
-				// set timelimit; any time further is likely to be unrealistic simulation
-				if (totalWeight > 4.f)
+				// set threatTime timelimit; any time further is likely to be unrealistic simulation
+				if (totalWeight > threatTime)
 					return;
 			}
 
@@ -9897,12 +10067,13 @@ void QuakeAIManager::CalculateVisibility(
 						otherVisibilityIt->second.moveTime += currentWeight;
 					}
 
-					totalVisibleWeight += currentWeight;
+					if (visibilityIt->first >= playerVisibleTime && otherVisibilityIt->first >= otherPlayerVisibleTime)
+						totalVisibleWeight += currentWeight;
 				}
 
 				totalWeight += currentWeight;
-				// set timelimit; any time further is likely to be unrealistic simulation
-				if (totalWeight > 4.f)
+				// set threatTime timelimit; any time further is likely to be unrealistic simulation
+				if (totalWeight > threatTime)
 					return;
 			}
 
@@ -12001,6 +12172,17 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 				{
 					playerGuessView.data.plan = playerGuessView.simulation.plan;
 					playerGuessView.data.planWeight = playerGuessView.simulation.planWeight;
+
+					playerGuessView.data.ResetItems();
+					for (auto const& playerGuessItem : playerGuessView.simulation.items)
+					{
+						if (playerGuessView.items.find(playerGuessItem.first) == playerGuessView.items.end())
+						{
+							playerGuessView.data.items[playerGuessItem.first] = playerGuessItem.second;
+							playerGuessView.data.itemWeight[playerGuessItem.first] = playerGuessView.simulation.itemWeight[playerGuessItem.first];
+							playerGuessView.data.itemAmount[playerGuessItem.first] = playerGuessView.simulation.itemAmount[playerGuessItem.first];
+						}
+					}
 					if (!playerGuessView.data.IsWeaponSelectable(playerGuessView.simulation.weapon))
 						playerGuessView.data.weapon = playerGuessView.simulation.weapon;
 				}
@@ -12010,6 +12192,19 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 					//update player guess simulation
 					playerGuessView.guessPlayers[pPlayerActor->GetId()].plan = playerGuessView.guessSimulations[pPlayerActor->GetId()].plan;
 					playerGuessView.guessPlayers[pPlayerActor->GetId()].planWeight = playerGuessView.guessSimulations[pPlayerActor->GetId()].planWeight;
+
+					playerGuessView.guessPlayers[pPlayerActor->GetId()].ResetItems();
+					for (auto const& playerGuessItem : playerGuessView.guessSimulations[pPlayerActor->GetId()].items)
+					{
+						if (playerGuessView.guessItems.find(playerGuessItem.first) == playerGuessView.guessItems.end())
+						{
+							playerGuessView.guessPlayers[pPlayerActor->GetId()].items[playerGuessItem.first] = playerGuessItem.second;
+							playerGuessView.guessPlayers[pPlayerActor->GetId()].itemWeight[playerGuessItem.first] = 
+								playerGuessView.guessSimulations[pPlayerActor->GetId()].itemWeight[playerGuessItem.first];
+							playerGuessView.guessPlayers[pPlayerActor->GetId()].itemAmount[playerGuessItem.first] = 
+								playerGuessView.guessSimulations[pPlayerActor->GetId()].itemAmount[playerGuessItem.first];
+						}
+					}
 					if (!playerGuessView.guessPlayers[pPlayerActor->GetId()].IsWeaponSelectable(playerGuessView.guessSimulations[pPlayerActor->GetId()].weapon))
 						playerGuessView.guessPlayers[pPlayerActor->GetId()].weapon = playerGuessView.guessSimulations[pPlayerActor->GetId()].weapon;
 				}

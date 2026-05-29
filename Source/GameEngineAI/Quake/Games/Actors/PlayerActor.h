@@ -295,10 +295,10 @@ struct PlayerState
 	Vector3<float> damageFrom;		// origin for vector calculation
 	bool damageFromWorld;			// if true, don't use the damage_from vector
 
-	int stats[MAX_STATS];
-	int persistant[MAX_PERSISTANT];	// stats that aren't cleared on death
-	int powerups[MAX_POWERUPS];	// level.time that the powerup runs out
-	int ammo[MAX_WEAPONS];
+	std::array<int, MAX_STATS> stats;
+	std::array<int, MAX_PERSISTANT> persistant;	// stats that aren't cleared on death
+	std::array<int, MAX_POWERUPS> powerups;	// level.time that the powerup runs out
+	std::array<int, MAX_WEAPONS> ammo;
 };
 
 struct HudElement;

@@ -208,8 +208,8 @@ namespace AIEditor
 		if (fpsTimings->busyTime + fpsTimings->sleepTime < frameTimeMin)
 		{
 			fpsTimings->sleepTime = frameTimeMin - fpsTimings->busyTime - fpsTimings->sleepTime;
-			//Sleep(fpsTimings->sleepTime);
-			Sleep(1);
+			Timer::Sleep(fpsTimings->sleepTime);
+			//Sleep(1);
 		}
 		else fpsTimings->sleepTime = 0;
 

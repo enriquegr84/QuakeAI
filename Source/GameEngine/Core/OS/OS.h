@@ -262,6 +262,9 @@ public:
 	//! returns the current real time in milliseconds
 	static unsigned int GetRealTime();
 
+	//! precise sleep for the specified amount of milliseconds
+	static void Sleep(double milliseconds);
+
 private:
 
 	static void InitVirtualTimer();

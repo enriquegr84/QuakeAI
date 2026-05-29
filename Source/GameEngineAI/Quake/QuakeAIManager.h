@@ -19,6 +19,7 @@
 #include "Mathematic/Algebra/Matrix4x4.h"
 
 #include <cereal/types/map.hpp>
+#include <cereal/types/array.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/archives/binary.hpp>
@@ -141,6 +142,8 @@ struct PlayerData
 			ammo[i] = 0;
 			damage[i] = 0;
 		}
+
+		ResetItems();
 	}
 
 	PlayerData(std::shared_ptr<PlayerActor> playerActor)
@@ -167,6 +170,8 @@ struct PlayerData
 			ammo[i] = playerActor->GetState().ammo[i];
 			damage[i] = 0;
 		}
+
+		ResetItems();
 	}
 
 	~PlayerData()
@@ -190,6 +195,8 @@ struct PlayerData
 			ammo[i] = playerActor->GetState().ammo[i];
 			damage[i] = 0;
 		}
+
+		ResetItems();
 	}
 
 	void PlayerData::ResetItems()
@@ -222,9 +229,9 @@ struct PlayerData
 	float weaponTime; // in sec
 	ActorId target;
 
-	int stats[MAX_STATS];
-	int ammo[MAX_WEAPONS];
-	int damage[MAX_WEAPONS];
+	std::array<int, MAX_STATS> stats;
+	std::array<int, MAX_WEAPONS> ammo;
+	std::array<int, MAX_WEAPONS> damage;
 
 	//list of items that the player plan to take or has taken as result of the simulation
 	std::unordered_map<ActorId, float> items; //items respawning time in sec.
@@ -547,8 +554,8 @@ namespace AIAnalysis
 		WeaponType weapon;
 		float weaponTime;
 
-		int stats[MAX_STATS];
-		int ammo[MAX_WEAPONS];
+		std::array<int, MAX_STATS> stats;
+		std::array<int, MAX_WEAPONS> ammo;
 
 		short planId;
 		float planOffset;
@@ -1088,6 +1095,7 @@ public:
 	void UpdatePlayerSimulationView(ActorId player, const PlayerView& playerView);
 
 	void SpawnActor(ActorId playerId);
+	void DetectPlayer(std::shared_ptr<PlayerActor> playerActor);
 	void DetectActor(std::shared_ptr<PlayerActor> playerActor, std::shared_ptr<Actor> item);
 
 	void PrintError(std::string data);
@@ -1108,7 +1116,7 @@ protected:
 	void CalculateWeightItems(const PlayerData& playerData, std::map<ActorId, float>& searchItems);
 	void CalculateHeuristic(EvaluationType evaluation, PlayerData& playerData, PlayerData& otherPlayerData);
 	void CalculateDamage(PlayerData& playerData, const std::map<float, VisibilityData>& visibility);
-	void CalculateVisibility(
+	void CalculateVisibility(float threatTime,
 		PathingNode* playerNode, float playerPathOffset, float playerVisibleTime,
 		const PathingArcVec& playerPathPlan, std::map<float, VisibilityData>& playerVisibility,
 		PathingNode* otherPlayerNode, float otherPlayerPathOffset, float otherPlayerVisibleTime,
@@ -1142,7 +1150,7 @@ protected:
 		Concurrency::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters);
 	bool BuildPath(
-		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
+		float& threatTime, std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
@@ -1168,7 +1176,8 @@ protected:
 		std::shared_ptr<PathingGraph>& graph, float closestDistance, bool skipIsolated = true);
 
 	// AI decision making process
-	void Simulation(EvaluationType evaluation, const std::map<ActorId, float>& gameItems,
+	void Simulation(
+		EvaluationType evaluation, const std::map<ActorId, float>& gameItems, float threatTime,
 		PlayerData& playerData, const PathingArcVec& playerPathPlan, float playerPathOffset,
 		PlayerData& otherPlayerData, const PathingArcVec& otherPlayerPathPlan, float otherPlayerPathOffset);
 
