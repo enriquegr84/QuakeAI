@@ -195,8 +195,6 @@ struct PlayerData
 			ammo[i] = playerActor->GetState().ammo[i];
 			damage[i] = 0;
 		}
-
-		ResetItems();
 	}
 
 	void PlayerData::ResetItems()

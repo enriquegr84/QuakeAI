@@ -5116,6 +5116,21 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 				else
 					mesh->SetRenderMesh(false);
 			}
+
+			if (mesh->GetName() == "lower")
+			{
+				//run animation
+				int legsAnim = pPlayerActor->GetState().legsAnim;
+				mesh->SetCurrentAnimation(legsAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(legsAnim).mBeginFrame);
+			}
+			else if (mesh->GetName() == "upper")
+			{
+				//run animation
+				int torsoAnim = pPlayerActor->GetState().torsoAnim;
+				mesh->SetCurrentAnimation(torsoAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(torsoAnim).mBeginFrame);
+			}
 		}
 	}
 
@@ -5167,6 +5182,21 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 					mesh->SetRenderMesh(true);
 				else
 					mesh->SetRenderMesh(false);
+			}
+
+			if (mesh->GetName() == "lower")
+			{
+				//run animation
+				int legsAnim = pPlayerActor->GetState().legsAnim;
+				mesh->SetCurrentAnimation(legsAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(legsAnim).mBeginFrame);
+			}
+			else if (mesh->GetName() == "upper")
+			{
+				//run animation
+				int torsoAnim = pPlayerActor->GetState().torsoAnim;
+				mesh->SetCurrentAnimation(torsoAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(torsoAnim).mBeginFrame);
 			}
 		}
 	}
@@ -5311,6 +5341,21 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 				else
 					mesh->SetRenderMesh(false);
 			}
+
+			if (mesh->GetName() == "lower")
+			{
+				//run animation
+				int legsAnim = pPlayerActor->GetState().legsAnim;
+				mesh->SetCurrentAnimation(legsAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(legsAnim).mBeginFrame);
+			}
+			else if (mesh->GetName() == "upper")
+			{
+				//run animation
+				int torsoAnim = pPlayerActor->GetState().torsoAnim;
+				mesh->SetCurrentAnimation(torsoAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(torsoAnim).mBeginFrame);
+			}
 		}
 	}
 
@@ -5362,6 +5407,21 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 					mesh->SetRenderMesh(true);
 				else
 					mesh->SetRenderMesh(false);
+			}
+
+			if (mesh->GetName() == "lower")
+			{
+				//run animation
+				int legsAnim = pPlayerActor->GetState().legsAnim;
+				mesh->SetCurrentAnimation(legsAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(legsAnim).mBeginFrame);
+			}
+			else if (mesh->GetName() == "upper")
+			{
+				//run animation
+				int torsoAnim = pPlayerActor->GetState().torsoAnim;
+				mesh->SetCurrentAnimation(torsoAnim);
+				mesh->SetCurrentFrame((float)mesh->GetAnimation(torsoAnim).mBeginFrame);
 			}
 		}
 	}

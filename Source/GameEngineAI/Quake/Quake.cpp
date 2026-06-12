@@ -1615,8 +1615,11 @@ void QuakeLogic::JumpActorDelegate(BaseEventDataPtr pEventData)
 
 		if (pPlayerActor->GetAction().triggerPush != INVALID_ACTOR_ID)
 		{
-			pPlayerActor->GetAction().triggerPush = INVALID_ACTOR_ID;
+			std::shared_ptr<Actor> pItemActor(GetActor(pPlayerActor->GetAction().triggerPush).lock());
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->DetectActor(pPlayerActor, pItemActor);
 
+			pPlayerActor->GetAction().triggerPush = INVALID_ACTOR_ID;
 			if (GameApplication::Get()->GetHumanView()->mCamera->GetTarget() &&
 				GameApplication::Get()->GetHumanView()->mCamera->GetTarget()->GetId() == pPlayerActor->GetId())
 			{
@@ -1674,6 +1677,9 @@ void QuakeLogic::TeleportActorDelegate(BaseEventDataPtr pEventData)
 	{
 		std::shared_ptr<Actor> pItemActor(
 			std::dynamic_pointer_cast<Actor>(GetActor(pPlayerActor->GetAction().triggerTeleporter).lock()));
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		aiManager->DetectActor(pPlayerActor, pItemActor);
+
 		std::shared_ptr<TeleporterTrigger> pTeleporterTrigger =
 			pItemActor->GetComponent<TeleporterTrigger>(TeleporterTrigger::Name).lock();
 		pPlayerActor->GetAction().triggerTeleporter = INVALID_ACTOR_ID;
@@ -2674,7 +2680,7 @@ void QuakeLogic::ShowAnalysisPredictionDelegate(BaseEventDataPtr pEventData)
 	std::shared_ptr<EventDataShowAnalysisPrediction> pCastEventData =
 		std::static_pointer_cast<EventDataShowAnalysisPrediction>(pEventData);
 	
-	UpdateGameAIAnalysisSimulation(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
+	UpdateGameAIAnalysisPrediction(pCastEventData->GetPlayer(), pCastEventData->GetAnalysisFrame());
 }
 
 void QuakeLogic::ShowGameStateDelegate(BaseEventDataPtr pEventData)
@@ -2711,16 +2717,10 @@ void QuakeLogic::PhysicsTriggerEnterDelegate(BaseEventDataPtr pEventData)
 			if (pItemActor->GetComponent<PushTrigger>(PushTrigger::Name).lock())
 			{
 				pPlayerActor->GetAction().triggerPush = pItemActor->GetId();
-
-				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-				aiManager->DetectActor(pPlayerActor, pItemActor);
 			}
 			else if (pItemActor->GetComponent<TeleporterTrigger>(TeleporterTrigger::Name).lock())
 			{
 				pPlayerActor->GetAction().triggerTeleporter = pItemActor->GetId();
-
-				QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-				aiManager->DetectActor(pPlayerActor, pItemActor);
 			}
 		}
 
