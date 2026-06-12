@@ -1086,7 +1086,8 @@ public:
 	void UpdatePlayerView(ActorId player, const PlayerView& playerView);
 	void UpdatePlayerView(ActorId player, const PlayerData& playerData);
 	void UpdatePlayerView(ActorId player, const PlayerData& playerData, bool update);
-	void UpdatePlayerView(ActorId player, const PlayerView& playerView, float planWeight);
+	void UpdatePlayerView(ActorId player, const std::map<ActorId, float>& gameItems);
+	void UpdatePlayerView(ActorId player, float planWeight);
 	void UpdatePlayerGuessView(ActorId player, const PlayerGuessView& playerGuessView, bool isUpdated);
 
 	void UpdatePlayerSimulationView(ActorId player, const PlayerGuessView& playerGuessView);
@@ -1321,7 +1322,8 @@ private:
 	void RegisterAllDelegates(void);
 	void RemoveAllDelegates(void);
 
-	void UpdatePlayerItems(ActorId playerId, PlayerView& playerView);
+	void InitializePlayerItems(PlayerView& playerView);
+	void UpdatePlayerItems(unsigned long deltaMs, PathingNode* playerNode, PlayerView& playerView);
 	void UpdatePlayerGuessItems(unsigned long deltaMs, ActorId playerId, PlayerGuessView& playerGuessView);
 
 	void UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessView& playerGuessView);

@@ -6473,7 +6473,6 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
 
 	if (aiSimulation.data.plan.node)
@@ -6607,7 +6606,6 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
 
 	if (aiSimulation.data.plan.node)
@@ -6747,7 +6745,6 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessDecisionSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerGuessView.items;
 
 	if (playerGuessSimulation.data.plan.node)
@@ -6781,7 +6778,6 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	gameDecision.evaluation.playerGuessItems = gameItems;
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	gameItems = aiView.gameItems;
 
 	if (aiDecisionSimulation.data.plan.node)
@@ -6950,7 +6946,6 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiView.gameItems;
 
 	if (aiDecisionSimulation.data.plan.node)
@@ -7086,7 +7081,6 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
 
 	if (playerSimulation.data.plan.node)
@@ -7219,7 +7213,6 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
 
 	if (playerSimulation.data.plan.node)
@@ -7359,7 +7352,6 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessDecisionSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = aiGuessView.items;
 
 	if (aiGuessSimulation.data.plan.node)
@@ -7393,7 +7385,6 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	gameDecision.evaluation.playerGuessItems = gameItems;
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	gameItems = playerView.gameItems;
 
 	if (playerDecisionSimulation.data.plan.node)
@@ -7562,7 +7553,6 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessSimulation.data);
 
 	// update the guess items from the world
-	// for the time being is perfect information to make things easier
 	std::map<ActorId, float> gameItems = playerView.gameItems;
 
 	if (playerDecisionSimulation.data.plan.node)
@@ -8265,11 +8255,17 @@ void QuakeAIManager::UpdatePlayerView(ActorId player, const PlayerData& playerDa
 	mPlayerViewMutex[player].unlock();
 }
 
-void QuakeAIManager::UpdatePlayerView(ActorId player, const PlayerView& playerView, float planWeight)
+void QuakeAIManager::UpdatePlayerView(ActorId player, float planWeight)
 {
 	mPlayerViewMutex[player].lock();
 	mPlayerViews[player].data.planWeight = planWeight;
-	mPlayerViews[player].gameItems = playerView.gameItems;
+	mPlayerViewMutex[player].unlock();
+}
+
+void QuakeAIManager::UpdatePlayerView(ActorId player, const std::map<ActorId, float>& gameItems)
+{
+	mPlayerViewMutex[player].lock();
+	mPlayerViews[player].gameItems = gameItems;
 	mPlayerViewMutex[player].unlock();
 }
 
@@ -8311,8 +8307,8 @@ void QuakeAIManager::SpawnActor(ActorId playerId)
 		playerView.isUpdated = false;
 		GetPlayerView(pPlayerActor->GetId(), playerView);
 
-		//update game items
-		UpdatePlayerItems(pPlayerActor->GetId(), playerView);
+		//initialize game items
+		InitializePlayerItems(playerView);
 
 		std::shared_ptr<PhysicComponent> pPhysicComponent(
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
@@ -8444,6 +8440,10 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 		otherPlayerGuessView.items.clear();
 		otherPlayerGuessView.guessItems[pPlayerActor->GetId()].clear();
 
+		//initialize player items
+		InitializePlayerItems(otherPlayerView);
+		UpdatePlayerView(pOtherPlayerActor->GetId(), otherPlayerView.gameItems);
+
 		//we update the players path plan based on current position. This is actually not right and it should be predicted
 		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], otherPlayerGuessView.data, playerNode);
 
@@ -8523,6 +8523,10 @@ void QuakeAIManager::DetectPlayer(std::shared_ptr<PlayerActor> pPlayerActor)
 		otherPlayerGuessView.isUpdated = false;
 		otherPlayerGuessView.items.clear();
 		otherPlayerGuessView.guessItems[pPlayerActor->GetId()].clear();
+
+		//initialize player items
+		InitializePlayerItems(otherPlayerView);
+		UpdatePlayerView(pOtherPlayerActor->GetId(), otherPlayerView.gameItems);
 
 		//we update the players path plan based on current position. This is actually not right and it should be predicted
 		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], otherPlayerGuessView.data, playerNode);
@@ -12188,7 +12192,7 @@ bool QuakeAIManager::CheckPlayerGuessItems(PathingNode* playerNode, PlayerGuessV
 	return resetGuessItem;
 }
 
-void QuakeAIManager::UpdatePlayerItems(ActorId playerId, PlayerView& playerView)
+void QuakeAIManager::InitializePlayerItems(PlayerView& playerView)
 {
 	//for the moment we take perfect information but the goal is to have
 	//an accurate system to predict items availability and respawning time estimation
@@ -12225,26 +12229,72 @@ void QuakeAIManager::UpdatePlayerItems(ActorId playerId, PlayerView& playerView)
 	}
 }
 
+void QuakeAIManager::UpdatePlayerItems(unsigned long deltaMs, PathingNode* playerNode, PlayerView& playerView)
+{
+	GameApplication* gameApp = (GameApplication*)Application::App;
+	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
+
+	std::vector<std::shared_ptr<Actor>> searchActors;
+	game->GetAmmoActors(searchActors);
+	game->GetWeaponActors(searchActors);
+	game->GetHealthActors(searchActors);
+	game->GetArmorActors(searchActors);
+	for (std::shared_ptr<Actor> pItemActor : searchActors)
+	{
+		if (mGameActorPickups.find(pItemActor->GetId()) != mGameActorPickups.end())
+		{
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(pItemActor->GetId());
+			if (playerNode->IsVisibleNode(itemPickup->GetNode()))
+			{
+				if (pItemActor->GetType() == "Weapon")
+				{
+					std::shared_ptr<WeaponPickup> pWeaponPickup = pItemActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+					playerView.gameItems[pItemActor->GetId()] = pWeaponPickup->mRespawnTime / 1000.f;
+				}
+				else if (pItemActor->GetType() == "Ammo")
+				{
+					std::shared_ptr<AmmoPickup> pAmmoPickup = pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
+					playerView.gameItems[pItemActor->GetId()] = pAmmoPickup->mRespawnTime / 1000.f;
+				}
+				else if (pItemActor->GetType() == "Armor")
+				{
+					std::shared_ptr<ArmorPickup> pArmorPickup = pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
+					playerView.gameItems[pItemActor->GetId()] = pArmorPickup->mRespawnTime / 1000.f;
+				}
+				else if (pItemActor->GetType() == "Health")
+				{
+					std::shared_ptr<HealthPickup> pHealthPickup = pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
+					playerView.gameItems[pItemActor->GetId()] = pHealthPickup->mRespawnTime / 1000.f;
+				}
+			}
+			else
+			{
+				playerView.gameItems[pItemActor->GetId()] -= deltaMs / 1000.f;
+				if (playerView.gameItems[pItemActor->GetId()] < 0)
+					playerView.gameItems[pItemActor->GetId()] = 0.f;
+			}
+		}
+	}
+}
+
 void QuakeAIManager::UpdatePlayerGuessItems(unsigned long deltaMs, ActorId playerId, PlayerGuessView& playerGuessView)
 {
 	for (auto const& item : playerGuessView.items)
 	{
-		std::shared_ptr<Actor> pItemActor(GameLogic::Get()->GetActor(item.first).lock());
-		playerGuessView.items[pItemActor->GetId()] -= deltaMs / 1000.f;
-		if (playerGuessView.items[pItemActor->GetId()] < 0)
-			playerGuessView.items[pItemActor->GetId()] = 0.f;
+		playerGuessView.items[item.first] -= deltaMs / 1000.f;
+		if (playerGuessView.items[item.first] < 0)
+			playerGuessView.items[item.first] = 0.f;
 
-		playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] -= deltaMs / 1000.f;
-		if (playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] < 0)
-			playerGuessView.guessItems[playerGuessView.data.player][pItemActor->GetId()] = 0.f;
+		playerGuessView.guessItems[playerGuessView.data.player][item.first] -= deltaMs / 1000.f;
+		if (playerGuessView.guessItems[playerGuessView.data.player][item.first] < 0)
+			playerGuessView.guessItems[playerGuessView.data.player][item.first] = 0.f;
 	}
 
 	for (auto const& item : playerGuessView.guessItems[playerId])
 	{
-		std::shared_ptr<Actor> pItemActor(GameLogic::Get()->GetActor(item.first).lock());
-		playerGuessView.guessItems[playerId][pItemActor->GetId()] -= deltaMs / 1000.f;
-		if (playerGuessView.guessItems[playerId][pItemActor->GetId()] < 0)
-			playerGuessView.guessItems[playerId][pItemActor->GetId()] = 0.f;
+		playerGuessView.guessItems[playerId][item.first] -= deltaMs / 1000.f;
+		if (playerGuessView.guessItems[playerId][item.first] < 0)
+			playerGuessView.guessItems[playerId][item.first] = 0.f;
 	}
 }
 
@@ -12275,19 +12325,22 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 			continue;
 		}
 
-		PlayerView playerView; 
+		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
+			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+		PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerPhysicComponent->GetPosition(), false);
+
+		PlayerView playerView;
 		GetPlayerView(pPlayerActor->GetId(), playerView);
 		playerView.data.planWeight += deltaMs / 1000.f;
+		UpdatePlayerView(pPlayerActor->GetId(), playerView.data.planWeight);
 
 		//update player items
-		UpdatePlayerItems(pPlayerActor->GetId(), playerView);
-		UpdatePlayerView(pPlayerActor->GetId(), playerView, playerView.data.planWeight);
+		UpdatePlayerItems(deltaMs, playerNode, playerView);
+		UpdatePlayerView(pPlayerActor->GetId(), playerView.gameItems);
 
 		//aware decision making
 		bool runAwareDecision = false;
 
-		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
-			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
 		for (std::shared_ptr<PlayerActor> pOtherPlayerActor : playerActors)
 		{
 			if (pPlayerActor->GetId() == pOtherPlayerActor->GetId())
@@ -12347,106 +12400,114 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 				}
 			}
 
-			if (pPlayerPhysicComponent)
+			if (playerNode)
 			{
-				PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerPhysicComponent->GetPosition(), false);
-				if (playerNode)
+				bool resetGuessItem = CheckPlayerGuessItems(playerNode, playerGuessView, pPlayerActor->GetId());
+
+				std::shared_ptr<PhysicComponent> pOtherPlayerPhysicComponent(
+					pOtherPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+				if (pOtherPlayerPhysicComponent)
 				{
-					bool resetGuessItem = CheckPlayerGuessItems(playerNode, playerGuessView, pPlayerActor->GetId());
+					PathingNode* otherPlayerNode = mPathingGraph->FindClosestNode(pOtherPlayerPhysicComponent->GetPosition(), false);
+					bool resetOtherGuessItem = CheckPlayerGuessItems(otherPlayerNode, playerGuessView);
 
-					std::shared_ptr<PhysicComponent> pOtherPlayerPhysicComponent(
-						pOtherPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-					if (pOtherPlayerPhysicComponent)
+					if (playerNode->IsVisibleNode(otherPlayerNode))
+						//if (RayCollisionDetection(currentPosition, pOtherPlayerPhysicComponent->GetPosition()) == NULL)
 					{
-						PathingNode* otherPlayerNode = mPathingGraph->FindClosestNode(pOtherPlayerPhysicComponent->GetPosition(), false);
-						bool resetOtherGuessItem = CheckPlayerGuessItems(otherPlayerNode, playerGuessView);
+						//distrust the guessing plan and reset guess player
+						playerGuessView.isUpdated = false;
+						playerGuessView.items.clear();
+						playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+						playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
-						if (playerNode->IsVisibleNode(otherPlayerNode))
-							//if (RayCollisionDetection(currentPosition, pOtherPlayerPhysicComponent->GetPosition()) == NULL)
+						//initialize player items
+						InitializePlayerItems(playerView);
+						UpdatePlayerView(pPlayerActor->GetId(), playerView.gameItems);
+
+						std::stringstream updatePlayer;
+						updatePlayer << "\n visible nodes for both players ";
+						PrintInfo(updatePlayer.str());
+
+						UpdatePlayerGuessPlan(pOtherPlayerActor,
+							gameAIViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
+
+						//what the guessing player is guessing about the player
+						UpdatePlayerGuessPlan(pPlayerActor,
+							gameAIViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
+
+						//if players can see each other, then we run aware decision making
+						runAwareDecision = true;
+					}
+					else
+					{
+						if (resetGuessItem)
 						{
-							//distrust the guessing plan and reset guess player
+							//distrust the guessing plan and reset guess player 
 							playerGuessView.isUpdated = false;
 							playerGuessView.items.clear();
 							playerGuessView.guessItems[pPlayerActor->GetId()].clear();
-							playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+
+							//initialize player items
+							InitializePlayerItems(playerView);
+							UpdatePlayerView(pPlayerActor->GetId(), playerView.gameItems);
 
 							std::stringstream updatePlayer;
-							updatePlayer << "\n visible nodes for both players ";
+							updatePlayer << "\n reset items for player guess: " << pPlayerActor->GetId() << " ";
 							PrintInfo(updatePlayer.str());
 
 							UpdatePlayerGuessPlan(pOtherPlayerActor,
 								gameAIViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
 
-							//what the guessing player is guessing about the player
+							//we update the players path plan based on current position. This is actually not right and it should be predicted
 							UpdatePlayerGuessPlan(pPlayerActor,
 								gameAIViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
-
-							//if players can see each other, then we run aware decision making
-							runAwareDecision = true;
 						}
-						else
+						else if (playerNode->IsVisibleNode(playerGuessView.data.plan.node))
+							//else if(RayCollisionDetection(currentPosition, playerGuessView.data.plan.node->GetPosition()) == NULL)
 						{
-							if (resetGuessItem)
-							{
-								//distrust the guessing plan and reset guess player 
-								playerGuessView.isUpdated = false;
-								playerGuessView.items.clear();
-								playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+							//distrust the guessing plan and reset guess player node
+							playerGuessView.isUpdated = false;
+							playerGuessView.items.clear();
+							playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
-								std::stringstream updatePlayer;
-								updatePlayer << "\n reset items for player guess: " << pPlayerActor->GetId() << " ";
-								PrintInfo(updatePlayer.str());
+							//initialize player items
+							InitializePlayerItems(playerView);
+							UpdatePlayerView(pPlayerActor->GetId(), playerView.gameItems);
 
-								UpdatePlayerGuessPlan(pOtherPlayerActor,
-									gameAIViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
+							std::stringstream updatePlayer;
+							updatePlayer << "\n visible node for player guess: " << pOtherPlayerActor->GetId() << " ";
+							PrintInfo(updatePlayer.str());
+							//we update the players path plan based on current position. This is actually not right and it should be predicted
+							UpdatePlayerGuessPlan(pOtherPlayerActor,
+								gameAIViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
+						}
 
-								//we update the players path plan based on current position. This is actually not right and it should be predicted
-								UpdatePlayerGuessPlan(pPlayerActor,
-									gameAIViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
-							}
-							else if (playerNode->IsVisibleNode(playerGuessView.data.plan.node))
-								//else if(RayCollisionDetection(currentPosition, playerGuessView.data.plan.node->GetPosition()) == NULL)
-							{
-								//distrust the guessing plan and reset guess player node
-								playerGuessView.isUpdated = false;
-								playerGuessView.items.clear();
-								playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+						if (resetOtherGuessItem)
+						{
+							//distrust the guessing plan and reset guess player 
+							playerGuessView.isUpdated = false;
+							playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
 
-								std::stringstream updatePlayer;
-								updatePlayer << "\n visible node for player guess: " << pOtherPlayerActor->GetId() << " ";
-								PrintInfo(updatePlayer.str());
-								//we update the players path plan based on current position. This is actually not right and it should be predicted
-								UpdatePlayerGuessPlan(pOtherPlayerActor,
-									gameAIViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
-							}
+							std::stringstream updatePlayer;
+							updatePlayer << "\n reset other items for player guess: " << pOtherPlayerActor->GetId() << " ";
+							PrintInfo(updatePlayer.str());
+							//we update the players path plan based on current position. This is actually not right and it should be predicted
+							UpdatePlayerGuessPlan(pOtherPlayerActor,
+								gameAIViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
+						}
+						else if (playerGuessView.data.plan.node &&
+							playerGuessView.data.plan.node->IsVisibleNode(playerGuessView.guessPlayers[pPlayerActor->GetId()].plan.node))
+						{
+							//distrust the guessing plan and reset guess player
+							playerGuessView.isUpdated = false;
+							playerGuessView.guessItems[pPlayerActor->GetId()].clear();
 
-							if (resetOtherGuessItem)
-							{
-								//distrust the guessing plan and reset guess player 
-								playerGuessView.isUpdated = false;
-								playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
-
-								std::stringstream updatePlayer;
-								updatePlayer << "\n reset other items for player guess: " << pOtherPlayerActor->GetId() << " ";
-								PrintInfo(updatePlayer.str());
-								//we update the players path plan based on current position. This is actually not right and it should be predicted
-								UpdatePlayerGuessPlan(pOtherPlayerActor,
-									gameAIViews[pOtherPlayerActor->GetId()], playerGuessView.data, otherPlayerNode);
-							}
-							else if (playerGuessView.data.plan.node &&
-								playerGuessView.data.plan.node->IsVisibleNode(playerGuessView.guessPlayers[pPlayerActor->GetId()].plan.node))
-							{
-								//distrust the guessing plan and reset guess player
-								playerGuessView.isUpdated = false;
-								playerGuessView.guessItems[pPlayerActor->GetId()].clear();
-
-								std::stringstream updatePlayer;
-								updatePlayer << "\n visible other node for player guess: " << pPlayerActor->GetId() << " ";
-								PrintInfo(updatePlayer.str());
-								//we update the players path plan based on current position. This is actually not right and it should be predicted
-								UpdatePlayerGuessPlan(pPlayerActor,
-									gameAIViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
-							}
+							std::stringstream updatePlayer;
+							updatePlayer << "\n visible other node for player guess: " << pPlayerActor->GetId() << " ";
+							PrintInfo(updatePlayer.str());
+							//we update the players path plan based on current position. This is actually not right and it should be predicted
+							UpdatePlayerGuessPlan(pPlayerActor,
+								gameAIViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
 						}
 					}
 				}
