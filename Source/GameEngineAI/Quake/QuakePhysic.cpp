@@ -161,6 +161,9 @@ void QuakePhysX::UpdatePlayerState(ActorId playerId, PxController* controller, f
 	quake->GetTriggerActors(triggers);
 	for (auto& trigger : triggers)
 	{
+		if (GetCollisionFlags(trigger->GetId()) & PxShapeFlag::eTRIGGER_SHAPE)
+			continue;
+
 		std::shared_ptr<PushTrigger> pTriggerPushComponent(
 			trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock());
 		if (pTriggerPushComponent)

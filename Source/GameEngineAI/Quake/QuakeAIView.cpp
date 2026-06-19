@@ -1831,9 +1831,26 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 										PlayerView playerView;
 										aiManager->GetPlayerView(pPlayerActor->GetId(), playerView);
 										PlayerGuessView playerGuessView = playerView.guessViews[pPlayerTarget->GetId()];
-										if (playerGuessView.data.plan.path.size())
+										targetPos = playerGuessView.data.plan.node->GetPosition();
+
+										bool foundTarget = false;
+										float targetDistance, targetWeight, pathWeight = 0.f;
+										for (auto path : playerGuessView.data.plan.path)
 										{
-											PathingArc* playerTargetArc = *playerGuessView.data.plan.path.begin();
+											pathWeight += path->GetWeight();
+											targetDistance = Length(path->GetNode()->GetPosition() - playerPos);
+											targetWeight = targetDistance / 1000.f; //rocket flies 1000 units per second
+
+											if (pathWeight >= targetWeight)
+											{
+												targetPos = path->GetNode()->GetPosition();
+												foundTarget = true;
+												break;
+											}
+										}
+										if (!foundTarget && playerGuessView.data.plan.path.size())
+										{
+											PathingArc* playerTargetArc = *playerGuessView.data.plan.path.rbegin();
 											targetPos = playerTargetArc->GetNode()->GetPosition();
 										}
 										targetPos -= Vector3<float>::Unit(AXIS_Y) * (float)pPlayerTarget->GetState().viewHeight / 2.f;

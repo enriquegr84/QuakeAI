@@ -148,6 +148,7 @@ public:
 		std::vector<Vector3<float>>& collisionPoints,
 		std::vector<Vector3<float>>& collisionNormals, ActorId actorId) = 0;
 
+	virtual int GetCollisionFlags(ActorId actorId) = 0;
 	virtual void SetCollisionFlags(ActorId actorId, int collisionFlags) = 0;
 	virtual void SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) = 0;
 
@@ -247,6 +248,7 @@ public:
 		std::vector<Vector3<float>>& collisionPoints,
 		std::vector<Vector3<float>>& collisionNormals, ActorId actorId) { }
 
+	virtual int GetCollisionFlags(ActorId actorId) { return 0; }
 	virtual void SetCollisionFlags(ActorId actorId, int collisionFlags) { }
 	virtual void SetIgnoreCollision(ActorId actorId, ActorId ignoreActorId, bool ignoreCollision) { }
 

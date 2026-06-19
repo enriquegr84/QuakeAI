@@ -831,14 +831,16 @@ void QuakeLogic::UpdateGameAI(float deltaMs)
 
 					std::shared_ptr<PlayerActor> pPlayerActor(
 						std::dynamic_pointer_cast<PlayerActor>(GetActor(evt.player).lock()));
+					std::shared_ptr<TransformComponent> pTransformComponent(
+						pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 					std::shared_ptr<PhysicComponent> pPhysicComponent(
 						pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-					if (pPhysicComponent)
+					if (pTransformComponent && pPhysicComponent)
 					{
 						viewAngles.mAxis[1] = 1;
 						viewAngles.mAxis[2] = 2;
-						pPhysicComponent->GetTransform().GetRotation(viewAngles);
-						origin = pPhysicComponent->GetTransform().GetTranslation();
+						pTransformComponent->GetTransform().GetRotation(viewAngles);
+						origin = pPhysicComponent->GetPosition();
 						Matrix4x4<float> yawRotation = Rotation<4, float>(
 							AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), viewAngles.mAngle[2]));
 						Matrix4x4<float> pitchRotation = Rotation<4, float>(
@@ -4482,11 +4484,11 @@ bool QuakeLogic::RadiusDamage(float damage, float radius, int mod,
 			if (!playerActor->GetState().takeDamage)
 				continue;
 
-			std::shared_ptr<TransformComponent> pTransformComponent(
-				playerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-			if (pTransformComponent)
+			std::shared_ptr<PhysicComponent> pPhysicComponent(
+				playerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+			if (pPhysicComponent)
 			{
-				Vector3<float> location = pTransformComponent->GetTransform().GetTranslation();
+				Vector3<float> location = pPhysicComponent->GetPosition();
 
 				float dist = Length(origin - location);
 				if (dist >= radius)
@@ -5298,33 +5300,33 @@ void QuakeLogic::FireWeaponDelegate(BaseEventDataPtr pEventData)
 	// fire the specific weapon
 	switch (pPlayerActor->GetState().weapon)
 	{
-	case WP_GAUNTLET:
-		GauntletAttack(pPlayerActor, muzzle, forward);
-		break;
-	case WP_SHOTGUN:
-		ShotgunFire(pPlayerActor, muzzle, forward, right, up);
-		break;
-	case WP_MACHINEGUN:
-		BulletFire(pPlayerActor, muzzle, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
-		break;
-	case WP_GRENADE_LAUNCHER:
-		GrenadeLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
-		break;
-	case WP_ROCKET_LAUNCHER:
-		RocketLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
-		break;
-	case WP_PLASMAGUN:
-		PlasmagunFire(pPlayerActor, muzzle, forward, viewAngles);
-		break;
-	case WP_RAILGUN:
-		RailgunFire(pPlayerActor, muzzle, forward);
-		break;
-	case WP_LIGHTNING:
-		LightningFire(pPlayerActor, muzzle, forward);
-		break;
-	default:
-		// FIXME Error( "Bad ent->state->weapon" );
-		break;
+		case WP_GAUNTLET:
+			GauntletAttack(pPlayerActor, muzzle, forward);
+			break;
+		case WP_SHOTGUN:
+			ShotgunFire(pPlayerActor, muzzle, forward, right, up);
+			break;
+		case WP_MACHINEGUN:
+			BulletFire(pPlayerActor, muzzle, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
+			break;
+		case WP_GRENADE_LAUNCHER:
+			GrenadeLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
+			break;
+		case WP_ROCKET_LAUNCHER:
+			RocketLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
+			break;
+		case WP_PLASMAGUN:
+			PlasmagunFire(pPlayerActor, muzzle, forward, viewAngles);
+			break;
+		case WP_RAILGUN:
+			RailgunFire(pPlayerActor, muzzle, forward);
+			break;
+		case WP_LIGHTNING:
+			LightningFire(pPlayerActor, muzzle, forward);
+			break;
+		default:
+			// FIXME Error( "Bad ent->state->weapon" );
+			break;
 	}
 }
 

@@ -1320,6 +1320,19 @@ void BulletPhysics::StopActor(ActorId actorId)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// BulletPhysics::GetCollisionFlags
+//
+int BulletPhysics::GetCollisionFlags(ActorId actorId)
+{
+	int collisionFlags = 0;
+	if (btCollisionObject* const collisionObject = FindBulletCollisionObject(actorId))
+	{
+		collisionFlags = collisionObject->getCollisionFlags();
+	}
+	return collisionFlags;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // BulletPhysics::SetCollisionFlags
 //
 void BulletPhysics::SetCollisionFlags(ActorId actorId, int collisionFlags)

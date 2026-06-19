@@ -95,6 +95,7 @@ public:
 	void SetRotation(const Transform& transform);
     void Stop(void);
 
+	int GetCollisionFlags();
 	void SetCollisionFlags(int collisionFlags);
 	void SetIgnoreCollision(ActorId actorId, bool ignoreCollision);
 

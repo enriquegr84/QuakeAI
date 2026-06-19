@@ -502,6 +502,12 @@ void PhysicComponent::Stop(void)
 	gamePhysics->StopActor(mOwner->GetId());
 }
 
+int PhysicComponent::GetCollisionFlags()
+{
+	BaseGamePhysic* gamePhysics = GameLogic::Get()->GetGamePhysics().get();
+	return gamePhysics->GetCollisionFlags(mOwner->GetId());
+}
+
 void PhysicComponent::SetCollisionFlags(int collisionFlags)
 {
 	BaseGamePhysic* gamePhysics = GameLogic::Get()->GetGamePhysics().get();

@@ -572,9 +572,7 @@ public:
 
 			// lookup the material
 			MaterialData material(mPhysics->LookupMaterialData(mPhysicMaterial));
-			PxMaterial* materialPtr = mPhysics->mPhysicsSystem->createMaterial(
-				material.mFriction, material.mFriction, material.mRestitution);
-
+			PxMaterial* materialPtr = mPhysics->mPhysicsSystem->createMaterial(material.mFriction, material.mFriction, material.mRestitution);
 			PxRigidStatic* rigidStatic = mPhysics->mPhysicsSystem->createRigidStatic(TransformToPxTransform(transform));
 			PxTriangleMeshGeometry triangleMeshGeom(triangleMesh);
 			PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
@@ -795,6 +793,7 @@ void PhysX::AddShape(std::shared_ptr<Actor> pGameActor, PxGeometry& geometry,
 
 	// create the collision body, which specifies the shape of the object
 	PxShape* shape = mPhysicsSystem->createShape(geometry, *materialPtr, true);
+	shape->userData = (void*)PxShapeFlag::eSIMULATION_SHAPE;
 	PX_ASSERT(shape);
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
@@ -885,6 +884,7 @@ void PhysX::AddTrigger(const Vector3<float> &dimension,
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(PxBoxGeometry(Vector3ToPxVector3(dimension)), *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->userData = (void*)PxShapeFlag::eTRIGGER_SHAPE;
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_TRIGGERS,				// my category
 		GROUP_DYNAMIC_OBJECTS,      // categories I want to collide + report with
@@ -1074,6 +1074,7 @@ void PhysX::AddConvexVertices(Plane3<float>* planes, int numPlanes, const Vector
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eTRIGGER_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->userData = (void*)PxShapeFlag::eTRIGGER_SHAPE;
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_TRIGGERS,
 		GROUP_DYNAMIC_OBJECTS,
@@ -1144,6 +1145,7 @@ void PhysX::AddPointCloud(Vector3<float> *verts, int numPoints, std::weak_ptr<Ac
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->userData = (void*)PxShapeFlag::eSIMULATION_SHAPE;
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
 		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,
@@ -1227,6 +1229,7 @@ void PhysX::AddPointCloud(Plane3<float> *planes, int numPlanes, std::weak_ptr<Ac
 	PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE;
 	PxShape* shape = mPhysicsSystem->createShape(convexMeshGeom, *materialPtr, true, shapeFlags);
 	PX_ASSERT(shape);
+	shape->userData = (void*)PxShapeFlag::eSIMULATION_SHAPE;
 	shape->setSimulationFilterData(PxFilterData(
 		GROUP_DYNAMIC_OBJECTS,
 		GROUP_ENVIRONMENT | GROUP_DYNAMIC_OBJECTS,
@@ -1356,6 +1359,22 @@ void PhysX::StopActor(ActorId actorId)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// PhysX::GetCollisionFlags
+//
+int PhysX::GetCollisionFlags(ActorId actorId)
+{
+	unsigned int collisionFlags = 0;
+	if (PxRigidActor* const rigidActor = FindPhysXCollisionObject(actorId))
+	{
+		PxShape* shape = nullptr;
+		rigidActor->getShapes(&shape, 1);
+
+		collisionFlags = (unsigned int)shape->getFlags();
+	}
+	return collisionFlags;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // PhysX::SetCollisionFlags
 //
 void PhysX::SetCollisionFlags(ActorId actorId, int collisionFlags)
@@ -1365,12 +1384,12 @@ void PhysX::SetCollisionFlags(ActorId actorId, int collisionFlags)
 		PxShape* shape = nullptr;
 		rigidActor->getShapes(&shape, 1);
 
-		if (shape->getFlags() & PxShapeFlag::eTRIGGER_SHAPE)
+		if ((unsigned short)shape->userData & PxShapeFlag::eTRIGGER_SHAPE)
 		{
 			// triggers always ignore collisions
 			shape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, collisionFlags);
 		}
-		else if (shape->getFlags() & PxShapeFlag::eSIMULATION_SHAPE)
+		else if ((unsigned short)shape->userData & PxShapeFlag::eSIMULATION_SHAPE)
 		{
 			// triggers always ignore collisions
 			shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, collisionFlags);

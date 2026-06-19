@@ -2414,7 +2414,6 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -2781,7 +2780,6 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -3319,7 +3317,6 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -3916,7 +3913,6 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -4516,7 +4512,6 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -4840,7 +4835,6 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -5292,7 +5286,6 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -5753,7 +5746,6 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -6196,7 +6188,6 @@ bool QuakeAIManager::SimulateClusterPathing(
 	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
 	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
@@ -8296,7 +8287,6 @@ void QuakeAIManager::UpdatePlayerSimulationView(ActorId player, const PlayerView
 
 void QuakeAIManager::SpawnActor(ActorId playerId)
 {
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic *>(GameLogic::Get());
 
 	std::shared_ptr<PlayerActor> pPlayerActor(
@@ -12196,7 +12186,6 @@ void QuakeAIManager::InitializePlayerItems(PlayerView& playerView)
 {
 	//for the moment we take perfect information but the goal is to have
 	//an accurate system to predict items availability and respawning time estimation
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<std::shared_ptr<Actor>> searchActors;
@@ -12231,7 +12220,6 @@ void QuakeAIManager::InitializePlayerItems(PlayerView& playerView)
 
 void QuakeAIManager::UpdatePlayerItems(unsigned long deltaMs, PathingNode* playerNode, PlayerView& playerView)
 {
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<std::shared_ptr<Actor>> searchActors;
@@ -12535,17 +12523,18 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 		AIGame::EventTrack eventTrack;
 		eventTrack.elapsedTime = (float)deltaMs;
 		AddGameEventTrack(eventTrack);
-		return;
 	}
-	mUpdateTimeMs -= 200;
+	else
+	{
+		mUpdateTimeMs -= 200;
 
-	//log ai guessing system
-	LogEvents(deltaMs);
+		//log ai guessing system
+		LogEvents(deltaMs);
+	}
 }
 
 void QuakeAIManager::LogEvents(unsigned long deltaMs)
 {
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
@@ -12616,9 +12605,12 @@ void QuakeAIManager::LogEvents(unsigned long deltaMs)
 			viewAngles.mAxis[1] = 1;
 			viewAngles.mAxis[2] = 2;
 			actorTransform.GetRotation(viewAngles);
-			Vector3<float> position = actorTransform.GetTranslation();
 			float yaw = viewAngles.mAngle[AXIS_Y];
 			float pitch = viewAngles.mAngle[AXIS_Z];
+
+			std::shared_ptr<PhysicComponent> physicComponent(
+				actor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+			Vector3<float> position = physicComponent->GetPosition();
 
 			if (!actor->GetComponent<GrenadeFire>(GrenadeFire::Name).expired())
 			{
@@ -12742,7 +12734,6 @@ void QuakeAIManager::CreatePathing(ActorId playerId, NodePlan& pathPlan, std::sh
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
@@ -12767,7 +12758,6 @@ void QuakeAIManager::CreatePathingJump(ActorId playerId, NodePlan& pathPlan, std
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
@@ -12801,7 +12791,6 @@ void QuakeAIManager::CreatePathingRun(ActorId playerId, NodePlan& pathPlan, std:
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
@@ -12835,7 +12824,6 @@ void QuakeAIManager::CreatePathingFall(ActorId playerId, NodePlan& pathPlan, std
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
@@ -12868,11 +12856,18 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, std::shared_ptr
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
 	RegisterAllDelegates();
+
+#if defined(PHYSX) && defined(_WIN64)
+	std::vector<std::shared_ptr<Actor>> triggers;
+	game->GetTriggerActors(triggers);
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			gamePhysics->SetCollisionFlags(trigger->GetId(), true);
+#endif
 
 	mActorPositions.clear();
 
@@ -12913,6 +12908,12 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, std::shared_ptr
 
 	RemoveAllDelegates();
 
+#if defined(PHYSX) && defined(_WIN64)
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			gamePhysics->SetCollisionFlags(trigger->GetId(), false);
+#endif
+
 	game->RegisterAllDelegates();
 
 	return newNode;
@@ -12922,11 +12923,18 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, const Vector3<f
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
 	RegisterAllDelegates();
+
+#if defined(PHYSX) && defined(_WIN64)
+	std::vector<std::shared_ptr<Actor>> triggers;
+	game->GetTriggerActors(triggers);
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			gamePhysics->SetCollisionFlags(trigger->GetId(), true);
+#endif
 
 	mActorPositions.clear();
 
@@ -12964,6 +12972,12 @@ PathingNode* QuakeAIManager::CreatePathingNode(ActorId playerId, const Vector3<f
 
 	RemoveAllDelegates();
 
+#if defined(PHYSX) && defined(_WIN64)
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			gamePhysics->SetCollisionFlags(trigger->GetId(), false);
+#endif
+
 	game->RegisterAllDelegates();
 
 	return newNode;
@@ -12974,7 +12988,6 @@ void QuakeAIManager::CreatePathingMap(ActorId playerId, const PathingNodeVec& pa
 {
 	std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
@@ -12997,7 +13010,6 @@ void QuakeAIManager::CreatePathingMap(ActorId playerId, const PathingNodeVec& pa
 //map generation via physics simulation
 void QuakeAIManager::CreatePathingMap(ActorId playerId, const PathingNodeVec& pathingNodes, std::shared_ptr<PathingGraph>& graph)
 {
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic *>(GameLogic::Get());
 	game->RemoveAllDelegates();
 
@@ -13031,7 +13043,17 @@ void QuakeAIManager::CreatePathingMap(ActorId playerId, const PathingNodeVec& pa
 
 void QuakeAIManager::SimulatePathing(std::map<unsigned short, unsigned short>& selectedClusters, std::shared_ptr<PathingGraph>& graph)
 {
+	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
+
 	RegisterAllDelegates();
+
+#if defined(PHYSX) && defined(_WIN64)
+	std::vector<std::shared_ptr<Actor>> triggers;
+	game->GetTriggerActors(triggers);
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			game->GetGamePhysics()->SetCollisionFlags(trigger->GetId(), true);
+#endif
 
 	mActorPositions.clear();
 
@@ -13127,11 +13149,27 @@ void QuakeAIManager::SimulatePathing(std::map<unsigned short, unsigned short>& s
 	}
 
 	mActorPositions.clear();
+
+#if defined(PHYSX) && defined(_WIN64)
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			game->GetGamePhysics()->SetCollisionFlags(trigger->GetId(), false);
+#endif
 }
 
 void QuakeAIManager::SimulatePathing(Transform transform, NodePlan& nodePlan, std::shared_ptr<PathingGraph>& graph)
 {
+	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
+
 	RegisterAllDelegates();
+
+#if defined(PHYSX) && defined(_WIN64)
+	std::vector<std::shared_ptr<Actor>> triggers;
+	game->GetTriggerActors(triggers);
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			game->GetGamePhysics()->SetCollisionFlags(trigger->GetId(), true);
+#endif
 
 	mActorPositions.clear();
 
@@ -13235,13 +13273,30 @@ void QuakeAIManager::SimulatePathing(Transform transform, NodePlan& nodePlan, st
 	}
 
 	mActorPositions.clear();
+
+#if defined(PHYSX) && defined(_WIN64)
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			game->GetGamePhysics()->SetCollisionFlags(trigger->GetId(), false);
+#endif
 }
 
 void QuakeAIManager::SimulatePathing(std::shared_ptr<PathingGraph>& graph)
 {
+	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
+
 	RegisterAllDelegates();
 
+#if defined(PHYSX) && defined(_WIN64)
+	std::vector<std::shared_ptr<Actor>> triggers;
+	game->GetTriggerActors(triggers);
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			game->GetGamePhysics()->SetCollisionFlags(trigger->GetId(), true);
+#endif
+
 	mActorPositions.clear();
+
 	while (!mOpenSet.empty())
 	{
 		// grab the candidate
@@ -13307,6 +13362,12 @@ void QuakeAIManager::SimulatePathing(std::shared_ptr<PathingGraph>& graph)
 	}
 
 	mActorPositions.clear();
+
+#if defined(PHYSX) && defined(_WIN64)
+	for (auto& trigger : triggers)
+		if (trigger->GetComponent<PushTrigger>(PushTrigger::Name).lock())
+			game->GetGamePhysics()->SetCollisionFlags(trigger->GetId(), false);
+#endif
 }
 
 void QuakeAIManager::CreateTransitions(std::shared_ptr<PathingGraph>& graph)
@@ -13394,7 +13455,6 @@ void QuakeAIManager::CreateClusters(std::shared_ptr<PathingGraph>& graph, unsign
 		clusterNodes[pathNode->GetCluster()].push_back(pathNode);
 	}
 
-	GameApplication* gameApp = (GameApplication*)Application::App;
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
 	std::vector<ActorId> searchActors;
