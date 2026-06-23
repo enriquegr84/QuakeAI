@@ -2287,12 +2287,8 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 		aiManager->BuildPlayerPath(simulation->otherPlayerSimulation,
 			otherPlayer.plan.node, otherPlayerOffset.plan.weight, otherPlayerPath);
 
-		//threat level in seconds determine the time spent in visibility/damage calculation.
-		float threatTime = 4.f;
-
-		aiManager->Simulation(
-			(EvaluationType)evaluation.type, gameItems,
-			threatTime, player, playerPath, playerOffset.plan.weight,
+		aiManager->Simulation((EvaluationType)evaluation.type, gameItems,
+			player, playerPath, playerOffset.plan.weight, 
 			otherPlayer, otherPlayerPath, otherPlayerOffset.plan.weight);
 
 		printf("\ndebug simulation %u", mGameDecision);

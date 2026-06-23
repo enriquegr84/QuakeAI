@@ -4922,7 +4922,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 
 		//simulation guessing
 		bool success = aiManager->SimulateClusterPathing(
-			gameItems, playerGuessData, playerGuessSimulation, otherPlayerGuessData, otherPlayerGuessSimulation, 
+			gameItems, playerGuessData, playerGuessSimulation, otherPlayerGuessData, otherPlayerGuessSimulation,
 			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
 		{
@@ -4930,7 +4930,8 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 			gameItems = gameDecision.evaluation.playerDecisionItems;
 
 			//simulation guessing decision
-			success = aiManager->SimulateClusterPathing(gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
+			success = aiManager->SimulateClusterPathing(
+				gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
 				playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 			if (success)
 			{
@@ -4945,7 +4946,8 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		gameItems = gameDecision.evaluation.playerGuessItems;
 
 		//simulation guessing
-		bool success = aiManager->SimulateClusterPathing(gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation, 
+		bool success = aiManager->SimulateClusterPathing(
+			gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
 			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
 		{
@@ -4959,7 +4961,8 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		gameItems = gameDecision.evaluation.playerDecisionItems;
 
 		//simulation decision
-		bool success = aiManager->SimulateClusterPathing(gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
+		bool success = aiManager->SimulateClusterPathing(
+			gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
 			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
 		{

@@ -539,6 +539,7 @@ namespace AIAnalysis
 				ammo[i] = 0;
 
 			planId = -1;
+			planWeight = 0.f;
 			planOffset = 0.f;
 
 			planNode = 0;
@@ -556,20 +557,20 @@ namespace AIAnalysis
 		std::array<int, MAX_WEAPONS> ammo;
 
 		short planId;
-		float planOffset;
+		float planWeight, planOffset;
 		unsigned short planNode, planNodeOffset;
 		std::vector<int> planPath, planPathOffset;
 
 		template <class Archive>
 		void save(Archive& ar) const
 		{
-			ar(id, frame, target, weapon, weaponTime, stats, ammo, planId, planOffset, planNode, planPath, planNodeOffset, planPathOffset);
+			ar(id, frame, target, weapon, weaponTime, stats, ammo, planId, planWeight, planOffset, planNode, planPath, planNodeOffset, planPathOffset);
 		}
 
 		template <class Archive>
 		void load(Archive& ar)
 		{
-			ar(id, frame, target, weapon, weaponTime, stats, ammo, planId, planOffset, planNode, planPath, planNodeOffset, planPathOffset);
+			ar(id, frame, target, weapon, weaponTime, stats, ammo, planId, planWeight, planOffset, planNode, planPath, planNodeOffset, planPathOffset);
 		}
 	};
 
@@ -1115,7 +1116,7 @@ protected:
 	void CalculateWeightItems(const PlayerData& playerData, std::map<ActorId, float>& searchItems);
 	void CalculateHeuristic(EvaluationType evaluation, PlayerData& playerData, PlayerData& otherPlayerData);
 	void CalculateDamage(PlayerData& playerData, const std::map<float, VisibilityData>& visibility);
-	void CalculateVisibility(float threatTime,
+	void CalculateVisibility(
 		PathingNode* playerNode, float playerPathOffset, float playerVisibleTime,
 		const PathingArcVec& playerPathPlan, std::map<float, VisibilityData>& playerVisibility,
 		PathingNode* otherPlayerNode, float otherPlayerPathOffset, float otherPlayerVisibleTime,
@@ -1149,7 +1150,7 @@ protected:
 		Concurrency::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters);
 	bool BuildPath(
-		float& threatTime, std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
+		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
@@ -1175,8 +1176,7 @@ protected:
 		std::shared_ptr<PathingGraph>& graph, float closestDistance, bool skipIsolated = true);
 
 	// AI decision making process
-	void Simulation(
-		EvaluationType evaluation, const std::map<ActorId, float>& gameItems, float threatTime,
+	void Simulation(EvaluationType evaluation, const std::map<ActorId, float>& gameItems,
 		PlayerData& playerData, const PathingArcVec& playerPathPlan, float playerPathOffset,
 		PlayerData& otherPlayerData, const PathingArcVec& otherPlayerPathPlan, float otherPlayerPathOffset);
 
