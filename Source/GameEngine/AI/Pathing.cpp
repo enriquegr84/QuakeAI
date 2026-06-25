@@ -447,6 +447,10 @@ void PathingArc::AddTransition(PathingTransition* pTransition)
 {
 	LogAssert(pTransition, "Invalid transition");
 	mTransition = pTransition;
+
+	mWeight = 0.f;
+	for (float weight : mTransition->GetWeights())
+		mWeight += weight;
 }
 
 void PathingArc::RemoveTransition()

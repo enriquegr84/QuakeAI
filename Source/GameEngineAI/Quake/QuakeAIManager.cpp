@@ -13787,16 +13787,17 @@ void QuakeAIManager::SimulateTriggerTeleport(
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	//falling simulation
-	float totalTime = 0.f;
-	std::vector<Vector3<float>> nodePositions;
+	float deltaTime = 0.f, totalTime = 0.f;
+	std::vector<std::pair<Vector3<float>, float>> nodePositions;
 	while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 	{
 		totalTime += mSimulationStep;
 
 		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-		nodePositions.push_back(transform.GetTranslation());
+		nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 		gamePhysics->OnUpdate(mSimulationStep);
 	}
+	transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 	//we store the falling position on ground
 	std::vector<std::pair<Transform, bool>> interpolations;
@@ -13806,11 +13807,16 @@ void QuakeAIManager::SimulateTriggerTeleport(
 		if (interpolation.second) // check we are on ground
 		{
 			transform = interpolation.first;
-			nodePositions.push_back(transform.GetTranslation());
 			break;
 		}
 
-		totalTime += mSimulationStep / 12.f;
+		deltaTime += mSimulationStep / 12.f;
+	}
+	if (deltaTime > 0.f)
+	{
+		totalTime += deltaTime;
+
+		nodePositions.push_back({ transform.GetTranslation(), deltaTime });
 	}
 	if (totalTime > 10.f) return;
 
@@ -13833,16 +13839,16 @@ void QuakeAIManager::SimulateTriggerTeleport(
 				std::vector<Vector3<float>> positions;
 				for (unsigned int idx = 0; idx < nodePositions.size(); idx++)
 				{
-					totalTime += mSimulationStep;
+					totalTime += nodePositions[idx].second;
 
-					if (Length(nodePositions[idx] - position) >= FLOATING_DISTANCE)
+					if (Length(nodePositions[idx].first - position) >= FLOATING_DISTANCE)
 					{
 						nodes.push_back(pNode);
 						weights.push_back(totalTime);
-						positions.push_back(nodePositions[idx]);
+						positions.push_back(nodePositions[idx].first);
 
 						totalTime = 0.f;
-						position = nodePositions[idx];
+						position = nodePositions[idx].first;
 					}
 				}
 
@@ -13902,16 +13908,17 @@ void QuakeAIManager::SimulateTriggerPush(
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	//falling simulation
-	float totalTime = 0.f;
-	std::vector<Vector3<float>> nodePositions;
+	float deltaTime = 0.f, totalTime = 0.f;
+	std::vector<std::pair<Vector3<float>, float>> nodePositions;
 	while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 	{
 		totalTime += mSimulationStep;
 
 		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-		nodePositions.push_back(transform.GetTranslation());
+		nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 		gamePhysics->OnUpdate(mSimulationStep);
 	}
+	transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 	//we store the falling position on ground
 	std::vector<std::pair<Transform, bool>> interpolations;
@@ -13921,11 +13928,16 @@ void QuakeAIManager::SimulateTriggerPush(
 		if (interpolation.second) // check we are on ground
 		{
 			transform = interpolation.first;
-			nodePositions.push_back(transform.GetTranslation());
 			break;
 		}
 
-		totalTime += mSimulationStep / 12.f;
+		deltaTime += mSimulationStep / 12.f;
+	}
+	if (deltaTime > 0.f)
+	{
+		totalTime += deltaTime;
+
+		nodePositions.push_back({ transform.GetTranslation(), deltaTime });
 	}
 	if (totalTime > 10.f) return;
 
@@ -13949,16 +13961,16 @@ void QuakeAIManager::SimulateTriggerPush(
 				std::vector<Vector3<float>> positions;
 				for (unsigned int idx = 0; idx < nodePositions.size(); idx++)
 				{
-					totalTime += mSimulationStep;
+					totalTime += nodePositions[idx].second;
 
-					if (Length(nodePositions[idx] - position) >= FLOATING_DISTANCE)
+					if (Length(nodePositions[idx].first - position) >= FLOATING_DISTANCE)
 					{
 						nodes.push_back(pNode);
 						weights.push_back(totalTime);
-						positions.push_back(nodePositions[idx]);
+						positions.push_back(nodePositions[idx].first);
 
 						totalTime = 0.f;
-						position = nodePositions[idx];
+						position = nodePositions[idx].first;
 					}
 				}
 
@@ -14621,7 +14633,7 @@ PathingNode* QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transfor
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	//falling simulation
-	float totalTime = 0.f;
+	float deltaTime = 0.f, totalTime = 0.f;
 	while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 	{
 		totalTime += mSimulationStep;
@@ -14629,6 +14641,7 @@ PathingNode* QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transfor
 		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 		gamePhysics->OnUpdate(mSimulationStep);
 	}
+	transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 	//we store the falling position on ground
 	std::vector<std::pair<Transform, bool>> interpolations;
@@ -14641,8 +14654,10 @@ PathingNode* QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transfor
 			break;
 		}
 
-		totalTime += mSimulationStep / 12.f;
+		deltaTime += mSimulationStep / 12.f;
 	}
+	if (deltaTime > 0.f)
+		totalTime += deltaTime;
 	if (totalTime > 10.f) 
 		return NULL;
 
@@ -14681,18 +14696,20 @@ PathingNode* QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transfor
 		gamePhysics->OnUpdate(mSimulationStep);
 
 		//falling simulation
-		float totalTime = 0.f;
-		std::vector<Vector3<float>> nodePositions;
+		totalTime = 0.f;
+		std::vector<std::pair<Vector3<float>, float>> nodePositions;
 		while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 		{
 			totalTime += mSimulationStep;
 
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-			nodePositions.push_back(transform.GetTranslation());
+			nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 			gamePhysics->OnUpdate(mSimulationStep);
 		}
+		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 		//we store the falling position on ground
+		deltaTime = 0.f;
 		interpolations.clear();
 		gamePhysics->GetInterpolations(mPlayerActor->GetId(), interpolations);
 		for (auto const& interpolation : interpolations)
@@ -14700,11 +14717,16 @@ PathingNode* QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transfor
 			if (interpolation.second) // check we are on ground
 			{
 				transform = interpolation.first;
-				nodePositions.push_back(transform.GetTranslation());
 				break;
 			}
 
-			totalTime += mSimulationStep / 12.f;
+			deltaTime += mSimulationStep / 12.f;
+		}
+		if (deltaTime > 0.f)
+		{
+			totalTime += deltaTime;
+
+			nodePositions.push_back({ transform.GetTranslation(), deltaTime });
 		}
 		if (totalTime > 10.f) 
 			return NULL;
@@ -14724,16 +14746,16 @@ PathingNode* QuakeAIManager::SimulateJump(PathingNode* pNode, Transform transfor
 			std::vector<Vector3<float>> positions;
 			for (unsigned int idx = 0; idx < nodePositions.size(); idx++)
 			{
-				totalTime += mSimulationStep;
+				totalTime += nodePositions[idx].second;
 
-				if (Length(nodePositions[idx] - position) >= FLOATING_DISTANCE)
+				if (Length(nodePositions[idx].first - position) >= FLOATING_DISTANCE)
 				{
 					nodes.push_back(pNode);
 					weights.push_back(totalTime);
-					positions.push_back(nodePositions[idx]);
+					positions.push_back(nodePositions[idx].first);
 
 					totalTime = 0.f;
-					position = nodePositions[idx];
+					position = nodePositions[idx].first;
 				}
 			}
 
@@ -14803,7 +14825,7 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 		gamePhysics->OnUpdate(mSimulationStep);
 
 		//falling simulation
-		float totalTime = 0.f;
+		float deltaTime = 0.f, totalTime = 0.f;
 		while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 		{
 			totalTime += mSimulationStep;
@@ -14811,6 +14833,7 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 			gamePhysics->OnUpdate(mSimulationStep);
 		}
+		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 		//we store the falling position on ground
 		std::vector<std::pair<Transform, bool>> interpolations;
@@ -14823,10 +14846,11 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 				break;
 			}
 
-			totalTime += mSimulationStep / 12.f;
+			deltaTime += mSimulationStep / 12.f;
 		}
-		if (totalTime > 10.f) 
-			continue;
+		if (deltaTime > 0.f)
+			totalTime += deltaTime;
+		if (totalTime > 10.f) return;
 
 		//then we do the "real" jump to the closest node we have found from the simulation
 		PathingNode* pEndNode = graph->FindClosestNode(transform.GetTranslation(), false);
@@ -14865,18 +14889,20 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 			gamePhysics->OnUpdate(mSimulationStep);
 
 			//falling simulation
-			float totalTime = 0.f;
-			std::vector<Vector3<float>> nodePositions;
+			totalTime = 0.f;
+			std::vector<std::pair<Vector3<float>, float>> nodePositions;
 			while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 			{
 				totalTime += mSimulationStep;
 
 				transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-				nodePositions.push_back(transform.GetTranslation());
+				nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 				gamePhysics->OnUpdate(mSimulationStep);
 			}
+			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 			//we store the falling position on ground
+			deltaTime = 0.f;
 			interpolations.clear();
 			gamePhysics->GetInterpolations(mPlayerActor->GetId(), interpolations);
 			for (auto const& interpolation : interpolations)
@@ -14884,14 +14910,18 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 				if (interpolation.second) // check we are on ground
 				{
 					transform = interpolation.first;
-					nodePositions.push_back(transform.GetTranslation());
 					break;
 				}
 
-				totalTime += mSimulationStep / 12.f;
+				deltaTime += mSimulationStep / 12.f;
 			}
-			if (totalTime > 10.f) 
-				continue;
+			if (deltaTime > 0.f)
+			{
+				totalTime += deltaTime;
+
+				nodePositions.push_back({ transform.GetTranslation(), deltaTime });
+			}
+			if (totalTime > 10.f) return;
 
 			//we store the jump if we find a landing node
 			if (Length(pEndNode->GetPosition() - transform.GetTranslation()) <= PATHING_DEFAULT_NODE_TOLERANCE)
@@ -14908,16 +14938,16 @@ void QuakeAIManager::SimulateJump(PathingNode* pNode, std::shared_ptr<PathingGra
 				std::vector<Vector3<float>> positions;
 				for (unsigned int idx = 0; idx < nodePositions.size(); idx++)
 				{
-					totalTime += mSimulationStep;
+					totalTime += nodePositions[idx].second;
 
-					if (Length(nodePositions[idx] - position) >= FLOATING_DISTANCE)
+					if (Length(nodePositions[idx].first - position) >= FLOATING_DISTANCE)
 					{
 						nodes.push_back(pNode);
 						weights.push_back(totalTime);
-						positions.push_back(nodePositions[idx]);
+						positions.push_back(nodePositions[idx].first);
 
 						totalTime = 0.f;
-						position = nodePositions[idx];
+						position = nodePositions[idx].first;
 					}
 				}
 
@@ -14974,15 +15004,15 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 		gamePhysics->Move(mPlayerActor->GetId(), move);
 		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 
-		float moveTime = 0.f;
-		while (gamePhysics->OnGround(mPlayerActor->GetId()) && moveTime <= 0.1f)
+		float deltaTime = 0.f;
+		while (gamePhysics->OnGround(mPlayerActor->GetId()) && deltaTime <= 0.1f)
 		{
-			gamePhysics->OnUpdate(mSimulationStep);
+			deltaTime += mSimulationStep;
 
-			moveTime += mSimulationStep;
+			gamePhysics->OnUpdate(mSimulationStep);
 		}
 		// we only consider falling positions near to the edge
-		if (moveTime > 0.1f)
+		if (deltaTime > 0.1f)
 			continue;
 
 		fall[AXIS_X] = direction[AXIS_X] * mFallSpeed[AXIS_X];
@@ -14993,7 +15023,7 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 		gamePhysics->OnUpdate(mSimulationStep);
 
 		//falling simulation
-		float totalTime = 0.f;
+		float totalTime = deltaTime;
 		while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 		{
 			totalTime += mSimulationStep;
@@ -15001,8 +15031,10 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 			gamePhysics->OnUpdate(mSimulationStep);
 		}
+		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 		//we store the falling position on ground
+		deltaTime = 0.f;
 		std::vector<std::pair<Transform, bool>> interpolations;
 		gamePhysics->GetInterpolations(mPlayerActor->GetId(), interpolations);
 		for (auto const& interpolation : interpolations)
@@ -15013,10 +15045,11 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 				break;
 			}
 
-			totalTime += mSimulationStep / 12.f;
+			deltaTime += mSimulationStep / 12.f;
 		}
-		if (totalTime > 10.f) 
-			continue;
+		if (deltaTime > 0.f)
+			totalTime += deltaTime;
+		if (totalTime > 10.f) return;
 
 		//then we do the "real" fall to the closest node we have found from the simulation
 		PathingNode* pEndNode = graph->FindClosestNode(transform.GetTranslation(), false);
@@ -15043,20 +15076,19 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 			gamePhysics->Move(mPlayerActor->GetId(), move);
 			gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 
-			moveTime = 0.f;
+			deltaTime = 0.f;
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-			std::vector<Vector3<float>> nodePositions{ transform.GetTranslation() };
-			while (gamePhysics->OnGround(mPlayerActor->GetId()) && moveTime <= 0.1f)
+			std::vector<std::pair<Vector3<float>, float>> nodePositions { { transform.GetTranslation(), deltaTime } };
+			while (gamePhysics->OnGround(mPlayerActor->GetId()) && deltaTime <= 0.1f)
 			{
+				deltaTime += mSimulationStep;
+
 				gamePhysics->OnUpdate(mSimulationStep);
-
-				moveTime += mSimulationStep;
-
 				transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-				nodePositions.push_back(transform.GetTranslation());
+				nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 			}
 			// we only consider falling positions near to the edge
-			if (moveTime > 0.1f)
+			if (deltaTime > 0.1f)
 				continue;
 
 			fall[AXIS_X] = direction[AXIS_X] * mFallSpeed[AXIS_X];
@@ -15067,17 +15099,19 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 			gamePhysics->OnUpdate(mSimulationStep);
 
 			//falling simulation
-			float totalTime = 0.f;
+			totalTime = deltaTime;
 			while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 			{
 				totalTime += mSimulationStep;
 
 				transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-				nodePositions.push_back(transform.GetTranslation());
+				nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 				gamePhysics->OnUpdate(mSimulationStep);
 			}
+			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 			//we store the falling position on ground
+			deltaTime = 0.f;
 			interpolations.clear();
 			gamePhysics->GetInterpolations(mPlayerActor->GetId(), interpolations);
 			for (auto const& interpolation : interpolations)
@@ -15085,14 +15119,18 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 				if (interpolation.second) // check we are on ground
 				{
 					transform = interpolation.first;
-					nodePositions.push_back(transform.GetTranslation());
 					break;
 				}
 
-				totalTime += mSimulationStep / 12.f;
+				deltaTime += mSimulationStep / 12.f;
 			}
-			if (totalTime > 10.f) 
-				continue;
+			if (deltaTime > 0.f)
+			{
+				totalTime += deltaTime;
+
+				nodePositions.push_back({ transform.GetTranslation(), deltaTime });
+			}
+			if (totalTime > 10.f) return;
 
 			//we store the falling action if we find a landing node
 			if (Length(pEndNode->GetPosition() - transform.GetTranslation()) <= PATHING_DEFAULT_NODE_TOLERANCE)
@@ -15109,16 +15147,16 @@ void QuakeAIManager::SimulateFall(PathingNode* pNode, std::shared_ptr<PathingGra
 				std::vector<Vector3<float>> positions;
 				for (unsigned int idx = 0; idx < nodePositions.size(); idx++)
 				{
-					totalTime += mSimulationStep;
+					totalTime += nodePositions[idx].second;
 
-					if (Length(nodePositions[idx] - position) >= FLOATING_DISTANCE)
+					if (Length(nodePositions[idx].first - position) >= FLOATING_DISTANCE)
 					{
 						nodes.push_back(pNode);
 						weights.push_back(totalTime);
-						positions.push_back(nodePositions[idx]);
+						positions.push_back(nodePositions[idx].first);
 
 						totalTime = 0.f;
-						position = nodePositions[idx];
+						position = nodePositions[idx].first;
 					}
 				}
 
@@ -15168,16 +15206,15 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 	gamePhysics->Move(mPlayerActor->GetId(), move);
 	gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 
-	float moveTime = 0.f;
-	while (gamePhysics->OnGround(mPlayerActor->GetId()) && moveTime <= 0.1f)
+	float deltaTime = 0.f;
+	while (gamePhysics->OnGround(mPlayerActor->GetId()) && deltaTime <= 0.1f)
 	{
+		deltaTime += mSimulationStep;
+
 		gamePhysics->OnUpdate(mSimulationStep);
-
-		moveTime += mSimulationStep;
 	}
-
 	// we only consider falling positions near to the edge
-	if (moveTime > 0.1f)
+	if (deltaTime > 0.1f)
 		return NULL;
 
 	fall[AXIS_X] = direction[AXIS_X] * mFallSpeed[AXIS_X];
@@ -15188,7 +15225,7 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 	gamePhysics->OnUpdate(mSimulationStep);
 
 	//falling simulation
-	float totalTime = 0.f;
+	float totalTime = deltaTime;
 	while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 	{
 		totalTime += mSimulationStep;
@@ -15196,8 +15233,10 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 		gamePhysics->OnUpdate(mSimulationStep);
 	}
+	transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 	//we store the falling position on ground
+	deltaTime = 0.f;
 	std::vector<std::pair<Transform, bool>> interpolations;
 	gamePhysics->GetInterpolations(mPlayerActor->GetId(), interpolations);
 	for (auto const& interpolation : interpolations)
@@ -15208,8 +15247,10 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 			break;
 		}
 
-		totalTime += mSimulationStep / 12.f;
+		deltaTime += mSimulationStep / 12.f;
 	}
+	if (deltaTime > 0.f)
+		totalTime += deltaTime;
 	if (totalTime > 10.f) 
 		return NULL;
 
@@ -15236,21 +15277,20 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 		gamePhysics->Move(mPlayerActor->GetId(), move);
 		gamePhysics->Fall(mPlayerActor->GetId(), mGravity);
 
-		moveTime = 0.f;
+		deltaTime = 0.f;
 		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-		std::vector<Vector3<float>> nodePositions{ transform.GetTranslation() };
-		while (gamePhysics->OnGround(mPlayerActor->GetId()) && moveTime <= 0.1f)
+		std::vector<std::pair<Vector3<float>, float>> nodePositions{ { transform.GetTranslation(), deltaTime } };
+		while (gamePhysics->OnGround(mPlayerActor->GetId()) && deltaTime <= 0.1f)
 		{
+			deltaTime += mSimulationStep;
 			gamePhysics->OnUpdate(mSimulationStep);
 
-			moveTime += mSimulationStep;
-
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-			nodePositions.push_back(transform.GetTranslation());
+			nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 		}
 
 		// we only consider falling positions near to the edge
-		if (moveTime > 0.1f) 
+		if (deltaTime > 0.1f)
 			return NULL;
 
 		fall[AXIS_X] = direction[AXIS_X] * mFallSpeed[AXIS_X];
@@ -15261,17 +15301,19 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 		gamePhysics->OnUpdate(mSimulationStep);
 
 		//falling simulation
-		float totalTime = 0.f;
+		float totalTime = deltaTime;
 		while (!gamePhysics->OnGround(mPlayerActor->GetId()) && totalTime <= 10.f)
 		{
 			totalTime += mSimulationStep;
 
 			transform = gamePhysics->GetTransform(mPlayerActor->GetId());
-			nodePositions.push_back(transform.GetTranslation());
+			nodePositions.push_back({ transform.GetTranslation(), mSimulationStep });
 			gamePhysics->OnUpdate(mSimulationStep);
 		}
+		transform = gamePhysics->GetTransform(mPlayerActor->GetId());
 
 		//we store the falling position on ground
+		deltaTime = 0.f;
 		interpolations.clear();
 		gamePhysics->GetInterpolations(mPlayerActor->GetId(), interpolations);
 		for (auto const& interpolation : interpolations)
@@ -15279,13 +15321,18 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 			if (interpolation.second) // check we are on ground
 			{
 				transform = interpolation.first;
-				nodePositions.push_back(transform.GetTranslation());
 				break;
 			}
 
-			totalTime += mSimulationStep / 12.f;
+			deltaTime += mSimulationStep / 12.f;
 		}
-		if (totalTime > 10.f) 
+		if (deltaTime > 0.f)
+		{
+			totalTime += deltaTime;
+
+			nodePositions.push_back({ transform.GetTranslation(), deltaTime });
+		}
+		if (totalTime > 10.f)
 			return NULL;
 
 		//we store the falling action if we find a landing node
@@ -15303,16 +15350,16 @@ PathingNode* QuakeAIManager::SimulateFall(PathingNode* pNode, Transform transfor
 			std::vector<Vector3<float>> positions;
 			for (unsigned int idx = 0; idx < nodePositions.size(); idx++)
 			{
-				totalTime += mSimulationStep;
+				totalTime += nodePositions[idx].second;
 
-				if (Length(nodePositions[idx] - position) >= FLOATING_DISTANCE)
+				if (Length(nodePositions[idx].first - position) >= FLOATING_DISTANCE)
 				{
 					nodes.push_back(pNode);
 					weights.push_back(totalTime);
-					positions.push_back(nodePositions[idx]);
+					positions.push_back(nodePositions[idx].first);
 
 					totalTime = 0.f;
-					position = nodePositions[idx];
+					position = nodePositions[idx].first;
 				}
 			}
 

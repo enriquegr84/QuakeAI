@@ -3216,13 +3216,66 @@ void QuakeAIEditorView::EditMapDelegate(BaseEventDataPtr pEventData)
 	if (!mPathingMap)
 	{
 		mPathingMap = std::make_shared<PathingGraph>();
-		std::string levelPath = "ai/quake/" + Settings::Get()->Get("selected_world") + "/map.bin";
-		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-		aiManager->LoadPathingMap(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), mPathingMap);
+		std::string filePath = "ai/quake/" + Settings::Get()->Get("selected_world") + "/map.bin";
+		if (!FileSystem::Get()->ExistFile(ToWideString(filePath)))
+		{
+			std::string fullFilePath = ToString(FileSystem::Get()->GetWorkingDirectory().c_str()) + "/../../assets/" + filePath;
+			if (!FileSystem::Get()->SafeWriteToFile(fullFilePath, ""))
+			{
+				LogError("Error creating map file: \"" + filePath + "\"");
+				return;
+			}
 
-		for (auto& node : mPathingMap->GetNodes())
-			if (!mPathingMap->FindCluster(node.second->GetCluster()))
-				mCreatedNodes.push_back(node.second);
+			std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_HUMAN);
+			std::shared_ptr<HumanView> humanView = std::dynamic_pointer_cast<HumanView>(gameView);
+
+			QuakeLogic* game = dynamic_cast<QuakeLogic*>(GameLogic::Get());
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(game->GetAIManager());
+
+			std::vector<std::shared_ptr<Actor>> actors;
+			game->GetAmmoActors(actors);
+			game->GetWeaponActors(actors);
+			game->GetHealthActors(actors);
+			game->GetArmorActors(actors);
+			for (std::shared_ptr<Actor> actor : actors)
+			{
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					actor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				if (pTransformComponent)
+				{
+					PathingNode* pNode = aiManager->CreatePathingNode(
+						humanView->GetActorId(), pTransformComponent->GetPosition(), mPathingMap);
+					mCreatedNodes.push_back(pNode);
+				}
+			}
+
+			actors.clear();
+			game->GetTargetActors(actors);
+			for (std::shared_ptr<Actor> actor : actors)
+			{
+				if (actor->GetComponent<LocationTarget>(LocationTarget::Name).lock())
+				{
+					std::shared_ptr<TransformComponent> pTransformComponent(
+						actor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+					if (pTransformComponent)
+					{
+						PathingNode* pNode = aiManager->CreatePathingNode(
+							humanView->GetActorId(), pTransformComponent->GetPosition(), mPathingMap);
+						mCreatedNodes.push_back(pNode);
+					}
+				}
+			}
+
+			aiManager->SaveGraph(FileSystem::Get()->GetPath(filePath.c_str()), mPathingMap);
+		}
+		else
+		{
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+			aiManager->LoadPathingMap(ToWideString(FileSystem::Get()->GetPath(filePath.c_str()).c_str()), mPathingMap);
+			for (auto& node : mPathingMap->GetNodes())
+				if (!mPathingMap->FindCluster(node.second->GetCluster()))
+					mCreatedNodes.push_back(node.second);
+		}
 	}
 
 	if (!mGraphNode)
