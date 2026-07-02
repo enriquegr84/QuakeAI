@@ -2690,12 +2690,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	diffTime += 200; //lets add estimation of guessing simulation
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
@@ -2708,6 +2704,11 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		playerDataOut.plan.node = playerPathArc->GetNode();
 		playerDataOut.planWeight -= playerPathArc->GetWeight();
 	}
+
+	otherPlayerDataOut.valid = true;
+	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
+	if (otherPlayerDataOut.plan.id == -1)
+		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -3224,17 +3225,16 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	diffTime += 100; //lets add estimation of guessing decision simulation
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
 
+	playerDataOut.planWeight = playerPathOffset;
+	playerDataOut.planWeight += diffTime / 1000.f;
+
+	otherPlayerDataOut.valid = true;
 	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
 	if (otherPlayerDataOut.plan.id == -1)
 		otherPlayerDataOut.plan.id = GetNewPlanID();
-
-	playerDataOut.planWeight = playerPathOffset;
-	playerDataOut.planWeight += diffTime / 1000.f;
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -3804,14 +3804,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	diffTime += 40; //lets add marginal time
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
@@ -3824,6 +3818,11 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		playerDataOut.plan.node = playerPathArc->GetNode();
 		playerDataOut.planWeight -= playerPathArc->GetWeight();
 	}
+
+	otherPlayerDataOut.valid = true;
+	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
+	if (otherPlayerDataOut.plan.id == -1)
+		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -4393,14 +4392,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	diffTime += 40; //lets add marginal time
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
@@ -4413,6 +4406,11 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		playerDataOut.plan.node = playerPathArc->GetNode();
 		playerDataOut.planWeight -= playerPathArc->GetWeight();
 	}
+
+	otherPlayerDataOut.valid = true;
+	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
+	if (otherPlayerDataOut.plan.id == -1)
+		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -4714,12 +4712,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	diffTime += 200; //lets add estimation of guessing simulation
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
@@ -4732,6 +4726,11 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		playerDataOut.plan.node = playerPathArc->GetNode();
 		playerDataOut.planWeight -= playerPathArc->GetWeight();
 	}
+
+	otherPlayerDataOut.valid = true;
+	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
+	if (otherPlayerDataOut.plan.id == -1)
+		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -5160,17 +5159,16 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	diffTime += 100; //lets add estimation of guessing decision simulation
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
 
+	playerDataOut.planWeight = playerPathOffset;
+	playerDataOut.planWeight += diffTime / 1000.f;
+
+	otherPlayerDataOut.valid = true;
 	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
 	if (otherPlayerDataOut.plan.id == -1)
 		otherPlayerDataOut.plan.id = GetNewPlanID();
-
-	playerDataOut.planWeight = playerPathOffset;
-	playerDataOut.planWeight += diffTime / 1000.f;
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -5602,14 +5600,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	diffTime += 40; //lets add marginal time
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
@@ -5622,6 +5614,11 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		playerDataOut.plan.node = playerPathArc->GetNode();
 		playerDataOut.planWeight -= playerPathArc->GetWeight();
 	}
+
+	otherPlayerDataOut.valid = true;
+	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
+	if (otherPlayerDataOut.plan.id == -1)
+		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -6030,14 +6027,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	diffTime += 40; //lets add marginal time
 
 	playerDataOut.valid = true;
-	otherPlayerDataOut.valid = true;
-
 	if (playerDataOut.plan.id == -1)
 		playerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
@@ -6050,6 +6041,11 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		playerDataOut.plan.node = playerPathArc->GetNode();
 		playerDataOut.planWeight -= playerPathArc->GetWeight();
 	}
+
+	otherPlayerDataOut.valid = true;
+	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
+	if (otherPlayerDataOut.plan.id == -1)
+		otherPlayerDataOut.plan.id = GetNewPlanID();
 
 	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
 	otherPlayerDataOut.planWeight += diffTime / 1000.f;
@@ -6330,7 +6326,10 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	aiSimulation.data.planWeight += aiPathWeightOffset;
 	aiSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiSimulation);
-	aiSimulation.data.planWeight = 0.24f;
+	aiSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiSimulationArc : aiSimulation.data.plan.path)
+		aiSimulation.data.planWeight += aiSimulationArc->GetWeight();
+	aiSimulation.data.planWeight -= aiPathWeightOffset;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView playerGuessSimulation = playerGuessView;
@@ -6338,6 +6337,12 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	playerGuessSimulation.data.planWeight += playerGuessPathWeightOffset;
 	playerGuessSimulation.data.plan.weight = playerGuessPathWeightOffset;
 	UpdatePlayerGuessState(playerGuessSimulation);
+	playerGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerGuessSimulationArc : playerGuessSimulation.data.plan.path)
+		playerGuessSimulation.data.planWeight += playerGuessSimulationArc->GetWeight();
+	playerGuessSimulation.data.planWeight -= playerGuessPathWeightOffset;
+
+
 	playerGuessSimulation.data.planWeight = 0.f;
 
 	PrintInfo("\nAI Guessing Human player guess input after: ");
@@ -6470,7 +6475,10 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	aiSimulation.data.planWeight += aiPathWeightOffset;
 	aiSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiSimulation);
-	aiSimulation.data.planWeight = 0.1f;
+	aiSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiSimulationArc : aiSimulation.data.plan.path)
+		aiSimulation.data.planWeight += aiSimulationArc->GetWeight();
+	aiSimulation.data.planWeight -= aiPathWeightOffset;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView playerGuessSimulation = playerGuessView;
@@ -6479,6 +6487,9 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	playerGuessSimulation.data.plan.weight = playerGuessPathWeightOffset;
 	UpdatePlayerGuessState(playerGuessSimulation);
 	playerGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerGuessSimulationArc : playerGuessSimulation.data.plan.path)
+		playerGuessSimulation.data.planWeight += playerGuessSimulationArc->GetWeight();
+	playerGuessSimulation.data.planWeight -= playerGuessPathWeightOffset;
 
 	PrintInfo("\nAI Decision Human player guess input after: ");
 	PrintPlayerData(playerGuessSimulation.data);
@@ -6602,7 +6613,10 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	aiDecisionSimulation.data.planWeight += aiPathWeightOffset;
 	aiDecisionSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiDecisionSimulation);
-	aiDecisionSimulation.data.planWeight = 0.3f;
+	aiDecisionSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiSimulationArc : aiDecisionSimulation.data.plan.path)
+		aiDecisionSimulation.data.planWeight += aiSimulationArc->GetWeight();
+	aiDecisionSimulation.data.planWeight -= aiPathWeightOffset;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView playerGuessSimulation = playerGuessView;
@@ -6615,7 +6629,14 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	UpdatePlayerGuessState(playerGuessSimulation);
 	UpdatePlayerGuessState(playerGuessSimulation, mPlayers[GV_AI]);
 	playerGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerGuessSimulationArc : playerGuessSimulation.data.plan.path)
+		playerGuessSimulation.data.planWeight += playerGuessSimulationArc->GetWeight();
+	playerGuessSimulation.data.planWeight -= playerGuessPathWeightOffset;
 	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight = 0.f;
+	for (PathingArc* aiGuessSimulationArc : playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].plan.path)
+		playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight += aiGuessSimulationArc->GetWeight();
+	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight -= aiGuessPathWeightOffset;
+
 	PlayerGuessView playerGuessDecisionSimulation = playerGuessSimulation;
 
 	PrintInfo("\nAI Guessing Human player guess input after: ");
@@ -6812,7 +6833,10 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	aiDecisionSimulation.data.planWeight += aiPathWeightOffset;
 	aiDecisionSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiDecisionSimulation);
-	aiDecisionSimulation.data.planWeight = 0.24f;
+	aiDecisionSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiSimulationArc : aiDecisionSimulation.data.plan.path)
+		aiDecisionSimulation.data.planWeight += aiSimulationArc->GetWeight();
+	aiDecisionSimulation.data.planWeight -= aiPathWeightOffset;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView playerGuessSimulation = playerGuessView;
@@ -6821,6 +6845,9 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	playerGuessSimulation.data.plan.weight = playerGuessPathWeightOffset;
 	UpdatePlayerGuessState(playerGuessSimulation);
 	playerGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerGuessSimulationArc : playerGuessSimulation.data.plan.path)
+		playerGuessSimulation.data.planWeight += playerGuessSimulationArc->GetWeight();
+	playerGuessSimulation.data.planWeight -= playerGuessPathWeightOffset;
 
 	//in awareness run the ai player and guess state are the same
 	playerGuessView.guessPlayers[mPlayers[GV_AI]] = aiView.data;
@@ -6958,7 +6985,10 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	playerSimulation.data.planWeight += playerPathWeightOffset;
 	playerSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerSimulation);
-	playerSimulation.data.planWeight = 0.24f;
+	playerSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerSimulationArc : playerSimulation.data.plan.path)
+		playerSimulation.data.planWeight += playerSimulationArc->GetWeight();
+	playerSimulation.data.planWeight -= playerPathWeightOffset;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView aiGuessSimulation = aiGuessView;
@@ -6967,6 +6997,9 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	aiGuessSimulation.data.plan.weight = aiGuessPathWeightOffset;
 	UpdatePlayerGuessState(aiGuessSimulation);
 	aiGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiGuessSimulationArc : aiGuessSimulation.data.plan.path)
+		aiGuessSimulation.data.planWeight += aiGuessSimulationArc->GetWeight();
+	aiGuessSimulation.data.planWeight -= aiGuessPathWeightOffset;
 
 	PrintInfo("\nHuman Guessing AI guess input after: ");
 	PrintPlayerData(aiGuessSimulation.data);
@@ -7097,7 +7130,10 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	playerSimulation.data.planWeight += playerPathWeightOffset;
 	playerSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerSimulation);
-	playerSimulation.data.planWeight = 0.1f;
+	playerSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerSimulationArc : playerSimulation.data.plan.path)
+		playerSimulation.data.planWeight += playerSimulationArc->GetWeight();
+	playerSimulation.data.planWeight -= playerPathWeightOffset;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView aiGuessSimulation = aiGuessView;
@@ -7106,6 +7142,9 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	aiGuessSimulation.data.plan.weight = aiGuessPathWeightOffset;
 	UpdatePlayerGuessState(aiGuessSimulation);
 	aiGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiGuessSimulationArc : aiGuessSimulation.data.plan.path)
+		aiGuessSimulation.data.planWeight += aiGuessSimulationArc->GetWeight();
+	aiGuessSimulation.data.planWeight -= aiGuessPathWeightOffset;
 
 	PrintInfo("\nHuamn Decision AI player guess input after: ");
 	PrintPlayerData(aiGuessSimulation.data);
@@ -7229,6 +7268,11 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	playerDecisionSimulation.data.planWeight += playerPathWeightOffset;
 	playerDecisionSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerDecisionSimulation);
+	playerDecisionSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerSimulationArc : playerDecisionSimulation.data.plan.path)
+		playerDecisionSimulation.data.planWeight += playerSimulationArc->GetWeight();
+	playerDecisionSimulation.data.planWeight -= playerPathWeightOffset;
+
 	playerDecisionSimulation.data.planWeight = 0.3f;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
@@ -7242,7 +7286,14 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	UpdatePlayerGuessState(aiGuessSimulation);
 	UpdatePlayerGuessState(aiGuessSimulation, mPlayers[GV_HUMAN]);
 	aiGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiGuessSimulationArc : aiGuessSimulation.data.plan.path)
+		aiGuessSimulation.data.planWeight += aiGuessSimulationArc->GetWeight();
+	aiGuessSimulation.data.planWeight -= aiGuessPathWeightOffset;
 	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight = 0.f;
+	for (PathingArc* playerGuessSimulationArc : aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].plan.path)
+		aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight += playerGuessSimulationArc->GetWeight();
+	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight -= playerGuessPathWeightOffset;
+
 	PlayerGuessView aiGuessDecisionSimulation = aiGuessSimulation;
 
 	PrintInfo("\nHuman Guessing AI player guess input after: ");
@@ -7439,7 +7490,10 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	playerDecisionSimulation.data.planWeight += playerPathWeightOffset;
 	playerDecisionSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerDecisionSimulation);
-	playerDecisionSimulation.data.planWeight = 0.24f;
+	playerDecisionSimulation.data.planWeight = 0.f;
+	for (PathingArc* playerSimulationArc : playerDecisionSimulation.data.plan.path)
+		playerDecisionSimulation.data.planWeight += playerSimulationArc->GetWeight();
+	playerDecisionSimulation.data.planWeight -= playerPathWeightOffset;
 
 	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView aiGuessSimulation = aiGuessView;
@@ -7448,6 +7502,9 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	aiGuessSimulation.data.plan.weight = aiGuessPathWeightOffset;
 	UpdatePlayerGuessState(aiGuessSimulation);
 	aiGuessSimulation.data.planWeight = 0.f;
+	for (PathingArc* aiGuessSimulationArc : aiGuessSimulation.data.plan.path)
+		aiGuessSimulation.data.planWeight += aiGuessSimulationArc->GetWeight();
+	aiGuessSimulation.data.planWeight -= aiGuessPathWeightOffset;
 
 	//in awareness run the human player and guess state must match
 	aiGuessView.guessPlayers[mPlayers[GV_HUMAN]] = playerView.data;
@@ -8326,7 +8383,7 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 		// take into consideration within a certain radius
 		std::shared_ptr<TransformComponent> pActorTransform(
 			pItemActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-		if (Length(pActorTransform->GetPosition() - playerGuessView.data.plan.node->GetPosition()) > 500.f)
+		if (Length(pActorTransform->GetPosition() - playerGuessView.data.plan.node->GetPosition()) > 700.f)
 			continue;
 
 		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
@@ -8358,7 +8415,7 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 			continue;
 
 		// take into consideration within a certain radius
-		if (Length(pActorTransform->GetPosition() - otherPlayerView.data.plan.node->GetPosition()) > 500.f)
+		if (Length(pActorTransform->GetPosition() - otherPlayerView.data.plan.node->GetPosition()) > 700.f)
 			continue;
 
 		otherPlayerGuessView.isUpdated = false;
@@ -8413,7 +8470,7 @@ void QuakeAIManager::DetectPlayer(std::shared_ptr<PlayerActor> pPlayerActor)
 		// take into consideration within a certain radius
 		std::shared_ptr<PhysicComponent> pPlayerPhysicComponent(
 			pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
-		if (Length(pPlayerPhysicComponent->GetPosition() - playerGuessView.data.plan.node->GetPosition()) > 500.f)
+		if (Length(pPlayerPhysicComponent->GetPosition() - playerGuessView.data.plan.node->GetPosition()) > 700.f)
 			continue;
 		PathingNode* playerNode = mPathingGraph->FindClosestNode(pPlayerPhysicComponent->GetPosition(), false);
 
@@ -8438,7 +8495,7 @@ void QuakeAIManager::DetectPlayer(std::shared_ptr<PlayerActor> pPlayerActor)
 			continue;
 
 		// take into consideration within a certain radius
-		if (Length(pPlayerPhysicComponent->GetPosition() - otherPlayerView.data.plan.node->GetPosition()) > 500.f)
+		if (Length(pPlayerPhysicComponent->GetPosition() - otherPlayerView.data.plan.node->GetPosition()) > 700.f)
 			continue;
 
 		if (otherPlayerView.guessViews.find(pPlayerActor->GetId()) == otherPlayerView.guessViews.end())
@@ -8983,7 +9040,7 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 	ActorId bestItem = INVALID_ACTOR_ID;
 	std::map<ActorId, float> heuristicItems;
 	heuristicItems[bestItem] = 0.f;
-	float margin = 0.02f;
+	float margin = 0.001f;
 	for (auto const& item : playerData.items)
 	{
 		if (playerData.itemWeight.at(item.first) <= playerData.planWeight + margin)
@@ -10515,6 +10572,21 @@ void QuakeAIManager::PerformGuessingMaking(
 			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
 		}
 	}
+	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerGuessingHeuristics.find(ULLONG_MAX) != otherPlayerGuessingHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best other player heuristic
+		if (abs(otherPlayerGuessingHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristics.at(ULLONG_MAX);
+		}
+		//lets take the value which maximize players heuristic
+		else if (otherPlayerGuessingHeuristics.at(ULLONG_MAX) > otherPlayerClusterHeuristic)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristics.at(ULLONG_MAX);
+		}
+	}
 
 	std::unordered_map<unsigned long long, std::map<WeaponType, float>> otherPlayerGuessingWeapons;
 	for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
@@ -10810,6 +10882,21 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 		{
 			otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
 			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
+		}
+	}
+	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerDecisionHeuristics.find(ULLONG_MAX) != otherPlayerDecisionHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best other player heuristic
+		if (abs(otherPlayerDecisionHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristics.at(ULLONG_MAX);
+		}
+		//lets take the value which maximize players heuristic
+		else if (otherPlayerDecisionHeuristics.at(ULLONG_MAX) > otherPlayerClusterHeuristic)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristics.at(ULLONG_MAX);
 		}
 	}
 
@@ -11112,6 +11199,21 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristicAvg;
 		}
 	}
+	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerGuessingHeuristics.find(ULLONG_MAX) != otherPlayerGuessingHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best other player heuristic
+		if (abs(otherPlayerGuessingHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristics.at(ULLONG_MAX);
+		}
+		//lets take the value which maximize players heuristic
+		else if (otherPlayerGuessingHeuristics.at(ULLONG_MAX) > otherPlayerClusterHeuristic)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristics.at(ULLONG_MAX);
+		}
+	}
 
 	std::unordered_map<unsigned long long, std::map<WeaponType, float>> otherPlayerGuessingWeapons;
 	for (auto& otherPlayerGuessingHeuristic : otherPlayerGuessingHeuristics)
@@ -11395,6 +11497,21 @@ void QuakeAIManager::PerformDecisionMaking(
 		{
 			otherPlayerClusterCode = otherPlayerDecisionHeuristic.first;
 			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristicAvg;
+		}
+	}
+	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerDecisionHeuristics.find(ULLONG_MAX) != otherPlayerDecisionHeuristics.end())
+	{
+		//we keep the current plan if the heuristic is close to the best other player heuristic
+		if (abs(otherPlayerDecisionHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristics.at(ULLONG_MAX);
+		}
+		//lets take the value which maximize players heuristic
+		else if (otherPlayerDecisionHeuristics.at(ULLONG_MAX) > otherPlayerClusterHeuristic)
+		{
+			otherPlayerClusterCode = ULLONG_MAX;
+			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristics.at(ULLONG_MAX);
 		}
 	}
 
@@ -11922,6 +12039,10 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 	}
 	else if (playerGuessView.guessPlayers[playerId].planWeight < 0.f)
 		playerGuessView.guessPlayers[playerId].planWeight += deltaMs / 1000.f;
+
+	playerGuessView.guessPlayers[playerId].weaponTime -= deltaMs / 1000.f;
+	if (playerGuessView.guessPlayers[playerId].weaponTime < 0)
+		playerGuessView.guessPlayers[playerId].weaponTime = 0.f;
 }
 
 void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessView& playerGuessView)
@@ -12002,6 +12123,10 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 	}
 	else if (playerGuessView.data.planWeight < 0.f)
 		playerGuessView.data.planWeight += deltaMs / 1000.f;
+
+	playerGuessView.data.weaponTime -= deltaMs / 1000.f;
+	if (playerGuessView.data.weaponTime < 0)
+		playerGuessView.data.weaponTime = 0.f;
 }
 
 bool QuakeAIManager::CheckPlayerGuessItems(PathingNode* playerNode, PlayerGuessView& playerGuessView)
@@ -12285,7 +12410,7 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 				playerGuessView.isUpdated = false;
 
 				//update to player guess simulation
-				if (playerGuessView.data.plan.path.empty())
+				if (playerGuessView.data.plan.path.empty() || playerGuessView.data.plan.id != playerGuessView.simulation.plan.id)
 				//if (playerGuessView.data.plan.id != -1)
 				{
 					playerGuessView.data.plan = playerGuessView.simulation.plan;

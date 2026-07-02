@@ -1789,6 +1789,8 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 
 							if (pPlayerTarget->GetState().stats[STAT_HEALTH] > 0)
 							{
+								ActorId closestCollisionId = INVALID_ACTOR_ID;
+
 								//set muzzle location relative to pivoting eye
 								Vector3<float> playerPos = pPhysicComponent->GetPosition();
 								playerPos += Vector3<float>::Unit(AXIS_Y) * (float)pPlayerActor->GetState().viewHeight;
@@ -1798,107 +1800,127 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 								Vector3<float> targetPos = pTargetPhysicComponent->GetPosition();
 								//targetPos += Vector3<float>::Unit(AXIS_Y) * (float)pPlayerTarget->GetState().viewHeight;
 
-								std::vector<ActorId> collisionActors;
-								std::vector<Vector3<float>> collisions, collisionNormals;
-								GameLogic::Get()->GetGamePhysics()->CastRay(
-									playerPos, targetPos, collisionActors, collisions, collisionNormals, pPlayerActor->GetId());
-
-								ActorId closestCollisionId = INVALID_ACTOR_ID;
-								std::optional<Vector3<float>> closestCollision = std::nullopt;
-								for (unsigned int i = 0; i < collisionActors.size(); i++)
+								if (pPlayerActor->GetState().weapon == WP_ROCKET_LAUNCHER)
 								{
-									if (closestCollision.has_value())
+									PlayerView playerView;
+									aiManager->GetPlayerView(pPlayerActor->GetId(), playerView);
+									PlayerGuessView playerGuessView = playerView.guessViews[pPlayerTarget->GetId()];
+									targetPos = playerGuessView.data.plan.node->GetPosition();
+
+									bool foundTarget = false;
+									float targetDistance, targetWeight, pathWeight = 0.f;
+									for (auto path : playerGuessView.data.plan.path)
 									{
-										if (Length(closestCollision.value() - playerPos) > Length(collisions[i] - playerPos))
+										pathWeight += path->GetWeight();
+										targetDistance = Length(path->GetNode()->GetPosition() - playerPos);
+										targetWeight = targetDistance / 1000.f; //rocket flies 1000 units per second
+
+										if (pathWeight >= targetWeight)
+										{
+											targetPos = path->GetNode()->GetPosition();
+											foundTarget = true;
+											break;
+										}
+									}
+									if (!foundTarget && playerGuessView.data.plan.path.size())
+									{
+										PathingArc* playerTargetArc = *playerGuessView.data.plan.path.rbegin();
+										targetPos = playerTargetArc->GetNode()->GetPosition();
+									}
+
+									std::vector<ActorId> collisionActors;
+									std::vector<Vector3<float>> collisions, collisionNormals;
+									GameLogic::Get()->GetGamePhysics()->CastRay(
+										playerPos, targetPos, collisionActors, collisions, collisionNormals, pPlayerActor->GetId());
+
+									Vector3<float> collision = NULL;
+									for (unsigned int i = 0; i < collisionActors.size(); i++)
+										if (collisionActors[i] == INVALID_ACTOR_ID)
+											collision = collisions[i];
+
+									if (collision == NULL)
+									{
+										Transform start;
+										start.SetTranslation(playerPos);
+										Transform end;
+										end.SetTranslation(targetPos);
+
+										collisionActors.clear();
+										collisions.clear();
+										collisionNormals.clear();
+										GameLogic::Get()->GetGamePhysics()->ConvexSweep(
+											mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
+
+										closestCollisionId = pPlayerTarget->GetId();
+										for (unsigned int i = 0; i < collisionActors.size(); i++)
+										{
+											if (collisionActors[i] != pPlayerActor->GetId() &&
+												collisionActors[i] != pPlayerTarget->GetId())
+											{
+												closestCollisionId = INVALID_ACTOR_ID;
+												break;
+											}
+										}
+
+										targetPos -= Vector3<float>::Unit(AXIS_Y) * (float)pPlayerTarget->GetState().viewHeight / 2.f;
+									}
+								}
+								else
+								{
+									std::vector<ActorId> collisionActors;
+									std::vector<Vector3<float>> collisions, collisionNormals;
+									GameLogic::Get()->GetGamePhysics()->CastRay(
+										playerPos, targetPos, collisionActors, collisions, collisionNormals, pPlayerActor->GetId());
+
+									std::optional<Vector3<float>> closestCollision = std::nullopt;
+									for (unsigned int i = 0; i < collisionActors.size(); i++)
+									{
+										if (closestCollision.has_value())
+										{
+											if (Length(closestCollision.value() - playerPos) > Length(collisions[i] - playerPos))
+											{
+												closestCollisionId = collisionActors[i];
+												closestCollision = collisions[i];
+											}
+										}
+										else
 										{
 											closestCollisionId = collisionActors[i];
 											closestCollision = collisions[i];
 										}
 									}
-									else
+
+									if (closestCollisionId == pPlayerTarget->GetId())
 									{
-										closestCollisionId = collisionActors[i];
-										closestCollision = collisions[i];
+										if (pPlayerActor->GetState().weapon == WP_RAILGUN || pPlayerActor->GetState().weapon == WP_SHOTGUN)
+										{
+											Transform start;
+											start.SetTranslation(playerPos);
+											Transform end;
+											end.SetTranslation(targetPos);
+
+											collisions.clear(); 
+											collisionNormals.clear();
+											collisionActors.clear();
+											GameLogic::Get()->GetGamePhysics()->ConvexSweep(
+												mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
+
+											for (unsigned int i = 0; i < collisionActors.size(); i++)
+											{
+												if (collisionActors[i] != pPlayerActor->GetId() &&
+													collisionActors[i] != pPlayerTarget->GetId())
+												{
+													closestCollisionId = INVALID_ACTOR_ID;
+													break;
+												}
+											}
+										}
 									}
 								}
 
 								if (closestCollisionId == pPlayerTarget->GetId())
 								{
 									mReactionTime += deltaMs / 1000.f;
-
-									if (pPlayerActor->GetState().weapon == WP_ROCKET_LAUNCHER)
-									{
-										PlayerView playerView;
-										aiManager->GetPlayerView(pPlayerActor->GetId(), playerView);
-										PlayerGuessView playerGuessView = playerView.guessViews[pPlayerTarget->GetId()];
-										targetPos = playerGuessView.data.plan.node->GetPosition();
-
-										bool foundTarget = false;
-										float targetDistance, targetWeight, pathWeight = 0.f;
-										for (auto path : playerGuessView.data.plan.path)
-										{
-											pathWeight += path->GetWeight();
-											targetDistance = Length(path->GetNode()->GetPosition() - playerPos);
-											targetWeight = targetDistance / 1000.f; //rocket flies 1000 units per second
-
-											if (pathWeight >= targetWeight)
-											{
-												targetPos = path->GetNode()->GetPosition();
-												foundTarget = true;
-												break;
-											}
-										}
-										if (!foundTarget && playerGuessView.data.plan.path.size())
-										{
-											PathingArc* playerTargetArc = *playerGuessView.data.plan.path.rbegin();
-											targetPos = playerTargetArc->GetNode()->GetPosition();
-										}
-										targetPos -= Vector3<float>::Unit(AXIS_Y) * (float)pPlayerTarget->GetState().viewHeight / 2.f;
-
-										Transform start;
-										start.SetTranslation(playerPos);
-										Transform end;
-										end.SetTranslation(targetPos);
-
-										std::vector<ActorId> collisionActors;
-										std::vector<Vector3<float>> collisions, collisionNormals;
-										std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
-										gamePhysics->ConvexSweep(
-											mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
-										
-										for (unsigned int i = 0; i < collisionActors.size(); i++)
-										{
-											if (collisionActors[i] != pPlayerActor->GetId() && 
-												collisionActors[i] != pPlayerTarget->GetId())
-											{
-												closestCollisionId = INVALID_ACTOR_ID;
-												break;
-											}
-										}
-									}
-									else if (pPlayerActor->GetState().weapon == WP_RAILGUN || pPlayerActor->GetState().weapon == WP_SHOTGUN)
-									{
-										Transform start;
-										start.SetTranslation(playerPos);
-										Transform end;
-										end.SetTranslation(targetPos);
-
-										std::vector<ActorId> collisionActors;
-										std::vector<Vector3<float>> collisions, collisionNormals;
-										std::shared_ptr<BaseGamePhysic> gamePhysics = GameLogic::Get()->GetGamePhysics();
-										gamePhysics->ConvexSweep(
-											mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
-
-										for (unsigned int i = 0; i < collisionActors.size(); i++)
-										{
-											if (collisionActors[i] != pPlayerActor->GetId() && 
-												collisionActors[i] != pPlayerTarget->GetId())
-											{
-												closestCollisionId = INVALID_ACTOR_ID;
-												break;
-											}
-										}
-									}
 
 									Vector3<float> direction = targetPos - playerPos;
 									float scale = Length(direction);
@@ -1911,7 +1933,7 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 									mPitch = 90 * ((mPitchTarget + 85.f) / 170.f) - 45.f;
 									/*
 									std::stringstream rotationInfo;
-									rotationInfo << "\n ROTATION player " << mPlayerId << " smooth yaw rotation " << mYawSmooth << 
+									rotationInfo << "\n ROTATION player " << mPlayerId << " smooth yaw rotation " << mYawSmooth <<
 										" yaw rotation " << mYaw  << " yaw smooth time " << mYawSmoothTime << " reaction time " << mReactionTime;
 									aiManager->PrintInfo(rotationInfo.str());
 									*/

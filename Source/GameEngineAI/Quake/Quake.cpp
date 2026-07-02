@@ -5929,9 +5929,9 @@ int QuakeLogic::PlaySound(const SimpleSound& sound, const SoundParams& params, b
 
 			if (posExists)
 			{
-				std::shared_ptr<TransformComponent> pPlayerTransform(
-					playerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
-				if (Length(pPlayerTransform->GetPosition() - pos) > params.maxHearDistance)
+				std::shared_ptr<PhysicComponent> pPhysicComponent(
+					playerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+				if (Length(pPhysicComponent->GetPosition() - pos) > params.maxHearDistance)
 					continue;
 			}
 			dstActors.push_back(playerActor->GetId());
