@@ -24,8 +24,6 @@
 #include "QuakeApp.h"
 #include "Quake.h"
 
-#define MAX_DAMAGE 400
-
 #define GROUND_DISTANCE 16.f
 #define FLOATING_DISTANCE 32.f
 
@@ -1244,7 +1242,7 @@ void QuakeAIManager::RemovePlayerSimulations(AIAnalysis::GameEvaluation& gameEva
 // AI Decision Making
 //
 void QuakeAIManager::Simulation(
-	EvaluationType evaluation, const std::map<ActorId, float>& gameItems,
+	EvaluationType evaluation, const std::map<ActorId, float>& gameItems, unsigned short threatLevel,
 	PlayerData& playerData, const PathingArcVec& playerPathPlan, float playerPathOffset,
 	PlayerData& otherPlayerData, const PathingArcVec& otherPlayerPathPlan, float otherPlayerPathOffset)
 {
@@ -1336,7 +1334,7 @@ void QuakeAIManager::Simulation(
 		playerVisibility[otherPlayerData.plan.weight - otherPlayerPathOffset] = VisibilityData();
 		playerVisibility[playerData.plan.weight - playerPathOffset] = VisibilityData();
 
-		CalculateVisibility(
+		CalculateVisibility(threatLevel,
 			otherPlayerData.plan.node, otherPlayerPathOffset, otherPlayerVisibleTime, otherPlayerPathPlan, otherPlayerVisibility,
 			playerData.plan.node, playerPathOffset, playerVisibleTime, playerPathPlan, playerVisibility);
 	}
@@ -1352,7 +1350,7 @@ void QuakeAIManager::Simulation(
 		otherPlayerVisibility[otherPlayerData.plan.weight - otherPlayerPathOffset] = VisibilityData();
 		otherPlayerVisibility[playerData.plan.weight - playerPathOffset] = VisibilityData();
 
-		CalculateVisibility(playerData.plan.node, playerPathOffset, playerVisibleTime, playerPathPlan, playerVisibility,
+		CalculateVisibility(threatLevel, playerData.plan.node, playerPathOffset, playerVisibleTime, playerPathPlan, playerVisibility,
 			otherPlayerData.plan.node, otherPlayerPathOffset, otherPlayerVisibleTime, otherPlayerPathPlan, otherPlayerVisibility);
 	}
 
@@ -1379,11 +1377,11 @@ void QuakeAIManager::Simulation(
 	CalculateDamage(otherPlayerData, otherPlayerVisibility);
 
 	//we calculate the heuristic
-	CalculateHeuristic(evaluation, playerData, otherPlayerData);
+	CalculateHeuristic(evaluation, threatLevel, playerData, otherPlayerData);
 }
 
 bool QuakeAIManager::BuildPath(
-	std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
+	unsigned short& threatLevel, std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
@@ -1480,6 +1478,42 @@ bool QuakeAIManager::BuildPath(
 	//add paths if there is at least one visible node 
 	if (visibleClusters.size())
 	{
+		threatLevel = 4; // maximum threat level if there is at least one close visible node
+
+		std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights, otherClosestClusterPathWeights;
+		for (auto& clusterPathWeight : clusterPathWeights)
+			closestClusterPathWeights.insert({ clusterPathWeight.second, clusterPathWeight.first });
+		for (auto& otherClusterPathWeight : otherClusterPathWeights)
+			otherClosestClusterPathWeights.insert({ otherClusterPathWeight.second, otherClusterPathWeight.first });
+		for (size_t maxClusters = 30; maxClusters <= 90; maxClusters += 30)
+		{
+			auto itClusterWeightEnd = std::next(closestClusterPathWeights.begin(), std::min(maxClusters, closestClusterPathWeights.size()));
+			auto itOtherClusterWeightEnd = std::next(otherClosestClusterPathWeights.begin(), std::min(maxClusters, otherClosestClusterPathWeights.size()));
+
+			unsigned short visibleClustersCount = 0;
+			for (auto itClusterWeight = closestClusterPathWeights.begin(); itClusterWeight != itClusterWeightEnd; ++itClusterWeight)
+			{
+				unsigned int clusterCode = itClusterWeight->second->GetType() << 28 | itClusterWeight->second->GetTarget()->GetId();
+				for (auto itOtherClusterWeight = otherClosestClusterPathWeights.begin(); itOtherClusterWeight != itOtherClusterWeightEnd; ++itOtherClusterWeight)
+				{
+					unsigned int otherClusterCode = itOtherClusterWeight->second->GetType() << 28 | itOtherClusterWeight->second->GetTarget()->GetId();
+					if (visibleClusters.find(((unsigned long long)clusterCode << 32 | (unsigned long long)otherClusterCode)) != visibleClusters.end())
+					{
+						visibleClustersCount++;
+						break;
+					}
+				}
+
+				if (visibleClustersCount)
+					break;
+			}
+
+			if (visibleClustersCount)
+				break;
+
+			threatLevel--;
+		}
+
 		for (auto& clusterPath : clusterPaths)
 		{
 			PathingCluster* pathingCluster = clusterPath.first;
@@ -1517,7 +1551,8 @@ bool QuakeAIManager::BuildPath(
 		}
 
 		//we will only expand those clusters which are visibles from both players
-		std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights, otherClosestClusterPathWeights;
+		closestClusterPathWeights.clear();
+		otherClosestClusterPathWeights.clear();
 		for (auto& visibleCluster : visibleClusters)
 		{
 			closestClusterPathWeights.insert({ clusterPathWeights[visibleCluster.second.first], visibleCluster.second.first });
@@ -1558,13 +1593,13 @@ bool QuakeAIManager::BuildLongPath(std::shared_ptr<PathingGraph>& graph, Pathing
 
 	std::map<PathingCluster*, PathingArcVec> clusterPaths, otherClusterPaths;
 	std::map<PathingCluster*, float> clusterPathWeights, otherClusterPathWeights;
-	clusterNodeStart->GetClusters(AT_MOVE, 260, clusterPaths, clusterPathWeights);
+	clusterNodeStart->GetClusters(AT_MOVE, 200, clusterPaths, clusterPathWeights);
 	for (auto& clusterPath : clusterPaths)
 		clusterNodes[clusterPath.first->GetTarget()->GetCluster()] = clusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
 	std::map<PathingCluster*, PathingArcVec> jumpClusterPaths, jumpOtherClusterPaths;
 	std::map<PathingCluster*, float> jumpClusterPathWeights, jumpOtherClusterPathWeights;
-	clusterNodeStart->GetClusters(AT_JUMP, 260, jumpClusterPaths, jumpClusterPathWeights);
+	clusterNodeStart->GetClusters(AT_JUMP, 200, jumpClusterPaths, jumpClusterPathWeights);
 	for (auto& jumpClusterPath : jumpClusterPaths)
 	{
 		if (clusterNodes.find(jumpClusterPath.first->GetTarget()->GetCluster()) == clusterNodes.end())
@@ -1592,7 +1627,7 @@ bool QuakeAIManager::BuildLongPath(std::shared_ptr<PathingGraph>& graph, Pathing
 }
 
 bool QuakeAIManager::BuildLongPath(
-	std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
+	unsigned short& threatLevel, std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
@@ -1602,11 +1637,11 @@ bool QuakeAIManager::BuildLongPath(
 
 	std::map<PathingCluster*, PathingArcVec> clusterPaths, jumpClusterPaths;
 	std::map<PathingCluster*, float> clusterPathWeights, jumpClusterPathWeights;
-	clusterNodeStart->GetClusters(AT_MOVE, 200, clusterPaths, clusterPathWeights);
+	clusterNodeStart->GetClusters(AT_MOVE, 150, clusterPaths, clusterPathWeights);
 	for (auto& clusterPath : clusterPaths)
 		clusterNodes[clusterPath.first->GetTarget()->GetCluster()] = clusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
-	clusterNodeStart->GetClusters(AT_JUMP, 200, jumpClusterPaths, jumpClusterPathWeights);
+	clusterNodeStart->GetClusters(AT_JUMP, 150, jumpClusterPaths, jumpClusterPathWeights);
 	for (auto& jumpClusterPath : jumpClusterPaths)
 	{
 		if (clusterNodes.find(jumpClusterPath.first->GetTarget()->GetCluster()) == clusterNodes.end())
@@ -1647,11 +1682,11 @@ bool QuakeAIManager::BuildLongPath(
 
 	std::map<PathingCluster*, PathingArcVec> otherClusterPaths, jumpOtherClusterPaths;
 	std::map<PathingCluster*, float> otherClusterPathWeights, jumpOtherClusterPathWeights;
-	otherClusterNodeStart->GetClusters(AT_MOVE, 200, otherClusterPaths, otherClusterPathWeights);
+	otherClusterNodeStart->GetClusters(AT_MOVE, 150, otherClusterPaths, otherClusterPathWeights);
 	for (auto& otherClusterPath : otherClusterPaths)
 		otherClusterNodes[otherClusterPath.first->GetTarget()->GetCluster()] = otherClusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
-	otherClusterNodeStart->GetClusters(AT_JUMP, 200, jumpOtherClusterPaths, jumpOtherClusterPathWeights);
+	otherClusterNodeStart->GetClusters(AT_JUMP, 150, jumpOtherClusterPaths, jumpOtherClusterPathWeights);
 	for (auto& jumpOtherClusterPath : jumpOtherClusterPaths)
 	{
 		if (otherClusterNodes.find(jumpOtherClusterPath.first->GetTarget()->GetCluster()) == otherClusterNodes.end())
@@ -1714,6 +1749,8 @@ bool QuakeAIManager::BuildLongPath(
 	//add paths if there is at least one visible node 
 	if (visibleClusters.size())
 	{
+		threatLevel = 1; // lower threat level if there is at least one visible node
+
 		for (auto& clusterPath : clusterPaths)
 		{
 			PathingCluster* pathingCluster = clusterPath.first;
@@ -1782,6 +1819,7 @@ bool QuakeAIManager::BuildLongPath(
 			otherClusterPaths, otherClosestClusterPaths, otherClusterPathings, otherClusterNodePathPlans);
 		return true;
 	}
+	else threatLevel = 0; // no threat level if there is no visible node
 	
 	return false;
 }
@@ -1797,13 +1835,13 @@ bool QuakeAIManager::BuildLongestPath(
 
 	std::map<PathingCluster*, PathingArcVec> clusterPaths, otherClusterPaths;
 	std::map<PathingCluster*, float> clusterPathWeights, otherClusterPathWeights;
-	clusterNodeStart->GetClusters(AT_MOVE, 260, clusterPaths, clusterPathWeights);
+	clusterNodeStart->GetClusters(AT_MOVE, 200, clusterPaths, clusterPathWeights);
 	for (auto& clusterPath : clusterPaths)
 		clusterNodes[clusterPath.first->GetTarget()->GetCluster()] = clusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
 	std::map<PathingCluster*, PathingArcVec> jumpClusterPaths, jumpOtherClusterPaths;
 	std::map<PathingCluster*, float> jumpClusterPathWeights, jumpOtherClusterPathWeights;
-	clusterNodeStart->GetClusters(AT_JUMP, 260, jumpClusterPaths, jumpClusterPathWeights);
+	clusterNodeStart->GetClusters(AT_JUMP, 200, jumpClusterPaths, jumpClusterPathWeights);
 	for (auto& jumpClusterPath : jumpClusterPaths)
 	{
 		if (clusterNodes.find(jumpClusterPath.first->GetTarget()->GetCluster()) == clusterNodes.end())
@@ -1814,14 +1852,14 @@ bool QuakeAIManager::BuildLongestPath(
 	}
 
 	//skip top clusters to reduce the number of candidates as they have been inspected previously
-	unsigned int skipPathingClusters = 140;
+	unsigned int skipPathingClusters = 120;
 	std::unordered_map<PathingNode*, std::unordered_map<PathingCluster*, unsigned int>> pathingClusterNodes;
 	std::multimap<float, PathingCluster*, std::less<float>> closestClusterPathWeights;
 	for (auto& clusterPathWeight : clusterPathWeights)
 		closestClusterPathWeights.insert({ clusterPathWeight.second, clusterPathWeight.first });
 
 	auto itCluster = closestClusterPathWeights.begin();
-	if (closestClusterPathWeights.size() > 140)
+	if (closestClusterPathWeights.size() > 120)
 	{
 		itCluster = std::next(closestClusterPathWeights.begin(),
 			std::min((size_t)skipPathingClusters, closestClusterPathWeights.size()));
@@ -1840,11 +1878,11 @@ bool QuakeAIManager::BuildLongestPath(
 		clusterPathings[pathingClusterCode] = { pathingCluster, pathingCluster };
 	}
 
-	otherClusterNodeStart->GetClusters(AT_MOVE, 260, otherClusterPaths, otherClusterPathWeights);
+	otherClusterNodeStart->GetClusters(AT_MOVE, 200, otherClusterPaths, otherClusterPathWeights);
 	for (auto& otherClusterPath : otherClusterPaths)
 		otherClusterNodes[otherClusterPath.first->GetTarget()->GetCluster()] = otherClusterPath.first->GetTarget();
 	//we will only consider jumps which are not reachable on moving
-	otherClusterNodeStart->GetClusters(AT_JUMP, 260, jumpOtherClusterPaths, jumpOtherClusterPathWeights);
+	otherClusterNodeStart->GetClusters(AT_JUMP, 200, jumpOtherClusterPaths, jumpOtherClusterPathWeights);
 	for (auto& jumpOtherClusterPath : jumpOtherClusterPaths)
 	{
 		if (otherClusterNodes.find(jumpOtherClusterPath.first->GetTarget()->GetCluster()) == otherClusterNodes.end())
@@ -1861,7 +1899,7 @@ bool QuakeAIManager::BuildLongestPath(
 		otherClosestClusterPathWeights.insert({ otherClusterPathWeight.second, otherClusterPathWeight.first });
 
 	auto itOtherCluster = otherClosestClusterPathWeights.begin();
-	if (otherClosestClusterPathWeights.size() > 140)
+	if (otherClosestClusterPathWeights.size() > 120)
 	{
 		itOtherCluster = std::next(otherClosestClusterPathWeights.begin(),
 			std::min((size_t)skipPathingClusters, otherClosestClusterPathWeights.size()));
@@ -2408,6 +2446,9 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level for visibility/damage calculation.
+	unsigned short threatLevel = gameEvaluation.threat;
+
 	Concurrency::concurrent_unordered_map<unsigned long long, 
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans;
@@ -2489,7 +2530,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -2531,8 +2572,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(
-				(EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset );
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -2596,7 +2637,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	WeaponType otherPlayerWeapon = WP_NONE;
 	unsigned long long playerClusterCode = 0;
 	unsigned long long otherPlayerClusterCode = 0;
-	PerformDecisionMaking(gameEvaluation, playerDataIn, otherPlayerDataIn, clusterPathings, otherClusterPathings, 
+	PerformDecisionMaking(gameEvaluation, 
+		playerDataIn, otherPlayerDataIn, clusterPathings, otherClusterPathings, 
 		playerWeapon, otherPlayerWeapon, playerClusterCode, otherPlayerClusterCode);
 	
 	//Simulate best outcome for each player
@@ -2613,7 +2655,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -2633,7 +2675,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -2653,7 +2695,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems,
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -2671,7 +2713,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems,
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -2762,13 +2804,16 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level for visibility/damage calculation.
+	unsigned short threatLevel = gameEvaluation.threat;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -2832,7 +2877,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	}
 	else
 	{
-		if (!BuildLongPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
+		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 		{
 			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
@@ -2944,7 +2989,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -2970,7 +3015,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -3026,7 +3071,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -3053,7 +3099,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -3145,7 +3192,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+					threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -3164,7 +3212,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel, 
+					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -3188,7 +3237,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+				threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -3206,7 +3256,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+				threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -3289,13 +3340,16 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level for visibility/damage calculation.
+	unsigned short threatLevel = gameEvaluation.threat;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -3359,7 +3413,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	}
 	else
 	{
-		if (!BuildLongPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
+		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 		{
 			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
@@ -3472,7 +3526,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
 			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
+				threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -3501,7 +3555,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -3558,7 +3612,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -3588,7 +3643,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -3723,7 +3779,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
 				Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-					player, itClusterNodePathPlan->second, playerPathOffset,
+					threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -3743,7 +3799,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
 				Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-					player, itClusterNodePathPlan->second, playerPathOffset,
+					threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -3767,7 +3823,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -3785,7 +3842,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -3877,13 +3935,16 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level for visibility/damage calculation.
+	unsigned short threatLevel = gameEvaluation.threat;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -3947,7 +4008,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	}
 	else
 	{
-		if (!BuildLongPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
+		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 		{
 			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
@@ -4059,7 +4120,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -4089,7 +4150,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -4147,7 +4208,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -4177,7 +4239,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
+			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
@@ -4310,7 +4372,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -4330,7 +4392,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems,
+				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -4355,7 +4417,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -4373,7 +4436,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation((EvaluationType)gameEvaluation.type, 
+				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -4422,9 +4486,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 //RUNTIME SIMULATIONS
 
-bool QuakeAIManager::SimulatePlayerGuessingDecision(
-	const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+bool QuakeAIManager::SimulatePlayerGuessingDecision(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 	const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation)
 {
 	PathingNode* clusterNodeStart = playerDataIn.plan.node;
@@ -4571,7 +4634,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -4596,7 +4659,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
 
 			playerSimulations[otherPlayerCluster.first] = player.heuristic;
@@ -4640,7 +4703,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			if (otherPlayerClusterCode != ULLONG_MAX)
@@ -4675,7 +4739,7 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPaths[otherPlayerClusterCode], otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -4693,7 +4757,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, 
+				threatLevel, player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -4738,9 +4803,8 @@ bool QuakeAIManager::SimulatePlayerGuessingDecision(
 	return true;
 }
 
-bool QuakeAIManager::SimulatePlayerGuessings(
-	const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+bool QuakeAIManager::SimulatePlayerGuessings(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 	const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation)
 {
 	PathingNode* clusterNodeStart = playerDataIn.plan.node;
@@ -4794,7 +4858,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -4858,7 +4922,7 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	}
 	else
 	{
-		if (!BuildLongPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
+		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 		{
 			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
@@ -4975,7 +5039,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -4988,7 +5053,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -5022,7 +5088,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -5034,7 +5101,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
@@ -5079,7 +5147,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+				Simulation(evaluation, gameItems, threatLevel, 
+					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -5098,7 +5167,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+				Simulation(evaluation, gameItems, threatLevel, 
+					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -5122,7 +5192,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -5140,7 +5211,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -5177,9 +5249,8 @@ bool QuakeAIManager::SimulatePlayerGuessings(
 	return true;
 }
 
-bool QuakeAIManager::SimulatePlayerGuessing(
-	const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+bool QuakeAIManager::SimulatePlayerGuessing(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 	const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation)
 {
 	PathingNode* clusterNodeStart = playerDataIn.plan.node;
@@ -5233,7 +5304,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -5297,7 +5368,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	}
 	else
 	{
-		if (!BuildLongPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
+		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 		{
 			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
@@ -5414,7 +5485,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			player.plan.id = -1;
@@ -5427,7 +5499,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
+			Simulation(evaluation, gameItems, threatLevel,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5462,7 +5534,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -5474,7 +5547,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset, 
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
@@ -5519,7 +5593,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+				Simulation(evaluation, gameItems, threatLevel, 
+					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -5538,7 +5613,7 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems,
+				Simulation(evaluation, gameItems, threatLevel,
 					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5563,7 +5638,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -5581,7 +5657,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -5627,9 +5704,8 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 	return true;
 }
 
-bool QuakeAIManager::SimulatePlayerDecision(
-	const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+bool QuakeAIManager::SimulatePlayerDecision(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 	const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation)
 {
 	PathingNode* clusterNodeStart = playerDataIn.plan.node;
@@ -5679,7 +5755,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -5743,7 +5819,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 	}
 	else
 	{
-		if (!BuildLongPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
+		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 		{
 			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
@@ -5852,7 +5928,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatLevel,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
@@ -5866,7 +5942,7 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems,
+			Simulation(evaluation, gameItems, threatLevel,
 				player, itClusterNodePathPlan->second, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
@@ -5894,7 +5970,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel,
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -5906,7 +5983,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			playerSimulations[ULLONG_MAX] = player.heuristic;
@@ -5947,7 +6025,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+				Simulation(evaluation, gameItems, threatLevel, 
+					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -5966,7 +6045,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 			{
 				PlayerData player(playerDataIn);
 				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems, player, itClusterNodePathPlan->second, playerPathOffset,
+				Simulation(evaluation, gameItems, threatLevel, 
+					player, itClusterNodePathPlan->second, playerPathOffset,
 					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 				player.plan.id = -1;
@@ -5990,7 +6070,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
 
 			otherPlayer.plan.id = -1;
@@ -6008,7 +6089,8 @@ bool QuakeAIManager::SimulatePlayerDecision(
 		{
 			PlayerData player(playerDataIn);
 			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, player, playerPathPlan, playerPathOffset,
+			Simulation(evaluation, gameItems, threatLevel, 
+				player, playerPathPlan, playerPathOffset,
 				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
 
 			player.weaponTime = 0.f;
@@ -6105,13 +6187,16 @@ bool QuakeAIManager::SimulateClusterPathing(
 	clusterNodeStart = playerDataOut.plan.node;
 	otherClusterNodeStart = otherPlayerDataOut.plan.node;
 
+	//threat level for visibility/damage calculation.
+	unsigned short threatLevel = 4;
+
 	Concurrency::concurrent_unordered_map<unsigned long long,
 		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
 	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
 	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
 
-	if (BuildPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
+	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
 		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 	{
 		std::mutex mutex;
@@ -6175,7 +6260,7 @@ bool QuakeAIManager::SimulateClusterPathing(
 	}
 	else
 	{
-		if (!BuildLongPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
+		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
 			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
 		{
 			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
@@ -6372,7 +6457,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6381,7 +6466,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -6399,7 +6484,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 
 	//simulation
 	bool success = SimulatePlayerGuessing(
-		aiView.data, aiSimulation.data, playerGuessView.data, playerGuessSimulation.data,
+		aiView.data, aiSimulation.data, playerGuessView.data, playerGuessSimulation.data, gameDecision.evaluation.threat,
 		gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
@@ -6413,10 +6498,12 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 
 		aiView.isUpdated = true;
 		aiView.simulation = aiSimulation.data;
+		aiView.threat = gameDecision.evaluation.threat;
 
 		playerGuessView.isUpdated = true;
 		playerGuessView.simulation = playerGuessSimulation.data;
 		playerGuessView.guessSimulations[mPlayers[GV_AI]] = aiSimulation.data;
+		playerGuessView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, aiView.simulation);
 
@@ -6515,7 +6602,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6524,7 +6611,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -6542,7 +6629,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 
 	//simulation
 	bool success = SimulatePlayerDecision(
-		aiView.data, aiSimulation.data, playerGuessView.data, playerGuessSimulation.data,
+		aiView.data, aiSimulation.data, playerGuessView.data, playerGuessSimulation.data, gameDecision.evaluation.threat,
 		gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
@@ -6553,6 +6640,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 
 		aiView.isUpdated = true;
 		aiView.simulation = aiSimulation.data;
+		aiView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, aiView.simulation);
 
@@ -6670,7 +6758,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
 			if (itemPickup)
-				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[guessItem.first] <= 0.f)
 					gameItems[guessItem.first] = guessItem.second;
 		}
 
@@ -6679,14 +6767,14 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 		for (auto const& aiGuessItem : playerGuessView.guessItems[mPlayers[GV_AI]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -6703,7 +6791,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6712,7 +6800,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -6732,12 +6820,13 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	//simulation
 	bool success = SimulatePlayerGuessings(playerGuessView.data, playerGuessSimulation.data, 
 		playerGuessView.guessPlayers[mPlayers[GV_AI]], playerGuessSimulation.guessPlayers[mPlayers[GV_AI]], 
-		gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
+		gameDecision.evaluation.threat, gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
 		playerGuessView.isUpdated = true;
 		playerGuessView.simulation = playerGuessSimulation.data;
 		playerGuessView.guessSimulations[mPlayers[GV_AI]] = playerGuessSimulation.guessPlayers[mPlayers[GV_AI]];
+		playerGuessView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerGuessView.simulation);
 		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, playerGuessView.guessSimulations[mPlayers[GV_AI]]);
@@ -6752,9 +6841,8 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		aiView.data.valid = aiDecisionSimulation.data.plan.path.empty() ? false : true;
 
 		//simulation
-		success = SimulatePlayerGuessingDecision(
-			aiView.data, aiDecisionSimulation.data, playerGuessView.data, playerGuessDecisionSimulation.data,
-			gameDecision.evaluation.playerDecisionItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
+		success = SimulatePlayerGuessingDecision(aiView.data, aiDecisionSimulation.data, playerGuessView.data, playerGuessDecisionSimulation.data, 
+			gameDecision.evaluation.threat, gameDecision.evaluation.playerDecisionItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 		if (success)
 		{
 			mMutex.lock();
@@ -6770,6 +6858,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 
 			aiView.isUpdated = true;
 			aiView.simulation = aiDecisionSimulation.data;
+			aiView.threat = gameDecision.evaluation.threat;
 
 			SetPlayerOutput(gameDecision.evaluation.playerOutput, aiView.simulation);
 
@@ -6883,7 +6972,7 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
@@ -6892,7 +6981,7 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -6911,7 +7000,7 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 
 	//simulation
 	bool success = SimulatePlayerDecision(
-		aiView.data, aiDecisionSimulation.data, playerGuessView.data, playerGuessSimulation.data, 
+		aiView.data, aiDecisionSimulation.data, playerGuessView.data, playerGuessSimulation.data, gameDecision.evaluation.threat,
 		gameDecision.evaluation.playerDecisionItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
@@ -6928,10 +7017,12 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 
 		aiView.isUpdated = true;
 		aiView.simulation = aiDecisionSimulation.data;
+		aiView.threat = gameDecision.evaluation.threat;
 
 		playerGuessView.isUpdated = true;
 		playerGuessView.simulation = playerGuessSimulation.data;
 		playerGuessView.guessSimulations[mPlayers[GV_AI]] = aiDecisionSimulation.data;
+		playerGuessView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, aiView.simulation);
 
@@ -7028,7 +7119,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7037,7 +7128,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -7055,7 +7146,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 
 	//simulation
 	bool success = SimulatePlayerGuessing(playerView.data, playerSimulation.data, aiGuessView.data, aiGuessSimulation.data,
-		gameDecision.evaluation.playerGuessItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
+		gameDecision.evaluation.threat, gameDecision.evaluation.playerGuessItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
 		mMutex.lock();
@@ -7068,10 +7159,12 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 
 		playerView.isUpdated = true;
 		playerView.simulation = playerSimulation.data;
+		playerView.threat = gameDecision.evaluation.threat;
 
 		aiGuessView.isUpdated = true;
 		aiGuessView.simulation = aiGuessSimulation.data;
 		aiGuessView.guessSimulations[mPlayers[GV_HUMAN]] = playerSimulation.data;
+		aiGuessView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, playerView.simulation);
 
@@ -7170,7 +7263,7 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7179,7 +7272,7 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -7196,9 +7289,8 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	aiGuessView.data.valid = aiGuessSimulation.data.plan.path.empty() ? false : true;
 
 	//simulation
-	bool success = SimulatePlayerDecision(
-		playerView.data, playerSimulation.data, aiGuessView.data, aiGuessSimulation.data,
-		gameItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
+	bool success = SimulatePlayerDecision(playerView.data, playerSimulation.data, aiGuessView.data, aiGuessSimulation.data,
+		gameDecision.evaluation.threat, gameItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
 		mMutex.lock();
@@ -7208,6 +7300,7 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 
 		playerView.isUpdated = true;
 		playerView.simulation = playerSimulation.data;
+		playerView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, playerView.simulation);
 
@@ -7327,7 +7420,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
 			if (itemPickup)
-				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[guessItem.first] <= 0.f)
 					gameItems[guessItem.first] = guessItem.second;
 		}
 
@@ -7336,14 +7429,14 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 		for (auto const& humanGuessItem : aiGuessView.guessItems[mPlayers[GV_HUMAN]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 	}
@@ -7360,7 +7453,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7369,7 +7462,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -7389,12 +7482,13 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	//simulation
 	bool success = SimulatePlayerGuessings(aiGuessView.data, aiGuessSimulation.data, 
 		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]], aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]], 
-		gameDecision.evaluation.playerGuessItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
+		gameDecision.evaluation.threat, gameDecision.evaluation.playerGuessItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
 		aiGuessView.isUpdated = true;
 		aiGuessView.simulation = aiGuessSimulation.data;
 		aiGuessView.guessSimulations[mPlayers[GV_HUMAN]] = aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]];
+		aiGuessView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, aiGuessView.simulation);
 		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, aiGuessView.guessSimulations[mPlayers[GV_HUMAN]]);
@@ -7409,9 +7503,8 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		playerView.data.valid = playerDecisionSimulation.data.plan.path.empty() ? false : true;
 
 		//simulation
-		success = SimulatePlayerGuessingDecision(
-			playerView.data, playerDecisionSimulation.data, aiGuessView.data, aiGuessDecisionSimulation.data,
-			gameDecision.evaluation.playerDecisionItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
+		success = SimulatePlayerGuessingDecision(playerView.data, playerDecisionSimulation.data, aiGuessView.data, aiGuessDecisionSimulation.data,
+			gameDecision.evaluation.threat, gameDecision.evaluation.playerDecisionItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 		if (success)
 		{
 			mMutex.lock();
@@ -7427,6 +7520,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 
 			playerView.isUpdated = true;
 			playerView.simulation = playerDecisionSimulation.data;
+			playerView.threat = gameDecision.evaluation.threat;
 
 			SetPlayerOutput(gameDecision.evaluation.playerOutput, playerView.simulation);
 
@@ -7540,7 +7634,7 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
 					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
@@ -7549,7 +7643,7 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
 					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 	}
@@ -7567,9 +7661,8 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	playerView.data.valid = playerDecisionSimulation.data.plan.path.empty() ? false : true;
 
 	//simulation
-	bool success = SimulatePlayerDecision(
-		playerView.data, playerDecisionSimulation.data, aiGuessView.data, aiGuessSimulation.data, 
-		gameDecision.evaluation.playerDecisionItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
+	bool success = SimulatePlayerDecision(playerView.data, playerDecisionSimulation.data, aiGuessView.data, aiGuessSimulation.data, 
+		gameDecision.evaluation.threat, gameDecision.evaluation.playerDecisionItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
 		mMutex.lock();
@@ -7585,10 +7678,12 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 
 		playerView.isUpdated = true;
 		playerView.simulation = playerDecisionSimulation.data;
+		playerView.threat = gameDecision.evaluation.threat;
 
 		aiGuessView.isUpdated = true;
 		aiGuessView.simulation = aiGuessSimulation.data;
 		aiGuessView.guessSimulations[mPlayers[GV_HUMAN]] = playerDecisionSimulation.data;
+		aiGuessView.threat = gameDecision.evaluation.threat;
 
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, playerView.simulation);
 
@@ -7646,7 +7741,7 @@ void QuakeAIManager::RunAIFastDecision()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n ai fast decision total elapsed time " << diffTime;
+				ss << "\n ai fast decision total elapsed time " << diffTime;// << " threat level " << aiView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -7702,7 +7797,7 @@ void QuakeAIManager::RunAIGuessing()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n ai close guessing total elapsed time " << diffTime;
+				ss << "\n ai close guessing total elapsed time " << diffTime;// << " threat level " << aiView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -7760,7 +7855,7 @@ void QuakeAIManager::RunAIAwareDecision()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n ai aware decision total elapsed time " << diffTime;
+				ss << "\n ai aware decision total elapsed time " << diffTime;// << " threat level " << aiView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -7821,7 +7916,7 @@ void QuakeAIManager::RunHumanFastDecision()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n human fast decision total elapsed time " << diffTime;
+				ss << "\n human fast decision total elapsed time " << diffTime;// << " threat level " << playerView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -7878,7 +7973,7 @@ void QuakeAIManager::RunHumanGuessing()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n human close guessing total elapsed time " << diffTime;
+				ss << "\n human close guessing total elapsed time " << diffTime;// << " threat level " << playerView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -7936,7 +8031,7 @@ void QuakeAIManager::RunHumanAwareDecision()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n human aware decision total elapsed time " << diffTime;
+				ss << "\n human aware decision total elapsed time " << diffTime;// << " threat level " << playerView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -9381,9 +9476,10 @@ float QuakeAIManager::CalculateBestHeuristicItem(const PlayerData& playerData)
 	return heuristic;
 }
 
-void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& playerData, PlayerData& otherPlayerData)
+void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, unsigned short threatLevel, PlayerData& playerData, PlayerData& otherPlayerData)
 {
 	float heuristic = 0.f;
+	int maxDamage = threatLevel > 1 ? 500 : 400;
 
 	//heuristic from picked up items
 	heuristic += CalculateBestHeuristicItem(playerData);
@@ -9393,7 +9489,7 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 	int playerMaxDamage = 0, otherPlayerMaxDamage = 0;
 	if (playerData.weapon != WP_NONE)
 	{
-		if (playerData.damage[playerData.weapon - 1] >= MAX_DAMAGE)
+		if (playerData.damage[playerData.weapon - 1] >= maxDamage)
 		{
 			//the player keeps current weapon if it is above the maximum damage
 			playerData.target = otherPlayerData.player;
@@ -9420,7 +9516,7 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 
 	if (otherPlayerData.weapon != WP_NONE)
 	{
-		if (otherPlayerData.damage[otherPlayerData.weapon - 1] >= MAX_DAMAGE)
+		if (otherPlayerData.damage[otherPlayerData.weapon - 1] >= maxDamage)
 		{
 			//the other player keeps current weapon if it is above the maximum damage
 			otherPlayerData.target = playerData.player;
@@ -9452,32 +9548,32 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 		if (CalculatePlayerStatus(otherPlayerData) > 0.3f)
 		{
 			//remains the same
-			playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-			otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+			playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
+			otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 		}
 		else if (CalculatePlayerStatus(otherPlayerData) > 0.15f)
 		{
 			if (CalculatePlayerWeaponStatus(playerData) > 0.f)
 			{
-				playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-				otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+				playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
+				otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 			}
 			else if (CalculatePlayerWeaponStatus(otherPlayerData) > 0.3f)
 			{
 				//remains the same
-				playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-				otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+				playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
+				otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 			}
 			else
 			{
-				playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-				otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+				playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
+				otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 			}
 		}
 		else
 		{
-			playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+			playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
+			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 		}
 	}
 	else if (CalculatePlayerStatus(playerData) > 0.15f)
@@ -9486,19 +9582,19 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 		{
 			if (CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
 			{
-				playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-				otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+				playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+				otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 			}
 			else if (CalculatePlayerWeaponStatus(playerData) > 0.3f)
 			{
 				//remains the same
-				playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-				otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+				playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
+				otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 			}
 			else
 			{
-				playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-				otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+				playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+				otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 			}
 		}
 		else if (CalculatePlayerStatus(otherPlayerData) > 0.15f)
@@ -9507,68 +9603,68 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, PlayerData& p
 			{
 				if (CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
 				{
-					playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-					otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+					playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+					otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 				}
 				else
 				{
-					playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
-					otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+					playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
+					otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 				}
 			}
 			else
 			{
 				if (CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
 				{
-					playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-					otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+					playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+					otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 				}
 				else
 				{
-					playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-					otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+					playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+					otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 				}
 			}
 		}
 		else
 		{
 			if (CalculatePlayerWeaponStatus(playerData) > 0.f)
-				playerDamage = playerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage;
+				playerDamage = playerMaxDamage > maxDamage ? (float)maxDamage : (float)playerMaxDamage;
 			else
-				playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+				playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 		}
 	}
 	else
 	{
 		if (CalculatePlayerStatus(otherPlayerData) > 0.3f)
 		{
-			playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-			otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+			playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+			otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 		}
 		else if (CalculatePlayerStatus(otherPlayerData) > 0.15f)
 		{
-			playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
+			playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
 			if (CalculatePlayerWeaponStatus(otherPlayerData) > 0.f)
-				otherPlayerDamage = otherPlayerMaxDamage > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage;
+				otherPlayerDamage = otherPlayerMaxDamage > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage;
 			else
-				otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+				otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 		}
 		else
 		{
-			playerDamage = playerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)playerMaxDamage * 0.25f;
-			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > MAX_DAMAGE ? (float)MAX_DAMAGE : (float)otherPlayerMaxDamage * 0.25f;
+			playerDamage = playerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)playerMaxDamage * 0.25f;
+			otherPlayerDamage = otherPlayerMaxDamage * 0.25f > maxDamage ? (float)maxDamage : (float)otherPlayerMaxDamage * 0.25f;
 		}
 	}
 
-
 	//calculate total damage as difference between inflicted and taken damage
-	float heuristicDamage = (playerDamage - otherPlayerDamage) / (float)MAX_DAMAGE;
+	float heuristicDamage = (playerDamage - otherPlayerDamage) / (float)maxDamage;
+
 	//reward taking less damage
 	if (playerDamage > otherPlayerDamage)
-		heuristicDamage += 0.4f * (playerDamage - otherPlayerDamage) / playerDamage;
+		heuristicDamage += (0.4f * heuristicDamage) * (playerDamage - otherPlayerDamage) / playerDamage;
 	else if (otherPlayerDamage > 0.f)
-		heuristicDamage += 0.4f * (playerDamage - otherPlayerDamage) / otherPlayerDamage;
+		heuristicDamage -= (0.4f * heuristicDamage) * (playerDamage - otherPlayerDamage) / otherPlayerDamage;
 
 	heuristic += heuristicDamage;
 	playerData.heuristic = heuristic;
@@ -9973,12 +10069,15 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 	}
 }
 
-void QuakeAIManager::CalculateVisibility(
+void QuakeAIManager::CalculateVisibility(unsigned short threatLevel,
 	PathingNode* playerNode, float playerPathOffset, float playerVisibleTime,
 	const PathingArcVec& playerPathPlan, std::map<float, VisibilityData>& playerVisibility, 
 	PathingNode* otherPlayerNode, float otherPlayerPathOffset, float otherPlayerVisibleTime,
 	const PathingArcVec& otherPlayerPathPlan, std::map<float, VisibilityData>& otherPlayerVisibility)
 {
+	if (threatLevel == 0)
+		return;
+
 	float totalWeight = 0.f, totalArcWeight = 0.f;
 	unsigned int index = 0, otherIndex = 0, otherPathIndex = 0;
 
@@ -10046,8 +10145,8 @@ void QuakeAIManager::CalculateVisibility(
 	auto otherVisibilityIt = otherPlayerVisibility.begin();
 
 	totalWeight = 0.f;
-	float weightLimit = 3.f;
 	float totalVisibleWeight = 0.f;
+	float weightLimit = threatLevel > 1 ? 4.f : 3.f;
 	//lets calculate the visibility for simultaneous path travelling.
 	if (otherCurrentArc != NULL)
 	{
@@ -10212,14 +10311,16 @@ void QuakeAIManager::CalculateVisibility(
 		}
 	}
 
-	if (totalVisibleWeight < 1.5f)
+	float visibleWeightLimit = threatLevel > 1 ? 2.f : 1.5f;
+	if (totalVisibleWeight < visibleWeightLimit)
 	{
 		//we need to add visible time if the total visible move time is short
 		if (currentNode->IsVisibleNode(otherCurrentNode))
 			/*if (RayCollisionDetection(currentNode->GetPosition(), otherCurrentNode->GetPosition()) == NULL)*/
 		{
 			float currentWeight = 0.5f;
-			totalVisibleWeight = totalVisibleWeight < 0.75f ? 2.f : 1.f;
+			visibleWeightLimit = threatLevel > 1 ? 1.f : 0.75f;
+			totalVisibleWeight = totalVisibleWeight < visibleWeightLimit ? 2.f : 1.f;
 			if (visibilityIt != playerVisibility.end())
 			{
 				float minimumVisibleWeight = playerVisibleTime < otherPlayerVisibleTime ? playerVisibleTime : otherPlayerVisibleTime;
@@ -10575,7 +10676,7 @@ void QuakeAIManager::PerformGuessingMaking(
 	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerGuessingHeuristics.find(ULLONG_MAX) != otherPlayerGuessingHeuristics.end())
 	{
 		//we keep the current plan if the heuristic is close to the best other player heuristic
-		if (abs(otherPlayerGuessingHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		if (abs(otherPlayerGuessingHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.05f)
 		{
 			otherPlayerClusterCode = ULLONG_MAX;
 			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristics.at(ULLONG_MAX);
@@ -10887,7 +10988,7 @@ void QuakeAIManager::PerformDecisionMaking(const PlayerData& playerDataIn, const
 	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerDecisionHeuristics.find(ULLONG_MAX) != otherPlayerDecisionHeuristics.end())
 	{
 		//we keep the current plan if the heuristic is close to the best other player heuristic
-		if (abs(otherPlayerDecisionHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		if (abs(otherPlayerDecisionHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.05f)
 		{
 			otherPlayerClusterCode = ULLONG_MAX;
 			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristics.at(ULLONG_MAX);
@@ -11202,7 +11303,7 @@ void QuakeAIManager::PerformGuessingMaking(const PlayerData& playerDataIn, const
 	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerGuessingHeuristics.find(ULLONG_MAX) != otherPlayerGuessingHeuristics.end())
 	{
 		//we keep the current plan if the heuristic is close to the best other player heuristic
-		if (abs(otherPlayerGuessingHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		if (abs(otherPlayerGuessingHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.05f)
 		{
 			otherPlayerClusterCode = ULLONG_MAX;
 			otherPlayerClusterHeuristic = otherPlayerGuessingHeuristics.at(ULLONG_MAX);
@@ -11502,7 +11603,7 @@ void QuakeAIManager::PerformDecisionMaking(
 	if (otherPlayerClusterCode != ULLONG_MAX && otherPlayerDecisionHeuristics.find(ULLONG_MAX) != otherPlayerDecisionHeuristics.end())
 	{
 		//we keep the current plan if the heuristic is close to the best other player heuristic
-		if (abs(otherPlayerDecisionHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.2f)
+		if (abs(otherPlayerDecisionHeuristics.at(ULLONG_MAX) - otherPlayerClusterHeuristic) < 0.05f)
 		{
 			otherPlayerClusterCode = ULLONG_MAX;
 			otherPlayerClusterHeuristic = otherPlayerDecisionHeuristics.at(ULLONG_MAX);
@@ -12410,7 +12511,7 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 				playerGuessView.isUpdated = false;
 
 				//update to player guess simulation
-				if (playerGuessView.data.plan.path.empty() || playerGuessView.data.plan.id != playerGuessView.simulation.plan.id)
+				if (playerGuessView.data.plan.path.empty() || playerGuessView.threat > 3)
 				//if (playerGuessView.data.plan.id != -1)
 				{
 					playerGuessView.data.plan = playerGuessView.simulation.plan;

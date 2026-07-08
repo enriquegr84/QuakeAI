@@ -241,11 +241,13 @@ struct PlayerGuessView
 {
 	PlayerGuessView()
 	{
+		threat = 0;
 		isUpdated = false;
 	}
 
 	PlayerGuessView(std::shared_ptr<PlayerActor> playerActor)
 	{
+		threat = 0;
 		isUpdated = false;
 
 		data = PlayerData(playerActor);
@@ -253,6 +255,7 @@ struct PlayerGuessView
 
 	PlayerGuessView(const PlayerData& playerData)
 	{
+		threat = 0;
 		isUpdated = false;
 
 		data = PlayerData(playerData);
@@ -264,6 +267,7 @@ struct PlayerGuessView
 	}
 
 	bool isUpdated;
+	unsigned short threat; // threat level of a combat (0 lowest - 4 highest)
 
 	PlayerData data;
 	PlayerData simulation;
@@ -280,11 +284,13 @@ struct PlayerView
 {
 	PlayerView()
 	{
+		threat = 0;
 		isUpdated = false;
 	}
 
 	PlayerView(std::shared_ptr<PlayerActor> playerActor)
 	{
+		threat = 0;
 		isUpdated = false;
 
 		data = PlayerData(playerActor);
@@ -292,6 +298,7 @@ struct PlayerView
 
 	PlayerView(const PlayerData& playerData)
 	{
+		threat = 0;
 		isUpdated = false;
 
 		data = PlayerData(playerData);
@@ -303,6 +310,7 @@ struct PlayerView
 	}
 
 	bool isUpdated;
+	unsigned short threat; // threat level of a combat (0 lowest - 4 highest)
 
 	PlayerData data;
 	PlayerData simulation;
@@ -682,12 +690,16 @@ namespace AIAnalysis
 			type = 0;
 			target = 0;
 
+			threat = 0;
+
 			playerDecision = nullptr;
 			playerGuessDecision = nullptr;
 		}
 
 		unsigned short type;
 		unsigned short target;
+
+		unsigned short threat; // threat level of a combat (0 lowest - 4 highest)
 
 		//player guessing inputs/output. What the evaluated player is guessing from the oponnent are
 		//the parameters for the player guessing simulation
@@ -715,14 +727,14 @@ namespace AIAnalysis
 		template <class Archive>
 		void save(Archive& ar) const
 		{
-			ar(type, target, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput,
+			ar(type, target, threat, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput,
 				playerInput, otherPlayerInput, playerOutput, otherPlayerOutput, playerDecisionItems, playerGuessItems);
 		}
 
 		template <class Archive>
 		void load(Archive& ar)
 		{
-			ar(type, target, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput,
+			ar(type, target, threat, playerGuessInput, otherPlayerGuessInput, playerGuessOutput, otherPlayerGuessOutput,
 				playerInput, otherPlayerInput, playerOutput, otherPlayerOutput, playerDecisionItems, playerGuessItems);
 		}
 	};
@@ -1114,9 +1126,9 @@ protected:
 	float CalculateBestHeuristicItem(const PlayerData& playerData);
 	float CalculateHeuristicItem(const PlayerData& playerData, ActorId item, float itemWeight);
 	void CalculateWeightItems(const PlayerData& playerData, std::map<ActorId, float>& searchItems);
-	void CalculateHeuristic(EvaluationType evaluation, PlayerData& playerData, PlayerData& otherPlayerData);
+	void CalculateHeuristic(EvaluationType evaluation, unsigned short threatLevel, PlayerData& playerData, PlayerData& otherPlayerData);
 	void CalculateDamage(PlayerData& playerData, const std::map<float, VisibilityData>& visibility);
-	void CalculateVisibility(
+	void CalculateVisibility(unsigned short threatLevel,
 		PathingNode* playerNode, float playerPathOffset, float playerVisibleTime,
 		const PathingArcVec& playerPathPlan, std::map<float, VisibilityData>& playerVisibility,
 		PathingNode* otherPlayerNode, float otherPlayerPathOffset, float otherPlayerVisibleTime,
@@ -1150,13 +1162,13 @@ protected:
 		Concurrency::concurrent_unordered_map<unsigned long long, float>& actorPathPlanClusterHeuristics,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& actorPathPlanClusters);
 	bool BuildPath(
-		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
+		unsigned short& threatLevel, std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& otherClusterNodePathPlans);
 	bool BuildLongPath(
-		std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
+		unsigned short& threatLevel, std::shared_ptr<PathingGraph>& graph, PathingNode* clusterNodeStart, PathingNode* otherClusterNodeStart,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& clusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, std::pair<PathingCluster*, PathingCluster*>>& otherClusterPathings,
 		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>& clusterNodePathPlans,
@@ -1176,7 +1188,8 @@ protected:
 		std::shared_ptr<PathingGraph>& graph, float closestDistance, bool skipIsolated = true);
 
 	// AI decision making process
-	void Simulation(EvaluationType evaluation, const std::map<ActorId, float>& gameItems,
+	void Simulation(
+		EvaluationType evaluation, const std::map<ActorId, float>& gameItems, unsigned short threatLevel,
 		PlayerData& playerData, const PathingArcVec& playerPathPlan, float playerPathOffset,
 		PlayerData& otherPlayerData, const PathingArcVec& otherPlayerPathPlan, float otherPlayerPathOffset);
 
@@ -1223,21 +1236,17 @@ protected:
 		const std::map<ActorId, float>& gameItems, AIAnalysis::GameEvaluation& gameEvaluation);
 
 	// Runtime simulation
-	bool SimulatePlayerGuessingDecision(
-		const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+	bool SimulatePlayerGuessingDecision(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
-	bool SimulatePlayerGuessings(
-		const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+	bool SimulatePlayerGuessings(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
-	bool SimulatePlayerGuessing(
-		const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+	bool SimulatePlayerGuessing(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
-	bool SimulatePlayerDecision(
-		const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
+	bool SimulatePlayerDecision(const PlayerData& playerDataIn, PlayerData& playerDataOut,
+		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
 
 	bool SimulateClusterPathing(

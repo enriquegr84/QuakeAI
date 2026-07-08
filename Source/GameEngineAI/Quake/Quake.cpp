@@ -2186,7 +2186,7 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 				if (success)
 				{
 					unsigned int time2 = Timer::GetRealTime();
-					printf("\n guessing decision total elapsed time %u", time2 - time);
+					printf("\n guessing decision total elapsed time %u threat level %u", time2 - time, gameDecision.evaluation.threat);
 				}
 			}
 		}
@@ -2201,7 +2201,7 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 			if (success)
 			{
 				unsigned int time2 = Timer::GetRealTime();
-				printf("\n close guessing total elapsed time %u", time2 - time);
+				printf("\n close guessing total elapsed time %u threat level %u", time2 - time, gameDecision.evaluation.threat);
 			}
 		}
 		else if (gameDecision.evaluation.type == ET_AWARENESS)
@@ -2215,7 +2215,7 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 			if (success)
 			{
 				unsigned int time2 = Timer::GetRealTime();
-				printf("\n awareness decision total elapsed time %u", time2 - time);
+				printf("\n awareness decision total elapsed time %u threat level %u", time2 - time, gameDecision.evaluation.threat);
 			}
 		}
 		aiManager->RemovePlayerSimulations(aiManager->GetGameEvaluation());
@@ -2288,7 +2288,7 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 			otherPlayer.plan.node, otherPlayerOffset.plan.weight, otherPlayerPath);
 
 		aiManager->Simulation((EvaluationType)evaluation.type, gameItems,
-			player, playerPath, playerOffset.plan.weight, 
+			evaluation.threat, player, playerPath, playerOffset.plan.weight,
 			otherPlayer, otherPlayerPath, otherPlayerOffset.plan.weight);
 
 		printf("\ndebug simulation %u", mGameDecision);

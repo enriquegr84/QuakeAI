@@ -1815,54 +1815,54 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 										targetDistance = Length(path->GetNode()->GetPosition() - playerPos);
 										targetWeight = targetDistance / 1000.f; //rocket flies 1000 units per second
 
-										if (pathWeight >= targetWeight)
+										if (abs(pathWeight - targetWeight) < 0.1f) //lets shoot around the estimated trajectory
 										{
 											targetPos = path->GetNode()->GetPosition();
 											foundTarget = true;
 											break;
 										}
 									}
-									if (!foundTarget && playerGuessView.data.plan.path.size())
+
+									if (foundTarget)
 									{
-										PathingArc* playerTargetArc = *playerGuessView.data.plan.path.rbegin();
-										targetPos = playerTargetArc->GetNode()->GetPosition();
-									}
+										mReactionTime = 0.1f;
 
-									std::vector<ActorId> collisionActors;
-									std::vector<Vector3<float>> collisions, collisionNormals;
-									GameLogic::Get()->GetGamePhysics()->CastRay(
-										playerPos, targetPos, collisionActors, collisions, collisionNormals, pPlayerActor->GetId());
+										std::vector<ActorId> collisionActors;
+										std::vector<Vector3<float>> collisions, collisionNormals;
+										GameLogic::Get()->GetGamePhysics()->CastRay(
+											playerPos, targetPos, collisionActors, collisions, collisionNormals, pPlayerActor->GetId());
 
-									Vector3<float> collision = NULL;
-									for (unsigned int i = 0; i < collisionActors.size(); i++)
-										if (collisionActors[i] == INVALID_ACTOR_ID)
-											collision = collisions[i];
-
-									if (collision == NULL)
-									{
-										Transform start;
-										start.SetTranslation(playerPos);
-										Transform end;
-										end.SetTranslation(targetPos);
-
-										collisionActors.clear();
-										collisions.clear();
-										collisionNormals.clear();
-										GameLogic::Get()->GetGamePhysics()->ConvexSweep(
-											mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
-
-										closestCollisionId = pPlayerTarget->GetId();
+										Vector3<float> collision = NULL;
 										for (unsigned int i = 0; i < collisionActors.size(); i++)
-										{
-											if (collisionActors[i] != pPlayerActor->GetId() &&
-												collisionActors[i] != pPlayerTarget->GetId())
-											{
-												closestCollisionId = INVALID_ACTOR_ID;
-												break;
-											}
-										}
+											if (collisionActors[i] == INVALID_ACTOR_ID)
+												collision = collisions[i];
 
-										targetPos -= Vector3<float>::Unit(AXIS_Y) * (float)pPlayerTarget->GetState().viewHeight / 2.f;
+										if (collision == NULL)
+										{
+											Transform start;
+											start.SetTranslation(playerPos);
+											Transform end;
+											end.SetTranslation(targetPos);
+
+											collisionActors.clear();
+											collisions.clear();
+											collisionNormals.clear();
+											GameLogic::Get()->GetGamePhysics()->ConvexSweep(
+												mProjectileActor->GetId(), start, end, collisionActors, collisions, collisionNormals);
+
+											closestCollisionId = pPlayerTarget->GetId();
+											for (unsigned int i = 0; i < collisionActors.size(); i++)
+											{
+												if (collisionActors[i] != pPlayerActor->GetId() &&
+													collisionActors[i] != pPlayerTarget->GetId())
+												{
+													closestCollisionId = INVALID_ACTOR_ID;
+													break;
+												}
+											}
+
+											targetPos -= Vector3<float>::Unit(AXIS_Y) * (float)pPlayerTarget->GetState().viewHeight / 2.f;
+										}
 									}
 								}
 								else

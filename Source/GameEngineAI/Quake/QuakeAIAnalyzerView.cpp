@@ -5108,7 +5108,12 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 
 		int weaponIdx = 0;
 		pPlayerActor->ChangeWeapon(playerData.weapon);
+		pPlayerActor->GetState().weaponState = WeaponState::WEAPON_RAISING;
 		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		if (pPlayerActor->GetState().weapon == WP_GAUNTLET)
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND2;
+		else
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
@@ -5174,8 +5179,13 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		animMeshMD3->GetMD3Mesh()->GetMeshes(meshes);
 
 		int weaponIdx = 0;
-		pPlayerActor->ChangeWeapon(otherPlayerData.weapon);
+		pPlayerActor->ChangeWeapon(playerData.weapon);
+		pPlayerActor->GetState().weaponState = WeaponState::WEAPON_RAISING;
 		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		if (pPlayerActor->GetState().weapon == WP_GAUNTLET)
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND2;
+		else
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
@@ -5333,7 +5343,12 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 
 		int weaponIdx = 0;
 		pPlayerActor->ChangeWeapon(playerData.weapon);
+		pPlayerActor->GetState().weaponState = WeaponState::WEAPON_RAISING;
 		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		if (pPlayerActor->GetState().weapon == WP_GAUNTLET)
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND2;
+		else
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
@@ -5399,8 +5414,13 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisPrediction(unsigned short playerIn
 			pPlayerActor->GetState().ammo[wp] = otherPlayerData.ammo[wp];
 
 		int weaponIdx = 0;
-		pPlayerActor->ChangeWeapon(otherPlayerData.weapon);
+		pPlayerActor->ChangeWeapon(playerData.weapon);
+		pPlayerActor->GetState().weaponState = WeaponState::WEAPON_RAISING;
 		pPlayerActor->GetState().weapon = pPlayerActor->GetAction().weaponSelect;
+		if (pPlayerActor->GetState().weapon == WP_GAUNTLET)
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND2;
+		else
+			pPlayerActor->GetState().torsoAnim = TORSO_STAND;
 		for (std::shared_ptr<MD3Mesh> mesh : meshes)
 		{
 			if (mesh->GetParent() && mesh->GetParent()->GetName() == "tag_weapon")
