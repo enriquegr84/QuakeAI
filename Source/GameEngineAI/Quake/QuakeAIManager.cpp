@@ -8502,17 +8502,17 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 		PlayerView otherPlayerView;
 		GetPlayerView(pOtherPlayerActor->GetId(), otherPlayerView);
 
-		if (otherPlayerView.guessViews.find(pPlayerActor->GetId()) == otherPlayerView.guessViews.end())
-			continue;
-
-		PlayerGuessView& otherPlayerGuessView = otherPlayerView.guessViews[pPlayerActor->GetId()];
-		if (!otherPlayerGuessView.data.plan.node)
+		if (!otherPlayerView.data.plan.node)
 			continue;
 
 		// take into consideration within a certain radius
 		if (Length(pActorTransform->GetPosition() - otherPlayerView.data.plan.node->GetPosition()) > 700.f)
 			continue;
 
+		if (otherPlayerView.guessViews.find(pPlayerActor->GetId()) == otherPlayerView.guessViews.end())
+			continue;
+
+		PlayerGuessView& otherPlayerGuessView = otherPlayerView.guessViews[pPlayerActor->GetId()];
 		otherPlayerGuessView.isUpdated = false;
 		otherPlayerGuessView.items.clear();
 		otherPlayerGuessView.guessItems[pPlayerActor->GetId()].clear();
@@ -9662,9 +9662,9 @@ void QuakeAIManager::CalculateHeuristic(EvaluationType evaluation, unsigned shor
 
 	//reward taking less damage
 	if (playerDamage > otherPlayerDamage)
-		heuristicDamage += (0.4f * heuristicDamage) * (playerDamage - otherPlayerDamage) / playerDamage;
+		heuristicDamage += (0.8f * heuristicDamage) * (playerDamage - otherPlayerDamage) / playerDamage;
 	else if (otherPlayerDamage > 0.f)
-		heuristicDamage -= (0.4f * heuristicDamage) * (playerDamage - otherPlayerDamage) / otherPlayerDamage;
+		heuristicDamage -= (0.8f * heuristicDamage) * (playerDamage - otherPlayerDamage) / otherPlayerDamage;
 
 	heuristic += heuristicDamage;
 	playerData.heuristic = heuristic;
@@ -9775,7 +9775,7 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 		if (weapon != WP_GAUNTLET)
 		{
 			bool weaponAvailable = false;
-			int ammo = 0, damage = 0, shotCount = 0, maxAmmo = 200;
+			int ammo = 0, damage = 0, currentDamage = 0, shotCount = 0, maxAmmo = 200;
 			float fireTime = 0.f, visibleTime = 0.f, weaponTime = FLT_MAX, rangeDistance = 0.f;
 
 			if (playerData.ammo[weapon] && (playerData.stats[STAT_WEAPONS] & (1 << weapon)))
@@ -9826,7 +9826,7 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 				weaponTime += 0.5f;
 			}
 
-			std::map<float, VisibilityData>::const_iterator itVisibility;
+			std::map<float, VisibilityData>::const_iterator itVisibility, itOptimalVisibility;
 			switch (weapon)
 			{
 				case WP_LIGHTNING:
@@ -9863,33 +9863,44 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 				case WP_SHOTGUN:
 					damage = 110;
 					fireTime = 1.0f;
-					visibleTime = 0.f;
 					playerData.damage[weapon - 1] = 0;
 
-					ammo = playerData.ammo[weapon];
-					for (itVisibility = visibility.begin(); itVisibility != visibility.end(); itVisibility++)
+					//optimal damage calculation
+					for (itOptimalVisibility = visibility.begin(); itOptimalVisibility != visibility.end(); itOptimalVisibility++)
 					{
-						if (itemAmmo.find((*itVisibility).first) != itemAmmo.end())
+						visibleTime = 0.f;
+						currentDamage = 0;
+						ammo = playerData.ammo[weapon];
+						for (itVisibility = itOptimalVisibility; itVisibility != visibility.end(); itVisibility++)
 						{
-							ammo += itemAmmo[(*itVisibility).first];
-							if (ammo > maxAmmo) ammo = maxAmmo;
+							if (itemAmmo.find((*itVisibility).first) != itemAmmo.end())
+							{
+								ammo += itemAmmo[(*itVisibility).first];
+								if (ammo > maxAmmo) ammo = maxAmmo;
+							}
+
+							if ((*itVisibility).first < weaponTime || (*itVisibility).first + (*itVisibility).second.moveTime < visibleTime)
+								continue;
+
+							// lets assign a firing threshold
+							if ((*itVisibility).second.moveTime >= 0.1f)
+							{
+								visibleTime = (*itVisibility).first + (*itVisibility).second.moveTime + fireTime;
+
+								shotCount = (int)ceil((*itVisibility).second.moveTime / fireTime);
+								shotCount = shotCount > ammo ? ammo : shotCount;
+								ammo -= shotCount;
+								rangeDistance = (*itVisibility).second.moveDistance > 500 ? (*itVisibility).second.moveDistance : 500;
+
+								if ((*itVisibility).second.moveDistance < 120)
+									currentDamage += (damage + 50) * shotCount;
+								else
+									currentDamage += (int)round(damage * (1.f - ((*itVisibility).second.moveDistance / rangeDistance)) * shotCount);
+							}
 						}
 
-						if ((*itVisibility).first < weaponTime || (*itVisibility).first + (*itVisibility).second.moveTime < visibleTime)
-							continue;
-
-						// lets assign a firing threshold
-						if ((*itVisibility).second.moveTime >= 0.1f)
-						{
-							visibleTime = (*itVisibility).first + (*itVisibility).second.moveTime + fireTime;
-
-							shotCount = (int)ceil((*itVisibility).second.moveTime / fireTime);
-							shotCount = shotCount > ammo ? ammo : shotCount;
-							ammo -= shotCount;
-							rangeDistance = (*itVisibility).second.moveDistance > 500 ? (*itVisibility).second.moveDistance : 500;
-							playerData.damage[weapon - 1] += (int)round(damage *
-								(1.f - ((*itVisibility).second.moveDistance / rangeDistance)) * shotCount);
-						}
+						if (playerData.damage[weapon - 1] < currentDamage)
+							playerData.damage[weapon - 1] = currentDamage;
 					}
 					break;
 
@@ -9916,7 +9927,7 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 							shotCount = (int)ceil((*itVisibility).second.moveTime / fireTime);
 							shotCount = shotCount > ammo ? ammo : shotCount;
 							ammo -= shotCount;
-							rangeDistance = (*itVisibility).second.moveDistance > 500 ? (*itVisibility).second.moveDistance : 500;
+							rangeDistance = (*itVisibility).second.moveDistance > 400 ? (*itVisibility).second.moveDistance : 400;
 							playerData.damage[weapon - 1] += (int)round(damage *
 								(1.f - ((*itVisibility).second.moveDistance / rangeDistance)) * shotCount);
 						}
@@ -9932,36 +9943,44 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 				case WP_ROCKET_LAUNCHER:
 					damage = 100;
 					fireTime = 0.8f;
-					visibleTime = 0.f;
 					playerData.damage[weapon - 1] = 0;
-					
-					ammo = playerData.ammo[weapon];
-					for (itVisibility = visibility.begin(); itVisibility != visibility.end(); itVisibility++)
+
+					//optimal damage calculation
+					for (itOptimalVisibility = visibility.begin(); itOptimalVisibility != visibility.end(); itOptimalVisibility++)
 					{
-						if (itemAmmo.find((*itVisibility).first) != itemAmmo.end())
+						visibleTime = 0.f;
+						currentDamage = 0;
+						ammo = playerData.ammo[weapon];
+
+						for (itVisibility = itOptimalVisibility; itVisibility != visibility.end(); itVisibility++)
 						{
-							ammo += itemAmmo[(*itVisibility).first];
-							if (ammo > maxAmmo) ammo = maxAmmo;
+							if (itemAmmo.find((*itVisibility).first) != itemAmmo.end())
+							{
+								ammo += itemAmmo[(*itVisibility).first];
+								if (ammo > maxAmmo) ammo = maxAmmo;
+							}
+
+							if ((*itVisibility).first < weaponTime || (*itVisibility).first + (*itVisibility).second.moveTime < visibleTime)
+								continue;
+
+							// lets assign a firing threshold
+							if ((*itVisibility).second.moveTime >= 0.1f)
+							{
+								visibleTime = (*itVisibility).first + (*itVisibility).second.moveTime + fireTime;
+
+								shotCount = (int)ceil((*itVisibility).second.moveTime / fireTime);
+								shotCount = shotCount > ammo ? ammo : shotCount;
+								ammo -= shotCount;
+								if ((*itVisibility).second.moveHeight <= 30.f)
+									rangeDistance = (*itVisibility).second.moveDistance > 500 ? (*itVisibility).second.moveDistance : 500;
+								else
+									rangeDistance = (*itVisibility).second.moveDistance > 700 ? (*itVisibility).second.moveDistance : 700;
+								currentDamage += (int)round(damage * (1.f - ((*itVisibility).second.moveDistance / rangeDistance)) * shotCount);
+							}
 						}
 
-						if ((*itVisibility).first < weaponTime || (*itVisibility).first + (*itVisibility).second.moveTime < visibleTime)
-							continue;
-
-						// lets assign a firing threshold
-						if ((*itVisibility).second.moveTime >= 0.1f)
-						{
-							visibleTime = (*itVisibility).first + (*itVisibility).second.moveTime + fireTime;
-
-							shotCount = (int)ceil((*itVisibility).second.moveTime / fireTime);
-							shotCount = shotCount > ammo ? ammo : shotCount;
-							ammo -= shotCount;
-							if ((*itVisibility).second.moveHeight <= 30.f)
-								rangeDistance = (*itVisibility).second.moveDistance > 500 ? (*itVisibility).second.moveDistance : 500;
-							else
-								rangeDistance = (*itVisibility).second.moveDistance > 700 ? (*itVisibility).second.moveDistance : 700;
-							playerData.damage[weapon - 1] += (int)round(damage *
-								(1.f - ((*itVisibility).second.moveDistance / rangeDistance)) * shotCount);
-						}
+						if (playerData.damage[weapon - 1] < currentDamage)
+							playerData.damage[weapon - 1] = currentDamage;
 					}
 					break;
 
@@ -9988,7 +10007,7 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 							shotCount = (int)ceil((*itVisibility).second.moveTime / fireTime);
 							shotCount = shotCount > ammo ? ammo : shotCount;
 							ammo -= shotCount;
-							rangeDistance = (*itVisibility).second.moveDistance > 400 ? (*itVisibility).second.moveDistance : 400;
+							rangeDistance = (*itVisibility).second.moveDistance > 300 ? (*itVisibility).second.moveDistance : 300;
 							playerData.damage[weapon - 1] += (int)round(damage *
 								(1.f - ((*itVisibility).second.moveDistance / rangeDistance)) * shotCount);
 						}
@@ -10056,7 +10075,7 @@ void QuakeAIManager::CalculateDamage(PlayerData& playerData, const std::map<floa
 				// lets assign a firing threshold
 				if ((*itVisibility).second.moveTime >= 0.1f)
 				{
-					if ((*itVisibility).second.moveDistance <= 20.f)
+					if ((*itVisibility).second.moveDistance <= 30.f)
 					{
 						visibleTime = (*itVisibility).first + (*itVisibility).second.moveTime + fireTime;
 
