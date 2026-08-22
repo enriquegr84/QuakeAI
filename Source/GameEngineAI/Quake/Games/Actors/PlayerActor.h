@@ -326,6 +326,9 @@ public:
 
 	void PlayerSpawn();
 
+	ActorId GetProjectile() const { return mProjectileId; }
+	void AttachProjectile(ActorId id) { mProjectileId = id; }
+
 	void NextWeapon();
 	void PreviousWeapon();
 	void ChangeWeapon(WeaponType weapon);
@@ -347,6 +350,8 @@ private:
 	PlayerAction mAction;
 
 	unsigned int GetFreeHudID();
+
+	ActorId mProjectileId;
 
 	void StartLegsAnim(int anim);
 	void StartTorsoAnim(int anim);

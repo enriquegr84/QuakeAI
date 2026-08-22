@@ -4623,6 +4623,28 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 		}
 	}
 
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		Transform origin;
+		origin.SetTranslation(muzzle);
+		Transform destination;
+		destination.SetTranslation(end);
+
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->ConvexSweep(
+			player->GetProjectile(), origin, destination, collisionActors, collisions, collisionNormals);
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
+		{
+			if (collisionActors[i] != player->GetId() && collisionActors[i] != INVALID_ACTOR_ID)
+			{
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
+			}
+		}
+	}
+
 	if (closestCollisionId != INVALID_ACTOR_ID &&
 		std::dynamic_pointer_cast<PlayerActor>(mActors[closestCollisionId]))
 	{
@@ -4683,6 +4705,28 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
 			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+			{
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
+			}
+		}
+	}
+
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		Transform origin;
+		origin.SetTranslation(muzzle);
+		Transform destination;
+		destination.SetTranslation(end);
+
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->ConvexSweep(
+			player->GetProjectile(), origin, destination, collisionActors, collisions, collisionNormals);
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
+		{
+			if (collisionActors[i] != player->GetId() && collisionActors[i] != INVALID_ACTOR_ID)
 			{
 				closestCollisionId = collisionActors[i];
 				closestCollision = collisions[i];
@@ -4760,6 +4804,28 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
 			if (Length(closestCollision - start) > Length(collisions[i] - start))
+			{
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
+			}
+		}
+	}
+
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		Transform origin;
+		origin.SetTranslation(start);
+		Transform destination;
+		destination.SetTranslation(end);
+
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->ConvexSweep(
+			player->GetProjectile(), origin, destination, collisionActors, collisions, collisionNormals);
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
+		{
+			if (collisionActors[i] != player->GetId() && collisionActors[i] != INVALID_ACTOR_ID)
 			{
 				closestCollisionId = collisionActors[i];
 				closestCollision = collisions[i];
@@ -5096,6 +5162,28 @@ void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
 		}
 	}
 
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		Transform origin;
+		origin.SetTranslation(muzzle);
+		Transform destination;
+		destination.SetTranslation(end);
+
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->ConvexSweep(
+			player->GetProjectile(), origin, destination, collisionActors, collisions, collisionNormals);
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
+		{
+			if (collisionActors[i] != player->GetId() && collisionActors[i] != INVALID_ACTOR_ID)
+			{
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
+			}
+		}
+	}
+
 	Vector3<float> direction = closestCollision - muzzle;
 	float scale = Length(direction);
 	Normalize(direction);
@@ -5183,6 +5271,28 @@ void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
 			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+			{
+				closestCollisionId = collisionActors[i];
+				closestCollision = collisions[i];
+			}
+		}
+	}
+
+	if (closestCollisionId == INVALID_ACTOR_ID)
+	{
+		Transform origin;
+		origin.SetTranslation(muzzle);
+		Transform destination;
+		destination.SetTranslation(end);
+
+		std::vector<ActorId> collisionActors;
+		std::vector<Vector3<float>> collisions, collisionNormals;
+		mPhysics->ConvexSweep(
+			player->GetProjectile(), origin, destination, collisionActors, collisions, collisionNormals);
+
+		for (unsigned int i = 0; i < collisionActors.size(); i++)
+		{
+			if (collisionActors[i] != player->GetId() && collisionActors[i] != INVALID_ACTOR_ID)
 			{
 				closestCollisionId = collisionActors[i];
 				closestCollision = collisions[i];

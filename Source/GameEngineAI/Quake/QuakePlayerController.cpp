@@ -114,6 +114,9 @@ QuakePlayerController::QuakePlayerController(
 		mProjectileActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
 	if (pPhysicComponent)
 		pPhysicComponent->SetIgnoreCollision(mTarget->GetId(), true);
+	std::shared_ptr<PlayerActor> pPlayerActor(
+		std::dynamic_pointer_cast<PlayerActor>(GameLogic::Get()->GetActor(mTarget->GetId()).lock()));
+	pPlayerActor->AttachProjectile(mProjectileActor->GetId());
 
 	const std::shared_ptr<ScreenElementScene>& pScene = GameApplication::Get()->GetHumanView()->mScene;
 	std::shared_ptr<Node> pProjectileNode = pScene->GetSceneNode(mProjectileActor->GetId());

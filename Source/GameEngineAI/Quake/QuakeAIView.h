@@ -40,8 +40,6 @@ public:
 	virtual bool OnMsgProc(const Event& evt) {	return false; }
 	virtual void OnUpdate(unsigned int timeMs, unsigned long deltaMs);
 
-	ActorId GetProjectileId() const { return mProjectileActor->GetId(); }
-
 	void PlayerSpawn(const Transform& spawnTransform);
 
 	void ResetActionPlan();

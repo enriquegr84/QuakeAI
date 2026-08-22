@@ -121,6 +121,7 @@ void QuakeAIView::PlayerSpawn(const Transform& spawnTransform)
 			mProjectileActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock();
 		if (pPhysicComponent)
 			pPhysicComponent->SetIgnoreCollision(mPlayerId, true);
+		pPlayerActor->AttachProjectile(mProjectileActor->GetId());
 
 		const std::shared_ptr<ScreenElementScene>& pScene = GameApplication::Get()->GetHumanView()->mScene;
 		std::shared_ptr<Node> pProjectileNode = pScene->GetSceneNode(mProjectileActor->GetId());

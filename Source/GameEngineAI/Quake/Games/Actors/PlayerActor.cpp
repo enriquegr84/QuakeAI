@@ -58,6 +58,8 @@ PlayerActor::PlayerActor(ActorId id) : Actor(id)
 		HUD_FLAG_AMMO_VISIBLE | HUD_FLAG_HEALTH_VISIBLE | 
 		HUD_FLAG_SCORE_VISIBLE | HUD_FLAG_CROSSHAIR_VISIBLE | 
 		HUD_FLAG_ARMOR_VISIBLE;
+
+	mProjectileId = INVALID_ACTOR_ID;
 }
 
 PlayerActor::~PlayerActor()
@@ -274,7 +276,7 @@ void PlayerActor::Weapon()
 
 void PlayerActor::OutOfAmmoChange()
 {
-	for (int i = MAX_WEAPONS; i > 0; i--)
+	for (int i = 1; i < MAX_WEAPONS; i++)
 	{
 		if (WeaponSelectable(i))
 		{
@@ -282,6 +284,7 @@ void PlayerActor::OutOfAmmoChange()
 			break;
 		}
 	}
+	mAction.weaponSelect = WP_GAUNTLET;
 }
 
 void PlayerActor::PlayerSpawn()
@@ -417,21 +420,21 @@ void PlayerActor::UpdateWeapon(unsigned long deltaMs)
 	else
 	{
 		StartTorsoAnim(TORSO_ATTACK);
+
+		// check for out of ammo
+		if (!mState.ammo[mState.weapon])
+		{
+			OutOfAmmoChange();
+			mState.weaponTime += 0.5f;
+			return;
+		}
+
+		// take ammo away if not infinite
+		if (mState.ammo[mState.weapon] != -1)
+			mState.ammo[mState.weapon]--;
 	}
 
 	mState.weaponState = WEAPON_FIRING;
-
-	// check for out of ammo
-	if (!mState.ammo[mState.weapon])
-	{
-		OutOfAmmoChange();
-		mState.weaponTime += 0.5f;
-		return;
-	}
-
-	// take ammo away if not infinite
-	if (mState.ammo[mState.weapon] != -1)
-		mState.ammo[mState.weapon]--;
 
 	// fire weapon
 	EventManager::Get()->TriggerEvent(
