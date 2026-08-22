@@ -76,6 +76,30 @@ void NodeAnimatorFollowCamera::AnimateNode(Scene* pScene, Node* node, unsigned i
 
 		float scale = 40;
 		Vector4<float> offset{ 0, 0, 37.f, 0 };
+		Vector3<float> start = HProject(translation - direction * scale + offset);
+		Vector3<float> end = HProject(translation);
+
+		ActorId closestCollisionId = INVALID_ACTOR_ID;
+		Vector3<float> closestCollision = end;
+		if (pPhysicComponent)
+		{
+			std::vector<ActorId> collisionActors;
+			std::vector<Vector3<float>> collisions, collisionNormals;
+			GameLogic::Get()->GetGamePhysics()->CastRay(start, end, collisionActors, collisions, collisionNormals, pGameActor->GetId());
+
+			for (unsigned int i = 0; i < collisionActors.size(); i++)
+			{
+				if (Length(closestCollision - start) > Length(collisions[i] - start))
+				{
+					closestCollisionId = collisionActors[i];
+					closestCollision = collisions[i];
+
+					camera->GetAbsoluteTransform().SetTranslation(translation + offset);
+					return;
+				}
+			}
+		}
+
 		camera->GetAbsoluteTransform().SetTranslation(translation - direction * scale + offset);
 	}
 }
