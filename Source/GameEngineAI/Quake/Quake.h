@@ -378,6 +378,7 @@ public:
 	void HandleChatMessageDelegate(BaseEventDataPtr pEventData);
 	void HandleNotifyPlayerDelegate(BaseEventDataPtr pEventData);
 
+	void PlayDuelCombatDelegate(BaseEventDataPtr pEventData);
 	void SimulateAIGameDelegate(BaseEventDataPtr pEventData);
 	void AnalyzeAIGameDelegate(BaseEventDataPtr pEventData);
 	void ShowAIGameAnalysisDelegate(BaseEventDataPtr pEventData);

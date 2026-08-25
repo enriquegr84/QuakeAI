@@ -2392,908 +2392,6 @@ void QuakeAIManager::BuildPlayerPath(const AIAnalysis::PlayerSimulation& playerS
 
 //ANALYSIS SIMULATIONS
 
-bool QuakeAIManager::SimulatePlayerGuessingDecision(
-	const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
-	const std::map<ActorId, float>& gameItems, AIAnalysis::GameEvaluation& gameEvaluation)
-{
-	PathingNode* clusterNodeStart = playerDataIn.plan.node;
-	PathingNode* otherClusterNodeStart = otherPlayerDataIn.plan.node;
-	if (!clusterNodeStart || !otherClusterNodeStart)
-		return false;
-
-	unsigned int time = Timer::GetRealTime();
-
-	PathingArcVec playerPathPlan = playerDataIn.plan.path;
-	PathingArcVec otherPlayerPathPlan = otherPlayerDataIn.plan.path;
-
-	float playerPathOffset = playerDataOut.plan.weight;
-	float otherPlayerPathOffset = otherPlayerDataOut.plan.weight;
-	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
-	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
-
-	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-
-	std::vector<ActorId> searchActors;
-	game->GetAmmoActors(searchActors);
-	game->GetWeaponActors(searchActors);
-	game->GetHealthActors(searchActors);
-	game->GetArmorActors(searchActors);
-
-	std::map<ActorId, float> searchItems;
-	for (ActorId actor : searchActors)
-		searchItems[actor] = 0.f;
-	CalculateWeightItems(playerDataIn, searchItems);
-
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> otherPlayerPaths;
-	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<unsigned int, unsigned int>> otherPlayerClusters;
-
-	//PrintInfo("\nGuessing clusters: ");
-	if (otherClusterNodeStart)
-	{
-		unsigned long long otherPlayerIdx = ULLONG_MAX;
-		unsigned int otherPlayerCluster = otherPlayerPathPlan.empty() ?
-			otherClusterNodeStart->GetCluster() : otherPlayerPathPlan.back()->GetNode()->GetCluster();
-		unsigned int otherPlayerClusterType = 0;
-
-		otherPlayerPaths[otherPlayerIdx] = otherPlayerPathPlan;
-		otherPlayerClusters[otherPlayerIdx] = std::make_pair(otherPlayerCluster, otherPlayerClusterType);
-	}
-
-	std::mutex mutex;
-
-	//cluster node offset
-	clusterNodeStart = playerDataOut.plan.node;
-	otherClusterNodeStart = otherPlayerDataOut.plan.node;
-
-	//threat level for visibility/damage calculation.
-	unsigned short threatLevel = gameEvaluation.threat;
-
-	Concurrency::concurrent_unordered_map<unsigned long long, 
-		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans;
-	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters;
-
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
-	Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-	//for (unsigned int actionType : actionTypes)
-	{
-		Concurrency::concurrent_unordered_map<unsigned long long,
-			std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-		Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-		//player
-		BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-			playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-			clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-		mutex.lock();
-		clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-		actorPathPlanClusterHeuristics.insert(
-			localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-		actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-		mutex.unlock();
-	});
-
-	float bestHeuristic = -FLT_MAX;
-	float heuristicThreshold = 0.15f;
-	for (auto& actorPathPlanClusterHeuristic : actorPathPlanClusterHeuristics)
-		if (actorPathPlanClusterHeuristic.second > bestHeuristic)
-			bestHeuristic = actorPathPlanClusterHeuristic.second;
-
-	//if there are worthy items to be taken we will only build items paths, otherwise only normal paths.
-	if (bestHeuristic < heuristicThreshold)
-	{
-		clusterPathings.clear();
-
-		actorPathPlanClusterHeuristics.clear();
-		actorPathPlanClusters.clear();
-
-		BuildLongPath(mPathingGraph, clusterNodeStart, clusterPathings, clusterNodePathPlans);
-	}
-	else
-	{
-		BuildExpandedActorPath(mPathingGraph, clusterNodeStart, 
-			heuristicThreshold, clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-	}
-
-	// 	adding pathing offset to clusters path
-	if (playerPathPlanOffset.size())
-		for (auto& clusterNodePathPlan : clusterNodePathPlans)
-			for (auto it = playerPathPlanOffset.rbegin(); it != playerPathPlanOffset.rend(); it++)
-				clusterNodePathPlan.second.insert(clusterNodePathPlan.second.begin(), *it);
-
-	Concurrency::concurrent_vector<AIAnalysis::GameSimulation*> playerDecisions;
-	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
-	{
-		auto itCluster = clusterPathings.begin();
-		std::advance(itCluster, clusterIdx);
-
-		PathingCluster* playerClusterStart = (*itCluster).second.first;
-		PathingCluster* playerClusterEnd = (*itCluster).second.second;
-
-		//cluster code
-		unsigned long long clusterCode = (*itCluster).first;
-		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-		itClusterNodePathPlan = actorPathPlanClusters.find(clusterCode);
-		if (itClusterNodePathPlan == actorPathPlanClusters.end())
-			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
-
-		Concurrency::concurrent_vector<AIAnalysis::Simulation*> playerSimulations;
-		Concurrency::parallel_for_each(
-			begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
-		//for (auto const& otherPlayerCluster : otherPlayerClusters)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
-				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
-
-			player.plan.id = -1;
-
-			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
-			simulation->playerSimulation.code = clusterCode;
-			simulation->playerSimulation.clusters.push_back(playerClusterStart->GetTarget()->GetCluster());
-			simulation->playerSimulation.clusters.push_back(playerClusterEnd->GetTarget()->GetCluster());
-			simulation->playerSimulation.action = playerClusterStart->GetType();
-			simulation->otherPlayerSimulation.code = ULLONG_MAX;
-			simulation->otherPlayerSimulation.planId = otherPlayer.plan.id;
-			simulation->otherPlayerSimulation.clusters.push_back(otherPlayerCluster.second.first);
-			simulation->otherPlayerSimulation.action = otherPlayerCluster.second.second;
-
-			SetPlayerSimulation(simulation->playerSimulation, player);
-			SetPlayerSimulation(simulation->otherPlayerSimulation, otherPlayer);
-
-			playerSimulations.push_back(simulation);
-		});
-
-		if (playerSimulations.size())
-		{
-			AIAnalysis::GameSimulation* gameSimulation = new AIAnalysis::GameSimulation();
-			gameSimulation->clusters.push_back(playerClusterStart->GetTarget()->GetCluster());
-			gameSimulation->clusters.push_back(playerClusterEnd->GetTarget()->GetCluster());
-			gameSimulation->action = playerClusterEnd->GetType();
-			for (auto& playerSimulation : playerSimulations)
-				gameSimulation->simulations.push_back(std::move(playerSimulation));
-			playerDecisions.push_back(gameSimulation);
-		}
-	});
-
-	if (playerDataIn.valid)
-	{
-		Concurrency::concurrent_vector<AIAnalysis::Simulation*> playerSimulations;
-		Concurrency::parallel_for_each(
-			begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
-		//for (auto const& otherPathingClusterNode : otherPathingClusterNodes)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, 
-				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset );
-
-			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
-			simulation->playerSimulation.code = ULLONG_MAX;
-			simulation->playerSimulation.planId = player.plan.id;
-			if (player.plan.path.empty())
-				simulation->playerSimulation.clusters.push_back(player.plan.node->GetCluster());
-			else 
-				simulation->playerSimulation.clusters.push_back(player.plan.path.back()->GetNode()->GetCluster());
-			simulation->otherPlayerSimulation.code = ULLONG_MAX;
-			simulation->otherPlayerSimulation.planId = otherPlayer.plan.id;
-			simulation->otherPlayerSimulation.clusters.push_back(otherPlayerCluster.second.first);
-			simulation->otherPlayerSimulation.action = otherPlayerCluster.second.second;
-
-			SetPlayerSimulation(simulation->playerSimulation, player);
-			SetPlayerSimulation(simulation->otherPlayerSimulation, otherPlayer);
-
-			playerSimulations.push_back(simulation);
-		});
-
-		if (playerSimulations.size())
-		{
-			AIAnalysis::GameSimulation* gameSimulation = new AIAnalysis::GameSimulation();
-			if (playerDataIn.plan.path.empty())
-				gameSimulation->clusters.push_back(playerDataIn.plan.node->GetCluster());
-			else
-				gameSimulation->clusters.push_back(playerDataIn.plan.path.back()->GetNode()->GetCluster());
-			for (auto& playerSimulation : playerSimulations)
-				gameSimulation->simulations.push_back(std::move(playerSimulation));
-			playerDecisions.push_back(gameSimulation);
-		}
-	}
-
-	for (auto& playerDecision : playerDecisions)
-		gameEvaluation.playerDecisions.push_back(std::move(playerDecision));
-
-	gameEvaluation.playerDecision = new AIAnalysis::GameSimulation();
-	for (auto const& gameSimulation : gameEvaluation.playerDecisions)
-	{
-		float playerHeuristic = FLT_MAX;
-		float otherPlayerHeuristic = FLT_MAX;
-
-		AIAnalysis::Simulation* playerSimulation = nullptr;
-		for (auto const& simulation : gameSimulation->simulations)
-		{
-			//minimize the other player heuristic according to minimax decision level
-			if (simulation->otherPlayerSimulation.heuristic < otherPlayerHeuristic)
-			{
-				playerHeuristic = simulation->playerSimulation.heuristic;
-				otherPlayerHeuristic = simulation->otherPlayerSimulation.heuristic;
-
-				playerSimulation = simulation;
-			}
-		}
-
-		gameEvaluation.playerDecision->simulations.push_back(playerSimulation);
-	}
-	
-	//player decision output
-	WeaponType playerWeapon = WP_NONE;
-	WeaponType otherPlayerWeapon = WP_NONE;
-	unsigned long long playerClusterCode = 0;
-	unsigned long long otherPlayerClusterCode = 0;
-	PerformDecisionMaking(gameEvaluation, 
-		playerDataIn, otherPlayerDataIn, clusterPathings, otherClusterPathings, 
-		playerWeapon, otherPlayerWeapon, playerClusterCode, otherPlayerClusterCode);
-	
-	//Simulate best outcome for each player
-	{
-		//cluster code
-		if (playerClusterCode != ULLONG_MAX)
-		{
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-			itClusterNodePathPlan = actorPathPlanClusters.find(playerClusterCode);
-			if (itClusterNodePathPlan == actorPathPlanClusters.end())
-				itClusterNodePathPlan = clusterNodePathPlans.find(playerClusterCode);
-
-			if (otherPlayerClusterCode != ULLONG_MAX)
-			{
-				PlayerData player(playerDataIn);
-				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
-					player, itClusterNodePathPlan->second, playerPathOffset,
-					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.plan.id = -1;
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-			else
-			{
-				PlayerData player(playerDataIn);
-				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
-					player, itClusterNodePathPlan->second, playerPathOffset,
-					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-		}
-		else if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
-				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			otherPlayer.plan.id = -1;
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-		}
-		else
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
-				player, playerPathPlan, playerPathOffset, otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-		}
-	}
-
-	unsigned int diffTime = Timer::GetRealTime() - time;
-	diffTime += 200; //lets add estimation of guessing simulation
-
-	playerDataOut.valid = true;
-	if (playerDataOut.plan.id == -1)
-		playerDataOut.plan.id = GetNewPlanID();
-
-	playerDataOut.planWeight = playerPathOffset;
-	playerDataOut.planWeight += diffTime / 1000.f;
-	for (PathingArc* playerPathArc : playerPathPlanOffset)
-	{
-		if (playerDataOut.planWeight <= 0.f)
-			break;
-
-		playerDataOut.plan.path.erase(playerDataOut.plan.path.begin());
-		playerDataOut.plan.node = playerPathArc->GetNode();
-		playerDataOut.planWeight -= playerPathArc->GetWeight();
-	}
-
-	otherPlayerDataOut.valid = true;
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
-	otherPlayerDataOut.planWeight += diffTime / 1000.f;
-
-	return true;
-}
-
-bool QuakeAIManager::SimulatePlayerGuessings(
-	const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
-	const std::map<ActorId, float>& gameItems, AIAnalysis::GameEvaluation& gameEvaluation)
-{
-	PathingNode* clusterNodeStart = playerDataIn.plan.node;
-	PathingNode* otherClusterNodeStart = otherPlayerDataIn.plan.node;
-	if (!clusterNodeStart || !otherClusterNodeStart || clusterNodeStart == otherClusterNodeStart)
-		return false;
-
-	unsigned int time = Timer::GetRealTime();
-
-	PathingArcVec playerPathPlan = playerDataIn.plan.path;
-	PathingArcVec otherPlayerPathPlan = otherPlayerDataIn.plan.path;
-
-	float playerPathOffset = playerDataOut.plan.weight;
-	float otherPlayerPathOffset = otherPlayerDataOut.plan.weight;
-	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
-	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
-
-	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-
-	std::vector<ActorId> searchActors;
-	game->GetAmmoActors(searchActors);
-	game->GetWeaponActors(searchActors);
-	game->GetHealthActors(searchActors);
-	game->GetArmorActors(searchActors);
-
-	std::map<ActorId, float> searchItems;
-	for (ActorId actor : searchActors)
-		searchItems[actor] = 0.f;
-	CalculateWeightItems(playerDataIn, searchItems);
-
-	std::map<ActorId, float> otherSearchItems;
-	for (ActorId actor : searchActors)
-		otherSearchItems[actor] = 0.f;
-	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
-
-	std::vector<std::pair<ActorId, unsigned int>> actionTypes
-		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP }, 
-		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP }  };
-
-	//cluster node offset
-	clusterNodeStart = playerDataOut.plan.node;
-	otherClusterNodeStart = otherPlayerDataOut.plan.node;
-
-	//threat level for visibility/damage calculation.
-	unsigned short threatLevel = gameEvaluation.threat;
-
-	Concurrency::concurrent_unordered_map<unsigned long long,
-		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
-	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
-
-	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
-		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
-	{
-		std::mutex mutex;
-
-		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
-		//for (auto& actionType : actionTypes)
-		{
-			if (actionType.first == playerDataIn.player)
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
-					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-				mutex.lock();
-				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-				actorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-			else
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//other player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
-					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-					localActorPathPlanClusters);
-
-				mutex.lock();
-				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-				otherActorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-		});
-
-		Concurrency::parallel_invoke(
-			[&] {			
-				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
-			[&] {
-				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
-		);
-	}
-	else
-	{
-		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
-			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
-		{
-			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
-				clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans);
-		}
-
-		std::mutex mutex;
-
-		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
-		//for (auto& actionType : actionTypes)
-		{
-			if (actionType.first == playerDataIn.player)
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
-					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-				mutex.lock();
-				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-				actorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-			else
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//other player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
-					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-					localActorPathPlanClusters);
-
-				mutex.lock();
-				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-				otherActorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-		});
-
-		Concurrency::parallel_invoke(
-			[&] {			
-				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
-			[&] {
-				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
-		);
-	}
-
-	// 	adding pathing offset to clusters path
-	if (playerPathPlanOffset.size())
-		for (auto& clusterNodePathPlan : clusterNodePathPlans)
-			for (auto it = playerPathPlanOffset.rbegin(); it != playerPathPlanOffset.rend(); it++)
-				clusterNodePathPlan.second.insert(clusterNodePathPlan.second.begin(), *it);
-	if (otherPlayerPathPlanOffset.size())
-		for (auto& otherClusterNodePathPlan : otherClusterNodePathPlans)
-			for (auto it = otherPlayerPathPlanOffset.rbegin(); it != otherPlayerPathPlanOffset.rend(); it++)
-				otherClusterNodePathPlan.second.insert(otherClusterNodePathPlan.second.begin(), *it);
-
-	Concurrency::concurrent_vector<AIAnalysis::GameSimulation*> playerGuessings;
-	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
-	{
-		auto itCluster = clusterPathings.begin();
-		std::advance(itCluster, clusterIdx);
-
-		PathingCluster* playerClusterStart = (*itCluster).second.first;
-		PathingCluster* playerClusterEnd = (*itCluster).second.second;
-
-		//cluster code
-		unsigned long long clusterCode = (*itCluster).first;
-		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-		itClusterNodePathPlan = actorPathPlanClusters.find(clusterCode);
-		if (itClusterNodePathPlan == actorPathPlanClusters.end())
-			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
-
-		Concurrency::concurrent_vector<AIAnalysis::Simulation*> playerSimulations;
-		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
-		{
-			auto itOtherCluster = otherClusterPathings.begin();
-			std::advance(itOtherCluster, otherClusterIdx);
-
-			PathingCluster* otherPlayerClusterStart = (*itOtherCluster).second.first;
-			PathingCluster* otherPlayerClusterEnd = (*itOtherCluster).second.second;
-
-			//other cluster code
-			unsigned long long otherClusterCode = (*itOtherCluster).first;
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-			itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherClusterCode);
-			if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-				itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherClusterCode);
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
-				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-			player.plan.id = -1;
-			otherPlayer.plan.id = -1;
-
-			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
-			simulation->playerSimulation.code = clusterCode;
-			simulation->playerSimulation.clusters.push_back(playerClusterStart->GetTarget()->GetCluster());
-			simulation->playerSimulation.clusters.push_back(playerClusterEnd->GetTarget()->GetCluster());
-			simulation->playerSimulation.action = playerClusterStart->GetType();
-			simulation->otherPlayerSimulation.code = otherClusterCode;
-			simulation->otherPlayerSimulation.clusters.push_back(otherPlayerClusterStart->GetTarget()->GetCluster());
-			simulation->otherPlayerSimulation.clusters.push_back(otherPlayerClusterEnd->GetTarget()->GetCluster());
-			simulation->otherPlayerSimulation.action = otherPlayerClusterStart->GetType();
-
-			SetPlayerSimulation(simulation->playerSimulation, player);
-			SetPlayerSimulation(simulation->otherPlayerSimulation, otherPlayer);
-
-			playerSimulations.push_back(simulation);
-		});
-
-		if (otherPlayerDataIn.valid)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel,
-				player, itClusterNodePathPlan->second, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			player.plan.id = -1;
-
-			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
-			simulation->playerSimulation.code = clusterCode;
-			simulation->playerSimulation.clusters.push_back(playerClusterStart->GetTarget()->GetCluster());
-			simulation->playerSimulation.clusters.push_back(playerClusterEnd->GetTarget()->GetCluster());
-			simulation->playerSimulation.action = playerClusterStart->GetType();
-			simulation->otherPlayerSimulation.code = ULLONG_MAX;
-			simulation->otherPlayerSimulation.planId = otherPlayer.plan.id;
-			if (otherPlayer.plan.path.empty())
-				simulation->otherPlayerSimulation.clusters.push_back(otherPlayer.plan.node->GetCluster());
-			else
-				simulation->otherPlayerSimulation.clusters.push_back(otherPlayer.plan.path.back()->GetNode()->GetCluster());
-
-			SetPlayerSimulation(simulation->playerSimulation, player);
-			SetPlayerSimulation(simulation->otherPlayerSimulation, otherPlayer);
-
-			playerSimulations.push_back(simulation);
-		}
-
-		if (playerSimulations.size())
-		{
-			AIAnalysis::GameSimulation* gameSimulation = new AIAnalysis::GameSimulation();
-			gameSimulation->clusters.push_back(playerClusterStart->GetTarget()->GetCluster());
-			gameSimulation->clusters.push_back(playerClusterEnd->GetTarget()->GetCluster());
-			gameSimulation->action = playerClusterEnd->GetType();
-			for (auto& playerSimulation : playerSimulations)
-				gameSimulation->simulations.push_back(std::move(playerSimulation));
-			playerGuessings.push_back(gameSimulation);
-		}
-	});
-	
-	if (playerDataIn.valid)
-	{
-		Concurrency::concurrent_vector<AIAnalysis::Simulation*> playerSimulations;
-		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
-		{
-			auto itOtherCluster = otherClusterPathings.begin();
-			std::advance(itOtherCluster, otherClusterIdx);
-
-			PathingCluster* otherPlayerClusterStart = (*itOtherCluster).second.first;
-			PathingCluster* otherPlayerClusterEnd = (*itOtherCluster).second.second;
-
-			//other cluster code
-			unsigned long long otherClusterCode = (*itOtherCluster).first;
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-			itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherClusterCode);
-			if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-				itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherClusterCode);
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, 
-				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-			otherPlayer.plan.id = -1;
-
-			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
-			simulation->playerSimulation.code = ULLONG_MAX;
-			simulation->playerSimulation.planId = player.plan.id;
-			if (player.plan.path.empty())
-				simulation->playerSimulation.clusters.push_back(player.plan.node->GetCluster());
-			else
-				simulation->playerSimulation.clusters.push_back(player.plan.path.back()->GetNode()->GetCluster());
-			simulation->otherPlayerSimulation.code = otherClusterCode;
-			simulation->otherPlayerSimulation.clusters.push_back(otherPlayerClusterStart->GetTarget()->GetCluster());
-			simulation->otherPlayerSimulation.clusters.push_back(otherPlayerClusterEnd->GetTarget()->GetCluster());
-			simulation->otherPlayerSimulation.action = otherPlayerClusterStart->GetType();
-
-			SetPlayerSimulation(simulation->playerSimulation, player);
-			SetPlayerSimulation(simulation->otherPlayerSimulation, otherPlayer);
-
-			playerSimulations.push_back(simulation);
-		});
-
-		if (otherPlayerDataIn.valid)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, 
-				gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			AIAnalysis::Simulation* simulation = new AIAnalysis::Simulation();
-			simulation->playerSimulation.code = ULLONG_MAX;
-			simulation->playerSimulation.planId = player.plan.id;
-			if (player.plan.path.empty())
-				simulation->playerSimulation.clusters.push_back(player.plan.node->GetCluster());
-			else
-				simulation->playerSimulation.clusters.push_back(player.plan.path.back()->GetNode()->GetCluster());
-			simulation->otherPlayerSimulation.code = ULLONG_MAX;
-			simulation->otherPlayerSimulation.planId = otherPlayer.plan.id;
-			if (otherPlayer.plan.path.empty())
-				simulation->otherPlayerSimulation.clusters.push_back(otherPlayer.plan.node->GetCluster());
-			else
-				simulation->otherPlayerSimulation.clusters.push_back(otherPlayer.plan.path.back()->GetNode()->GetCluster());
-
-			SetPlayerSimulation(simulation->playerSimulation, player);
-			SetPlayerSimulation(simulation->otherPlayerSimulation, otherPlayer);
-
-			playerSimulations.push_back(simulation);
-		}
-
-		if (playerSimulations.size())
-		{
-			AIAnalysis::GameSimulation* gameSimulation = new AIAnalysis::GameSimulation();
-			if (playerDataIn.plan.path.empty())
-				gameSimulation->clusters.push_back(playerDataIn.plan.node->GetCluster());
-			else
-				gameSimulation->clusters.push_back(playerDataIn.plan.path.back()->GetNode()->GetCluster());
-			for (auto& playerSimulation : playerSimulations)
-				gameSimulation->simulations.push_back(std::move(playerSimulation));
-			playerGuessings.push_back(gameSimulation);
-		}
-	}
-
-	for (auto& playerGuessing : playerGuessings)
-		gameEvaluation.playerGuessings.push_back(std::move(playerGuessing));
-	
-	//printf("\n player guessing simulations end");
-	//printf("\n player guessing decisions start");
-
-	gameEvaluation.playerGuessDecision = new AIAnalysis::GameSimulation();
-	for (auto const& gameSimulation : gameEvaluation.playerGuessings)
-	{
-		float playerHeuristic = FLT_MAX;
-		float otherPlayerHeuristic = FLT_MAX;
-
-		AIAnalysis::Simulation* playerGuessSimulation = nullptr;
-		for (auto const& simulation : gameSimulation->simulations)
-		{
-			//minimize the other player heuristic according to minimax decision level
-			if (simulation->otherPlayerSimulation.heuristic < otherPlayerHeuristic)
-			{
-				playerHeuristic = simulation->playerSimulation.heuristic;
-				otherPlayerHeuristic = simulation->otherPlayerSimulation.heuristic;
-
-				playerGuessSimulation = simulation;
-			}
-		}
-
-		gameEvaluation.playerGuessDecision->simulations.push_back(playerGuessSimulation);
-	}
-
-	//player guessing output
-	WeaponType playerWeapon = WP_NONE;
-	WeaponType otherPlayerWeapon = WP_NONE;
-	unsigned long long playerClusterCode = 0;
-	unsigned long long otherPlayerClusterCode = 0;
-	PerformGuessingMaking(gameEvaluation, playerDataIn, otherPlayerDataIn, clusterPathings, otherClusterPathings,
-		playerWeapon, otherPlayerWeapon, playerClusterCode, otherPlayerClusterCode);
-
-	//Simulate best outcome for each player
-	{
-		//cluster code
-		if (playerClusterCode != ULLONG_MAX)
-		{
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-			itClusterNodePathPlan = actorPathPlanClusters.find(playerClusterCode);
-			if (itClusterNodePathPlan == actorPathPlanClusters.end())
-				itClusterNodePathPlan = clusterNodePathPlans.find(playerClusterCode);
-
-			//other cluster code
-			if (otherPlayerClusterCode != ULLONG_MAX)
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-				itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherPlayerClusterCode);
-				if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-					itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherPlayerClusterCode);
-
-				PlayerData player(playerDataIn);
-				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-					threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
-					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.plan.id = -1;
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-			else
-			{
-				PlayerData player(playerDataIn);
-				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation((EvaluationType)gameEvaluation.type, gameItems, threatLevel, 
-					player, itClusterNodePathPlan->second, playerPathOffset,
-					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-		}
-		else if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-			itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherPlayerClusterCode);
-			if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-				itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherPlayerClusterCode);
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-			otherPlayer.plan.id = -1;
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-		}
-		else
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation((EvaluationType)gameEvaluation.type, gameItems, 
-				threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-		}
-	}
-
-	unsigned int diffTime = Timer::GetRealTime() - time;
-	diffTime += 100; //lets add estimation of guessing decision simulation
-
-	playerDataOut.valid = true;
-	if (playerDataOut.plan.id == -1)
-		playerDataOut.plan.id = GetNewPlanID();
-
-	playerDataOut.planWeight = playerPathOffset;
-	playerDataOut.planWeight += diffTime / 1000.f;
-
-	otherPlayerDataOut.valid = true;
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
-	otherPlayerDataOut.planWeight += diffTime / 1000.f;
-
-	//printf("\n player guessing decisions end");
-	return true;
-}
-
 bool QuakeAIManager::SimulatePlayerGuessing(
 	const PlayerData& playerDataIn, PlayerData& playerDataOut,
 	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
@@ -4485,769 +3583,6 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 
 //RUNTIME SIMULATIONS
-
-bool QuakeAIManager::SimulatePlayerGuessingDecision(const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
-	const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation)
-{
-	PathingNode* clusterNodeStart = playerDataIn.plan.node;
-	PathingNode* otherClusterNodeStart = otherPlayerDataIn.plan.node;
-	if (!clusterNodeStart || !otherClusterNodeStart)
-		return false;
-
-	unsigned int time = Timer::GetRealTime();
-
-	PathingArcVec playerPathPlan = playerDataIn.plan.path;
-	PathingArcVec otherPlayerPathPlan = otherPlayerDataIn.plan.path;
-
-	float playerPathOffset = playerDataOut.plan.weight;
-	float otherPlayerPathOffset = otherPlayerDataOut.plan.weight;
-	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
-	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
-
-	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-
-	std::vector<ActorId> searchActors;
-	game->GetAmmoActors(searchActors);
-	game->GetWeaponActors(searchActors);
-	game->GetHealthActors(searchActors);
-	game->GetArmorActors(searchActors);
-
-	std::map<ActorId, float> searchItems;
-	for (ActorId actor : searchActors)
-		searchItems[actor] = 0.f;
-	CalculateWeightItems(playerDataIn, searchItems);
-
-	//we need to stop the simulation if an aware decision making has started
-	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-		return false;
-
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> otherPlayerPaths;
-	Concurrency::concurrent_unordered_map<unsigned long long, std::pair<unsigned int, unsigned int>> otherPlayerClusters;
-
-	//PrintInfo("\nGuessing clusters: ");
-	if (otherClusterNodeStart)
-	{
-		unsigned long long otherPlayerIdx = ULLONG_MAX;
-		unsigned int otherPlayerCluster = otherPlayerPathPlan.empty() ?
-			otherClusterNodeStart->GetCluster() : otherPlayerPathPlan.back()->GetNode()->GetCluster();
-		unsigned int otherPlayerClusterType = 0;
-
-		otherPlayerPaths[otherPlayerIdx] = otherPlayerPathPlan;
-		otherPlayerClusters[otherPlayerIdx] = std::make_pair(otherPlayerCluster, otherPlayerClusterType);
-	}
-
-	//we need to stop the simulation if an aware decision making has started
-	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-		return false;
-
-	std::mutex mutex;
-
-	//cluster node offset
-	clusterNodeStart = playerDataOut.plan.node;
-	otherClusterNodeStart = otherPlayerDataOut.plan.node;
-
-	Concurrency::concurrent_unordered_map<unsigned long long,
-		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans;
-	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters;
-
-	std::vector<unsigned int> actionTypes{ AT_MOVE, AT_JUMP };
-	Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](unsigned int actionType)
-	//for (unsigned int actionType : actionTypes)
-	{
-		Concurrency::concurrent_unordered_map<unsigned long long,
-			std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-		Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-		//player
-		BuildActorPath(mPathingGraph, actionType, gameItems, searchItems,
-			playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-			clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-		mutex.lock();
-		clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-		actorPathPlanClusterHeuristics.insert(
-			localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-		actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-		mutex.unlock();
-	});
-
-	float bestHeuristic = -FLT_MAX;
-	float heuristicThreshold = 0.15f;
-	for (auto& actorPathPlanClusterHeuristic : actorPathPlanClusterHeuristics)
-		if (actorPathPlanClusterHeuristic.second > bestHeuristic)
-			bestHeuristic = actorPathPlanClusterHeuristic.second;
-
-	//if there are worthy items to be taken we will only build items paths, otherwise only normal paths.
-	if (bestHeuristic < heuristicThreshold)
-	{
-		clusterPathings.clear();
-		actorPathPlanClusterHeuristics.clear();
-		actorPathPlanClusters.clear();
-
-		BuildLongPath(mPathingGraph, clusterNodeStart, clusterPathings, clusterNodePathPlans);
-	}
-	else
-	{
-		BuildExpandedActorPath(mPathingGraph, clusterNodeStart, 
-			heuristicThreshold, clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics);
-	}
-
-	//we need to stop the simulation if an aware decision making has started
-	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-		return false;
-
-	// 	adding pathing offset to clusters path
-	if (playerPathPlanOffset.size())
-		for (auto& clusterNodePathPlan : clusterNodePathPlans)
-			for (auto it = playerPathPlanOffset.rbegin(); it != playerPathPlanOffset.rend(); it++)
-				clusterNodePathPlan.second.insert(clusterNodePathPlan.second.begin(), *it);
-
-	Concurrency::concurrent_unordered_map<unsigned long long, 
-		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerDecisions;
-	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponDecisions;
-	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
-	{
-		auto itCluster = clusterPathings.begin();
-		std::advance(itCluster, clusterIdx);
-
-		//cluster code
-		unsigned long long clusterCode = (*itCluster).first;
-		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-		itClusterNodePathPlan = actorPathPlanClusters.find(clusterCode);
-		if (itClusterNodePathPlan == actorPathPlanClusters.end())
-			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
-
-		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
-		Concurrency::parallel_for_each(begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
-		//for (auto const& otherPlayerCluster : otherPlayerClusters)
-		{
-			//we need to stop the simulation if an aware decision making has started
-			if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-				return;
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, player, itClusterNodePathPlan->second, playerPathOffset,
-				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
-
-			player.plan.id = -1;
-			playerSimulations[otherPlayerCluster.first] = player.heuristic;
-			playerWeaponSimulations[otherPlayerCluster.first] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
-		});
-
-		playerDecisions[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
-		playerWeaponDecisions[clusterCode].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
-	});
-
-	if (playerDataIn.valid)
-	{
-		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
-		Concurrency::parallel_for_each(begin(otherPlayerClusters), end(otherPlayerClusters), [&](auto const& otherPlayerCluster)
-		//for (auto const& otherPathingClusterNode : otherPathingClusterNodes)
-		{
-			//we need to stop the simulation if an aware decision making has started
-			if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-				return;
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPaths[otherPlayerCluster.first], otherPlayerPathOffset);
-
-			playerSimulations[otherPlayerCluster.first] = player.heuristic;
-			playerWeaponSimulations[otherPlayerCluster.first] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
-		});
-
-		playerDecisions[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
-		playerWeaponDecisions[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
-	}
-
-	//we need to stop the simulation if an aware decision making has started
-	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-		return false;
-
-	//printf("\n player simulations end");
-	//printf("\n player decisions start");
-
-	playerDataOut = playerDataIn;
-	playerDataOut.heuristic = -FLT_MAX;
-
-	otherPlayerDataOut = otherPlayerDataIn;
-	otherPlayerDataOut.heuristic = -FLT_MAX;
-
-	//player decision output
-	WeaponType playerWeapon = WP_NONE;
-	WeaponType otherPlayerWeapon = WP_NONE;
-	unsigned long long playerClusterCode = 0;
-	unsigned long long otherPlayerClusterCode = 0;
-	PerformDecisionMaking(playerDataIn, otherPlayerDataIn, clusterPathings, otherClusterPathings, 
-		playerDecisions, playerWeaponDecisions, playerWeapon, otherPlayerWeapon, playerClusterCode, otherPlayerClusterCode);
-
-	//Simulate best outcome for each player
-	{
-		//cluster code
-		if (playerClusterCode != ULLONG_MAX)
-		{
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-			itClusterNodePathPlan = actorPathPlanClusters.find(playerClusterCode);
-			if (itClusterNodePathPlan == actorPathPlanClusters.end())
-				itClusterNodePathPlan = clusterNodePathPlans.find(playerClusterCode);
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			if (otherPlayerClusterCode != ULLONG_MAX)
-			{
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.plan.id = -1;
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-			else
-			{
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-		}
-		else if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPaths[otherPlayerClusterCode], otherPlayerPathOffset);
-
-			otherPlayer.plan.id = -1;
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-		}
-		else
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, 
-				threatLevel, player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-		}
-	}
-
-	unsigned int diffTime = Timer::GetRealTime() - time;
-	diffTime += 200; //lets add estimation of guessing simulation
-
-	playerDataOut.valid = true;
-	if (playerDataOut.plan.id == -1)
-		playerDataOut.plan.id = GetNewPlanID();
-
-	playerDataOut.planWeight = playerPathOffset;
-	playerDataOut.planWeight += diffTime / 1000.f;
-	for (PathingArc* playerPathArc : playerPathPlanOffset)
-	{
-		if (playerDataOut.planWeight <= 0.f)
-			break;
-
-		playerDataOut.plan.path.erase(playerDataOut.plan.path.begin());
-		playerDataOut.plan.node = playerPathArc->GetNode();
-		playerDataOut.planWeight -= playerPathArc->GetWeight();
-	}
-
-	otherPlayerDataOut.valid = true;
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
-	otherPlayerDataOut.planWeight += diffTime / 1000.f;
-
-	return true;
-}
-
-bool QuakeAIManager::SimulatePlayerGuessings(const PlayerData& playerDataIn, PlayerData& playerDataOut,
-	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
-	const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation)
-{
-	PathingNode* clusterNodeStart = playerDataIn.plan.node;
-	PathingNode* otherClusterNodeStart = otherPlayerDataIn.plan.node;
-	if (!clusterNodeStart || !otherClusterNodeStart || clusterNodeStart == otherClusterNodeStart)
-		return false;
-
-	unsigned int time = Timer::GetRealTime();
-
-	PathingArcVec playerPathPlan = playerDataIn.plan.path;
-	PathingArcVec otherPlayerPathPlan = otherPlayerDataIn.plan.path;
-
-	float playerPathOffset = playerDataOut.plan.weight;
-	float otherPlayerPathOffset = otherPlayerDataOut.plan.weight;
-	PathingArcVec playerPathPlanOffset = playerDataOut.plan.path;
-	PathingArcVec otherPlayerPathPlanOffset = otherPlayerDataOut.plan.path;
-
-	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
-
-	std::vector<ActorId> searchActors;
-	game->GetAmmoActors(searchActors);
-	game->GetWeaponActors(searchActors);
-	game->GetHealthActors(searchActors);
-	game->GetArmorActors(searchActors);
-
-	std::map<ActorId, float> searchItems;
-	for (ActorId actor : searchActors)
-		searchItems[actor] = 0.f;
-	CalculateWeightItems(playerDataIn, searchItems);
-
-	std::map<ActorId, float> otherSearchItems;
-	for (ActorId actor : searchActors)
-		otherSearchItems[actor] = 0.f;
-	CalculateWeightItems(otherPlayerDataIn, otherSearchItems);
-
-	std::vector<std::pair<ActorId, unsigned int>> actionTypes
-		{ { playerDataIn.player, AT_MOVE }, { playerDataIn.player, AT_JUMP },
-		{ otherPlayerDataIn.player, AT_MOVE }, { otherPlayerDataIn.player, AT_JUMP } };
-
-	//we need to stop the simulation if an aware decision making has started
-	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-		return false;
-
-	//cluster node offset
-	clusterNodeStart = playerDataOut.plan.node;
-	otherClusterNodeStart = otherPlayerDataOut.plan.node;
-
-	Concurrency::concurrent_unordered_map<unsigned long long,
-		std::pair<PathingCluster*, PathingCluster*>> clusterPathings, otherClusterPathings;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> clusterNodePathPlans, otherClusterNodePathPlans;
-	Concurrency::concurrent_unordered_map<unsigned long long, float> actorPathPlanClusterHeuristics, otherActorPathPlanClusterHeuristics;
-	Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> actorPathPlanClusters, otherActorPathPlanClusters;
-
-	if (BuildPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart, 
-		clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
-	{
-		std::mutex mutex;
-
-		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
-		//for (auto& actionType : actionTypes)
-		{
-			if (actionType.first == playerDataIn.player)
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
-					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-				mutex.lock();
-				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-				actorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-			else
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//other player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
-					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-					localActorPathPlanClusters);
-
-				mutex.lock();
-				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-				otherActorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-		});
-
-		Concurrency::parallel_invoke(
-			[&] {			
-				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
-			[&] {
-				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
-		);
-	}
-	else
-	{
-		if (!BuildLongPath(threatLevel, mPathingGraph, clusterNodeStart, otherClusterNodeStart,
-			clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans))
-		{
-			BuildLongestPath(mPathingGraph, clusterNodeStart, otherClusterNodeStart,
-				clusterPathings, otherClusterPathings, clusterNodePathPlans, otherClusterNodePathPlans);
-		}
-
-		std::mutex mutex;
-
-		Concurrency::parallel_for_each(begin(actionTypes), end(actionTypes), [&](auto& actionType)
-		//for (auto& actionType : actionTypes)
-		{
-			if (actionType.first == playerDataIn.player)
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, searchItems,
-					playerDataIn, clusterNodeStart, playerPathPlanOffset, playerPathOffset, localClusterPathings,
-					clusterNodePathPlans, localActorPathPlanClusterHeuristics, localActorPathPlanClusters);
-
-				mutex.lock();
-				clusterPathings.insert(localClusterPathings.begin(), localClusterPathings.end());
-
-				actorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				actorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-			else
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long,
-					std::pair<PathingCluster*, PathingCluster*>> localOtherClusterPathings;
-				Concurrency::concurrent_unordered_map<unsigned long long, float> localActorPathPlanClusterHeuristics;
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec> localActorPathPlanClusters;
-
-				//other player
-				BuildActorPath(mPathingGraph, actionType.second, gameItems, otherSearchItems,
-					otherPlayerDataIn, otherClusterNodeStart, otherPlayerPathPlanOffset, otherPlayerPathOffset,
-					localOtherClusterPathings, otherClusterNodePathPlans, localActorPathPlanClusterHeuristics,
-					localActorPathPlanClusters);
-
-				mutex.lock();
-				otherClusterPathings.insert(localOtherClusterPathings.begin(), localOtherClusterPathings.end());
-
-				otherActorPathPlanClusterHeuristics.insert(
-					localActorPathPlanClusterHeuristics.begin(), localActorPathPlanClusterHeuristics.end());
-				otherActorPathPlanClusters.insert(localActorPathPlanClusters.begin(), localActorPathPlanClusters.end());
-				mutex.unlock();
-			}
-		});
-
-		Concurrency::parallel_invoke(
-			[&] {			
-				//player
-				BuildExpandedActorPath(mPathingGraph, clusterNodeStart,
-					clusterPathings, actorPathPlanClusters, actorPathPlanClusterHeuristics); },
-			[&] {
-				//other player
-				BuildExpandedActorPath(mPathingGraph, otherClusterNodeStart,
-					otherClusterPathings, otherActorPathPlanClusters, otherActorPathPlanClusterHeuristics);}
-		);
-	}
-
-	//we need to stop the simulation if an aware decision making has started
-	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-		return false;
-
-	// 	adding pathing offset to clusters path
-	if (playerPathPlanOffset.size())
-		for (auto& clusterNodePathPlan : clusterNodePathPlans)
-			for (auto it = playerPathPlanOffset.rbegin(); it != playerPathPlanOffset.rend(); it++)
-				clusterNodePathPlan.second.insert(clusterNodePathPlan.second.begin(), *it);
-	if (otherPlayerPathPlanOffset.size())
-		for (auto& otherClusterNodePathPlan : otherClusterNodePathPlans)
-			for (auto it = otherPlayerPathPlanOffset.rbegin(); it != otherPlayerPathPlanOffset.rend(); it++)
-				otherClusterNodePathPlan.second.insert(otherClusterNodePathPlan.second.begin(), *it);
-
-	Concurrency::concurrent_unordered_map<unsigned long long, 
-		Concurrency::concurrent_unordered_map<unsigned long long, float>> playerGuessings;
-	Concurrency::concurrent_unordered_map<unsigned long long,
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short>> playerWeaponGuessings;
-	Concurrency::parallel_for(size_t(0), clusterPathings.size(), [&](size_t clusterIdx)
-	{
-		auto itCluster = clusterPathings.begin();
-		std::advance(itCluster, clusterIdx);
-
-		//cluster code
-		unsigned long long clusterCode = (*itCluster).first;
-		Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-		itClusterNodePathPlan = actorPathPlanClusters.find(clusterCode);
-		if (itClusterNodePathPlan == actorPathPlanClusters.end())
-			itClusterNodePathPlan = clusterNodePathPlans.find(clusterCode);
-
-		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
-		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
-		{
-			//we need to stop the simulation if an aware decision making has started
-			if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-				return;
-
-			auto itOtherCluster = otherClusterPathings.begin();
-			std::advance(itOtherCluster, otherClusterIdx);
-
-			//other cluster code
-			unsigned long long otherClusterCode = (*itOtherCluster).first;
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-			itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherClusterCode);
-			if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-				itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherClusterCode);
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
-				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-			player.plan.id = -1;
-			otherPlayer.plan.id = -1;
-			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
-		});
-		
-		if (otherPlayerDataIn.valid)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, 
-				player, itClusterNodePathPlan->second, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			player.plan.id = -1;
-			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
-		}
-
-		playerGuessings[clusterCode].insert(playerSimulations.begin(), playerSimulations.end());
-		playerWeaponGuessings[clusterCode].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
-	});
-
-	if (playerDataIn.valid)
-	{
-		Concurrency::concurrent_unordered_map<unsigned long long, float> playerSimulations;
-		Concurrency::concurrent_unordered_map<unsigned long long, unsigned short> playerWeaponSimulations;
-		Concurrency::parallel_for(size_t(0), otherClusterPathings.size(), [&](size_t otherClusterIdx)
-		{
-			//we need to stop the simulation if an aware decision making has started
-			if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-				return;
-
-			auto itOtherCluster = otherClusterPathings.begin();
-			std::advance(itOtherCluster, otherClusterIdx);
-
-			//other cluster code
-			unsigned long long otherClusterCode = (*itOtherCluster).first;
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-			itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherClusterCode);
-			if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-				itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherClusterCode);
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, 
-				player, playerPathPlan, playerPathOffset,
-				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-			otherPlayer.plan.id = -1;
-			playerSimulations[otherClusterCode] = player.heuristic;
-			playerWeaponSimulations[otherClusterCode] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
-		});
-
-		if (otherPlayerDataIn.valid)
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, 
-				player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			playerSimulations[ULLONG_MAX] = player.heuristic;
-			playerWeaponSimulations[ULLONG_MAX] = (unsigned short)player.weapon << 8 | (unsigned short)otherPlayer.weapon;
-		}
-		playerGuessings[ULLONG_MAX].insert(playerSimulations.begin(), playerSimulations.end());
-		playerWeaponGuessings[ULLONG_MAX].insert(playerWeaponSimulations.begin(), playerWeaponSimulations.end());
-	}
-
-	//we need to stop the simulation if an aware decision making has started
-	if (evaluation != ET_AWARENESS && mPlayerEvaluations.at(playerEvaluation) == ET_AWARENESS)
-		return false;
-
-	//printf("\n player guessing simulations end");
-	//printf("\n player guessing decisions start");
-
-	//player guessing output
-	WeaponType playerWeapon = WP_NONE;
-	WeaponType otherPlayerWeapon = WP_NONE;
-	unsigned long long playerClusterCode = 0;
-	unsigned long long otherPlayerClusterCode = 0;
-	PerformGuessingMaking(playerDataIn, otherPlayerDataIn, clusterPathings, otherClusterPathings, 
-		playerGuessings, playerWeaponGuessings, playerWeapon, otherPlayerWeapon, playerClusterCode, otherPlayerClusterCode);
-	
-	//Simulate best outcome for each player
-	{
-		//cluster code
-		if (playerClusterCode != ULLONG_MAX)
-		{
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itClusterNodePathPlan;
-			itClusterNodePathPlan = actorPathPlanClusters.find(playerClusterCode);
-			if (itClusterNodePathPlan == actorPathPlanClusters.end())
-				itClusterNodePathPlan = clusterNodePathPlans.find(playerClusterCode);
-
-			//other cluster code
-			if (otherPlayerClusterCode != ULLONG_MAX)
-			{
-				Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-				itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherPlayerClusterCode);
-				if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-					itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherPlayerClusterCode);
-
-				PlayerData player(playerDataIn);
-				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems, threatLevel, 
-					player, itClusterNodePathPlan->second, playerPathOffset,
-					otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.plan.id = -1;
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-			else
-			{
-				PlayerData player(playerDataIn);
-				PlayerData otherPlayer(otherPlayerDataIn);
-				Simulation(evaluation, gameItems, threatLevel, 
-					player, itClusterNodePathPlan->second, playerPathOffset,
-					otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-				player.plan.id = -1;
-				player.weaponTime = 0.f;
-				player.weapon = playerWeapon;
-				player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-				playerDataOut = std::move(player);
-
-				otherPlayer.weaponTime = 0.f;
-				otherPlayer.weapon = otherPlayerWeapon;
-				otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-				otherPlayerDataOut = std::move(otherPlayer);
-			}
-		}
-		else if (otherPlayerClusterCode != ULLONG_MAX)
-		{
-			Concurrency::concurrent_unordered_map<unsigned long long, PathingArcVec>::iterator itOtherClusterNodePathPlan;
-			itOtherClusterNodePathPlan = otherActorPathPlanClusters.find(otherPlayerClusterCode);
-			if (itOtherClusterNodePathPlan == otherActorPathPlanClusters.end())
-				itOtherClusterNodePathPlan = otherClusterNodePathPlans.find(otherPlayerClusterCode);
-
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, 
-				player, playerPathPlan, playerPathOffset,
-				otherPlayer, itOtherClusterNodePathPlan->second, otherPlayerPathOffset);
-
-			otherPlayer.plan.id = -1;
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-		}
-		else
-		{
-			PlayerData player(playerDataIn);
-			PlayerData otherPlayer(otherPlayerDataIn);
-			Simulation(evaluation, gameItems, threatLevel, 
-				player, playerPathPlan, playerPathOffset,
-				otherPlayer, otherPlayerPathPlan, otherPlayerPathOffset);
-
-			player.weaponTime = 0.f;
-			player.weapon = playerWeapon;
-			player.target = player.weapon != WP_NONE ? otherPlayer.player : INVALID_ACTOR_ID;
-			playerDataOut = std::move(player);
-
-			otherPlayer.weaponTime = 0.f;
-			otherPlayer.weapon = otherPlayerWeapon;
-			otherPlayer.target = otherPlayer.weapon != WP_NONE ? player.player : INVALID_ACTOR_ID;
-			otherPlayerDataOut = std::move(otherPlayer);
-		}
-	}
-
-	unsigned int diffTime = Timer::GetRealTime() - time;
-	diffTime += 100; //lets add estimation of guessing decision simulation
-
-	playerDataOut.valid = true;
-	if (playerDataOut.plan.id == -1)
-		playerDataOut.plan.id = GetNewPlanID();
-
-	playerDataOut.planWeight = playerPathOffset;
-	playerDataOut.planWeight += diffTime / 1000.f;
-
-	otherPlayerDataOut.valid = true;
-	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
-	if (otherPlayerDataOut.plan.id == -1)
-		otherPlayerDataOut.plan.id = GetNewPlanID();
-
-	otherPlayerDataOut.planWeight = otherPlayerPathOffset;
-	otherPlayerDataOut.planWeight += diffTime / 1000.f;
-
-	//printf("\n player guessing decisions end");
-	return true;
-}
 
 bool QuakeAIManager::SimulatePlayerGuessing(const PlayerData& playerDataIn, PlayerData& playerDataOut,
 	const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
@@ -6523,7 +4858,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	return false;
 }
 
-bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
+bool QuakeAIManager::MakeAIDecision(PlayerView& aiView)
 {
 	mMutex.lock();
 
@@ -6558,7 +4893,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (max 0.1 seg)
 	PlayerView aiSimulation = aiView;
-	aiSimulation.data.planWeight = 0.1f;
+	aiSimulation.data.planWeight = 0.24f;
 	aiSimulation.data.planWeight += aiPathWeightOffset;
 	aiSimulation.data.plan.weight = aiPathWeightOffset;
 	UpdatePlayerState(aiSimulation);
@@ -6587,7 +4922,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	mMutex.unlock();
 
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
-	gameDecision.evaluation.type = ET_RESPONSIVE;
+	gameDecision.evaluation.type = ET_CLOSEGUESSING;
 	gameDecision.evaluation.target = GV_AI;
 	SetPlayerInput(gameDecision.evaluation.playerInput, aiView.data, aiSimulation.data);
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessSimulation.data);
@@ -6628,7 +4963,7 @@ bool QuakeAIManager::MakeAIFastDecision(PlayerView& aiView)
 	aiView.data.valid = aiSimulation.data.plan.path.empty() ? false : true;
 
 	//simulation
-	bool success = SimulatePlayerDecision(
+	bool success = SimulatePlayerGuessing(
 		aiView.data, aiSimulation.data, playerGuessView.data, playerGuessSimulation.data, gameDecision.evaluation.threat,
 		gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
@@ -6681,79 +5016,64 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		return false;
 	}
 
-	PrintInfo("\nAI Guessing Human player guess input before: ");
+	PrintInfo("\nAI Guessing Decision Human player guess input before: ");
 	PrintPlayerData(playerGuessView.data);
 
-	PrintInfo("\nAI Guessing AI player guess input before: ");
+	PrintInfo("\nAI Guessing Decision AI player guess input before: ");
 	PrintPlayerData(playerGuessView.guessPlayers[mPlayers[GV_AI]]);
 
-	PrintInfo("\nAI Decision AI player input before: ");
-	PrintPlayerData(aiView.data);
-
-	float aiPathWeightOffset = CalculatePathingWeight(aiView.data);
 	float playerGuessPathWeightOffset = playerGuessView.data.planWeight > 0.f ? playerGuessView.data.planWeight : 0.f;
 	float aiGuessPathWeightOffset = 
 		playerGuessView.guessPlayers[mPlayers[GV_AI]].planWeight > 0.f ? playerGuessView.guessPlayers[mPlayers[GV_AI]].planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
-	PlayerView aiDecisionSimulation = aiView;
-	aiDecisionSimulation.data.planWeight = 0.3f;
-	aiDecisionSimulation.data.planWeight += aiPathWeightOffset;
-	aiDecisionSimulation.data.plan.weight = aiPathWeightOffset;
-	UpdatePlayerState(aiDecisionSimulation);
-	aiDecisionSimulation.data.planWeight = 0.f;
-	for (PathingArc* aiSimulationArc : aiDecisionSimulation.data.plan.path)
-		aiDecisionSimulation.data.planWeight += aiSimulationArc->GetWeight();
-	aiDecisionSimulation.data.planWeight -= aiPathWeightOffset;
-
-	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView playerGuessSimulation = playerGuessView;
-	playerGuessSimulation.data.planWeight = 0.f;
+	playerGuessSimulation.data.planWeight = 0.24f;
 	playerGuessSimulation.data.planWeight += playerGuessPathWeightOffset;
 	playerGuessSimulation.data.plan.weight = playerGuessPathWeightOffset;
-	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight = 0.f;
-	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight += aiGuessPathWeightOffset;
-	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].plan.weight = aiGuessPathWeightOffset;
 	UpdatePlayerGuessState(playerGuessSimulation);
-	UpdatePlayerGuessState(playerGuessSimulation, mPlayers[GV_AI]);
 	playerGuessSimulation.data.planWeight = 0.f;
 	for (PathingArc* playerGuessSimulationArc : playerGuessSimulation.data.plan.path)
 		playerGuessSimulation.data.planWeight += playerGuessSimulationArc->GetWeight();
 	playerGuessSimulation.data.planWeight -= playerGuessPathWeightOffset;
+
+	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
+	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight = 0.f;
+	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight += aiGuessPathWeightOffset;
+	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].plan.weight = aiGuessPathWeightOffset;
+	UpdatePlayerGuessState(playerGuessSimulation, mPlayers[GV_AI]);
 	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight = 0.f;
 	for (PathingArc* aiGuessSimulationArc : playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].plan.path)
 		playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight += aiGuessSimulationArc->GetWeight();
 	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight -= aiGuessPathWeightOffset;
 
-	PlayerGuessView playerGuessDecisionSimulation = playerGuessSimulation;
+	playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight = 0.f;
 
-	PrintInfo("\nAI Guessing Human player guess input after: ");
+	PrintInfo("\nAI Guessing Decision Human player guess input after: ");
 	PrintPlayerData(playerGuessSimulation.data);
 
-	PrintInfo("\nAI Guessing AI player guess input after: ");
+	PrintInfo("\nAI Guessing Decision AI player guess input after: ");
 	PrintPlayerData(playerGuessSimulation.guessPlayers[mPlayers[GV_AI]]);
-
-	PrintInfo("\nAI Decision AI player input after: ");
-	PrintPlayerData(aiDecisionSimulation.data);
 
 	mMutex.unlock();
 
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
-	gameDecision.evaluation.type = ET_GUESSING;
-	gameDecision.evaluation.target = GV_AI;
+	gameDecision.evaluation.type = ET_CLOSEGUESSING;
+	gameDecision.evaluation.target = GV_HUMAN;
 	SetPlayerInput(gameDecision.evaluation.playerGuessInput, playerGuessView.data, playerGuessSimulation.data);
 	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput,
 		playerGuessView.guessPlayers[mPlayers[GV_AI]], playerGuessSimulation.guessPlayers[mPlayers[GV_AI]]);
 
-	SetPlayerInput(gameDecision.evaluation.playerInput, aiView.data, aiDecisionSimulation.data);
-	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessDecisionSimulation.data);
+	SetPlayerInput(gameDecision.evaluation.playerInput, 
+		playerGuessView.guessPlayers[mPlayers[GV_AI]], playerGuessSimulation.guessPlayers[mPlayers[GV_AI]]);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessSimulation.data);
 
 	// update the guess items from the world
 	std::map<ActorId, float> gameItems = playerGuessView.items;
 
 	if (playerGuessSimulation.data.plan.node)
 	{
-		// exclude items which are guessed to be taken
+		// exclude items which are guessed to be take by the human player
 		for (auto const& guessItem : playerGuessView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
@@ -6762,14 +5082,7 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 					gameItems[guessItem.first] = guessItem.second;
 		}
 
-		// update the items which are guessed to be taken
-		for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
-		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
-			if (itemPickup)
-				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
-					gameItems[humanGuessItem.first] = humanGuessItem.second;
-		}
+		// update the items which are guessed to be taken by the ai player
 		for (auto const& aiGuessItem : playerGuessView.guessItems[mPlayers[GV_AI]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
@@ -6780,49 +5093,32 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
-
-	// update the guess items from the world
-	gameItems = aiView.gameItems;
-
-	if (aiDecisionSimulation.data.plan.node)
-	{
-		// exclude items which are guessed to be taken by the ai player
-		for (auto const& aiGuessItem : aiView.data.items)
-		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
-			if (itemPickup)
-				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
-					gameItems[aiGuessItem.first] = aiGuessItem.second;
-		}
-
-		// update the items which are guessed to be taken by the human player
-		for (auto const& humanGuessItem : playerGuessView.items)
-		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
-			if (itemPickup)
-				if (!aiDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
-					gameItems[humanGuessItem.first] = humanGuessItem.second;
-		}
-	}
-
 	gameDecision.evaluation.playerDecisionItems = gameItems;
 
 	playerGuessView.data.ResetItems();
-	playerGuessView.guessPlayers[mPlayers[GV_AI]].ResetItems();
 	playerGuessView.data.planWeight = playerGuessSimulation.data.planWeight;
 	playerGuessView.data.valid = playerGuessSimulation.data.plan.path.empty() ? false : true;
 
+	playerGuessView.guessPlayers[mPlayers[GV_AI]].ResetItems();
 	playerGuessView.guessPlayers[mPlayers[GV_AI]].planWeight = 
 		playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].planWeight;
 	playerGuessView.guessPlayers[mPlayers[GV_AI]].valid = 
 		playerGuessSimulation.guessPlayers[mPlayers[GV_AI]].plan.path.empty() ? false : true;
 
 	//simulation
-	bool success = SimulatePlayerGuessings(playerGuessView.data, playerGuessSimulation.data, 
+	bool success = SimulatePlayerDecision(playerGuessView.data, playerGuessSimulation.data, 
 		playerGuessView.guessPlayers[mPlayers[GV_AI]], playerGuessSimulation.guessPlayers[mPlayers[GV_AI]], 
 		gameDecision.evaluation.threat, gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		mMutex.lock();
+
+		PrintInfo("\nAI Guessing Decision human player guess output: ");
+		PrintPlayerData(playerGuessSimulation.data);
+
+		PrintInfo("\nAI Guessing Decision AI player guess output: ");
+		PrintPlayerData(playerGuessSimulation.guessPlayers[mPlayers[GV_AI]]);
+
 		playerGuessView.isUpdated = true;
 		playerGuessView.simulation = playerGuessSimulation.data;
 		playerGuessView.guessSimulations[mPlayers[GV_AI]] = playerGuessSimulation.guessPlayers[mPlayers[GV_AI]];
@@ -6831,47 +5127,15 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerGuessView.simulation);
 		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, playerGuessView.guessSimulations[mPlayers[GV_AI]]);
 
-		playerGuessView.data.ResetItems();
-		playerGuessView.guessPlayers[mPlayers[GV_AI]].ResetItems();
-		playerGuessView.data.planWeight = playerGuessDecisionSimulation.data.planWeight;
-		playerGuessView.data.valid = playerGuessDecisionSimulation.data.plan.path.empty() ? false : true;
+		Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
+		gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
+		gameDecision.time =
+			std::to_string(realTime.Hour) + ":" + std::to_string(realTime.Minute) + ":" + std::to_string(realTime.Second);
+		mGameDecisions.push_back(std::move(gameDecision));
 
-		aiView.data.ResetItems();
-		aiView.data.planWeight = aiDecisionSimulation.data.planWeight;
-		aiView.data.valid = aiDecisionSimulation.data.plan.path.empty() ? false : true;
+		mMutex.unlock();
 
-		//simulation
-		success = SimulatePlayerGuessingDecision(aiView.data, aiDecisionSimulation.data, playerGuessView.data, playerGuessDecisionSimulation.data, 
-			gameDecision.evaluation.threat, gameDecision.evaluation.playerDecisionItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
-		if (success)
-		{
-			mMutex.lock();
-
-			PrintInfo("\nAI Guessing human player guess output: ");
-			PrintPlayerData(playerGuessDecisionSimulation.data);
-
-			PrintInfo("\nAI Guessing AI player guess output: ");
-			PrintPlayerData(playerGuessDecisionSimulation.guessPlayers[mPlayers[GV_AI]]);
-
-			PrintInfo("\nAI Decision AI player output: ");
-			PrintPlayerData(aiDecisionSimulation.data);
-
-			aiView.isUpdated = true;
-			aiView.simulation = aiDecisionSimulation.data;
-			aiView.threat = gameDecision.evaluation.threat;
-
-			SetPlayerOutput(gameDecision.evaluation.playerOutput, aiView.simulation);
-
-			Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
-			gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
-			gameDecision.time =
-				std::to_string(realTime.Hour) + ":" + std::to_string(realTime.Minute) + ":" + std::to_string(realTime.Second);
-			mGameDecisions.push_back(std::move(gameDecision));
-
-			mMutex.unlock();
-
-			return true;
-		}
+		return true;
 	}
 
 	return false;
@@ -7184,7 +5448,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	return false;
 }
 
-bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
+bool QuakeAIManager::MakeHumanDecision(PlayerView& playerView)
 {
 	mMutex.lock();
 
@@ -7217,9 +5481,9 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	float playerPathWeightOffset = CalculatePathingWeight(playerView.data);
 	float aiGuessPathWeightOffset = aiGuessView.data.planWeight > 0.f ? aiGuessView.data.planWeight : 0.f;
 
-	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (max 0.1 seg)
+	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed
 	PlayerView playerSimulation = playerView;
-	playerSimulation.data.planWeight = 0.1f;
+	playerSimulation.data.planWeight = 0.24f;
 	playerSimulation.data.planWeight += playerPathWeightOffset;
 	playerSimulation.data.plan.weight = playerPathWeightOffset;
 	UpdatePlayerState(playerSimulation);
@@ -7248,7 +5512,7 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	mMutex.unlock();
 
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
-	gameDecision.evaluation.type = ET_RESPONSIVE;
+	gameDecision.evaluation.type = ET_CLOSEGUESSING;
 	gameDecision.evaluation.target = GV_HUMAN;
 	SetPlayerInput(gameDecision.evaluation.playerInput, playerView.data, playerSimulation.data);
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessSimulation.data);
@@ -7289,7 +5553,7 @@ bool QuakeAIManager::MakeHumanFastDecision(PlayerView& playerView)
 	aiGuessView.data.valid = aiGuessSimulation.data.plan.path.empty() ? false : true;
 
 	//simulation
-	bool success = SimulatePlayerDecision(playerView.data, playerSimulation.data, aiGuessView.data, aiGuessSimulation.data,
+	bool success = SimulatePlayerGuessing(playerView.data, playerSimulation.data, aiGuessView.data, aiGuessSimulation.data,
 		gameDecision.evaluation.threat, gameItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
@@ -7341,81 +5605,64 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		return false;
 	}
 
-	PrintInfo("\nHuman Guessing AI player guess input before: ");
+	PrintInfo("\nHuman Guessing Decision AI player guess input before: ");
 	PrintPlayerData(aiGuessView.data);
 
-	PrintInfo("\nHuman Guessing Human player guess input before: ");
+	PrintInfo("\nHuman Guessing Decision Human player guess input before: ");
 	PrintPlayerData(aiGuessView.guessPlayers[mPlayers[GV_HUMAN]]);
 
-	PrintInfo("\nHuman Decision Human player input before: ");
-	PrintPlayerData(playerView.data);
-
-	float playerPathWeightOffset = CalculatePathingWeight(playerView.data);
 	float aiGuessPathWeightOffset = aiGuessView.data.planWeight > 0.f ? aiGuessView.data.planWeight : 0.f;
 	float playerGuessPathWeightOffset = 
 		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].planWeight > 0.f ? aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].planWeight : 0.f;
 
 	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (in sec)
-	PlayerView playerDecisionSimulation = playerView;
-	playerDecisionSimulation.data.planWeight = 0.3f;
-	playerDecisionSimulation.data.planWeight += playerPathWeightOffset;
-	playerDecisionSimulation.data.plan.weight = playerPathWeightOffset;
-	UpdatePlayerState(playerDecisionSimulation);
-	playerDecisionSimulation.data.planWeight = 0.f;
-	for (PathingArc* playerSimulationArc : playerDecisionSimulation.data.plan.path)
-		playerDecisionSimulation.data.planWeight += playerSimulationArc->GetWeight();
-	playerDecisionSimulation.data.planWeight -= playerPathWeightOffset;
-
-	playerDecisionSimulation.data.planWeight = 0.3f;
-
-	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
 	PlayerGuessView aiGuessSimulation = aiGuessView;
-	aiGuessSimulation.data.planWeight = 0.f;
+	aiGuessSimulation.data.planWeight = 0.24f;
 	aiGuessSimulation.data.planWeight += aiGuessPathWeightOffset;
 	aiGuessSimulation.data.plan.weight = aiGuessPathWeightOffset;
-	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight = 0.f;
-	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight += playerGuessPathWeightOffset;
-	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].plan.weight = playerGuessPathWeightOffset;
 	UpdatePlayerGuessState(aiGuessSimulation);
-	UpdatePlayerGuessState(aiGuessSimulation, mPlayers[GV_HUMAN]);
 	aiGuessSimulation.data.planWeight = 0.f;
 	for (PathingArc* aiGuessSimulationArc : aiGuessSimulation.data.plan.path)
 		aiGuessSimulation.data.planWeight += aiGuessSimulationArc->GetWeight();
 	aiGuessSimulation.data.planWeight -= aiGuessPathWeightOffset;
+
+	//we need to advance the opponents path plan total time only to the otherplayer's arc target position
+	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight = 0.f;
+	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight += playerGuessPathWeightOffset;
+	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].plan.weight = playerGuessPathWeightOffset;
+	UpdatePlayerGuessState(aiGuessSimulation, mPlayers[GV_HUMAN]);
 	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight = 0.f;
 	for (PathingArc* playerGuessSimulationArc : aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].plan.path)
 		aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight += playerGuessSimulationArc->GetWeight();
 	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight -= playerGuessPathWeightOffset;
 
-	PlayerGuessView aiGuessDecisionSimulation = aiGuessSimulation;
+	aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight = 0.f;
 
-	PrintInfo("\nHuman Guessing AI player guess input after: ");
+	PrintInfo("\nHuman Guessing Decision AI player guess input after: ");
 	PrintPlayerData(aiGuessSimulation.data);
 
-	PrintInfo("\nHuman Guessing Human player guess input after: ");
+	PrintInfo("\nHuman Guessing Decision Human player guess input after: ");
 	PrintPlayerData(aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]]);
-
-	PrintInfo("\nHuman Decision Human player input after: ");
-	PrintPlayerData(playerDecisionSimulation.data);
 
 	mMutex.unlock();
 
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
-	gameDecision.evaluation.type = ET_GUESSING;
-	gameDecision.evaluation.target = GV_HUMAN;
+	gameDecision.evaluation.type = ET_CLOSEGUESSING;
+	gameDecision.evaluation.target = GV_AI;
 	SetPlayerInput(gameDecision.evaluation.playerGuessInput, aiGuessView.data, aiGuessSimulation.data);
 	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput,
 		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]], aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]]);
 
-	SetPlayerInput(gameDecision.evaluation.playerInput, playerView.data, playerDecisionSimulation.data);
-	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessDecisionSimulation.data);
+	SetPlayerInput(gameDecision.evaluation.playerInput, 
+		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]], aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]]);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessSimulation.data);
 
 	// update the guess items from the world
 	std::map<ActorId, float> gameItems = aiGuessView.items;
 
 	if (aiGuessSimulation.data.plan.node)
 	{
-		// exclude items which are guessed to be taken
+		// exclude items which are guessed to be taken by the ai player
 		for (auto const& guessItem : aiGuessView.data.items)
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
@@ -7424,14 +5671,7 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 					gameItems[guessItem.first] = guessItem.second;
 		}
 
-		// update the items which are guessed to be taken
-		for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
-		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
-			if (itemPickup)
-				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
-					gameItems[aiGuessItem.first] = aiGuessItem.second;
-		}
+		// update the items which are guessed to be taken by the human player
 		for (auto const& humanGuessItem : aiGuessView.guessItems[mPlayers[GV_HUMAN]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
@@ -7442,49 +5682,32 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	}
 
 	gameDecision.evaluation.playerGuessItems = gameItems;
-
-	// update the guess items from the world
-	gameItems = playerView.gameItems;
-
-	if (playerDecisionSimulation.data.plan.node)
-	{
-		// exclude items which are guessed to be taken by the human player
-		for (auto const& humanGuessItem : playerView.data.items)
-		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
-			if (itemPickup)
-				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
-					gameItems[humanGuessItem.first] = humanGuessItem.second;
-		}
-
-		// update the items which are guessed to be taken by the ai player
-		for (auto const& aiGuessItem : aiGuessView.items)
-		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
-			if (itemPickup)
-				if (!playerDecisionSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
-					gameItems[aiGuessItem.first] = aiGuessItem.second;
-		}
-	}
-
 	gameDecision.evaluation.playerDecisionItems = gameItems;
 
 	aiGuessView.data.ResetItems();
-	aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].ResetItems();
 	aiGuessView.data.planWeight = aiGuessSimulation.data.planWeight;
 	aiGuessView.data.valid = aiGuessSimulation.data.plan.path.empty() ? false : true;
 
+	aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].ResetItems();
 	aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].planWeight =
 		aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].planWeight;
 	aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].valid = 
 		aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]].plan.path.empty() ? false : true;
 
 	//simulation
-	bool success = SimulatePlayerGuessings(aiGuessView.data, aiGuessSimulation.data, 
+	bool success = SimulatePlayerDecision(aiGuessView.data, aiGuessSimulation.data, 
 		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]], aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]], 
 		gameDecision.evaluation.threat, gameDecision.evaluation.playerGuessItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		mMutex.lock();
+
+		PrintInfo("\nHuman Guessing Decision AI player guess output: ");
+		PrintPlayerData(aiGuessSimulation.data);
+
+		PrintInfo("\nHuman Guessing Decision Human player guess output: ");
+		PrintPlayerData(aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]]);
+
 		aiGuessView.isUpdated = true;
 		aiGuessView.simulation = aiGuessSimulation.data;
 		aiGuessView.guessSimulations[mPlayers[GV_HUMAN]] = aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]];
@@ -7493,47 +5716,15 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, aiGuessView.simulation);
 		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, aiGuessView.guessSimulations[mPlayers[GV_HUMAN]]);
 
-		aiGuessView.data.ResetItems();
-		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]].ResetItems();
-		aiGuessView.data.planWeight = aiGuessDecisionSimulation.data.planWeight;
-		aiGuessView.data.valid = aiGuessDecisionSimulation.data.plan.path.empty() ? false : true;
+		Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
+		gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
+		gameDecision.time =
+			std::to_string(realTime.Hour) + ":" + std::to_string(realTime.Minute) + ":" + std::to_string(realTime.Second);
+		mGameDecisions.push_back(std::move(gameDecision));
 
-		playerView.data.ResetItems();
-		playerView.data.planWeight = playerDecisionSimulation.data.planWeight;
-		playerView.data.valid = playerDecisionSimulation.data.plan.path.empty() ? false : true;
+		mMutex.unlock();
 
-		//simulation
-		success = SimulatePlayerGuessingDecision(playerView.data, playerDecisionSimulation.data, aiGuessView.data, aiGuessDecisionSimulation.data,
-			gameDecision.evaluation.threat, gameDecision.evaluation.playerDecisionItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
-		if (success)
-		{
-			mMutex.lock();
-
-			PrintInfo("\nHuman Guessing AI player guess output: ");
-			PrintPlayerData(aiGuessDecisionSimulation.data);
-
-			PrintInfo("\nHuman Guessing Human player guess output: ");
-			PrintPlayerData(aiGuessDecisionSimulation.guessPlayers[mPlayers[GV_HUMAN]]);
-
-			PrintInfo("\nHuman Decision Human player output: ");
-			PrintPlayerData(playerDecisionSimulation.data);
-
-			playerView.isUpdated = true;
-			playerView.simulation = playerDecisionSimulation.data;
-			playerView.threat = gameDecision.evaluation.threat;
-
-			SetPlayerOutput(gameDecision.evaluation.playerOutput, playerView.simulation);
-
-			Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
-			gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
-			gameDecision.time =
-				std::to_string(realTime.Hour) + ":" + std::to_string(realTime.Minute) + ":" + std::to_string(realTime.Second);
-			mGameDecisions.push_back(std::move(gameDecision));
-
-			mMutex.unlock();
-
-			return true;
-		}
+		return true;
 	}
 
 	return false;
@@ -7704,7 +5895,7 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	return false;
 }
 
-void QuakeAIManager::RunAIFastDecision()
+void QuakeAIManager::RunAIDecision()
 {
 	unsigned int iteration = 0;
 
@@ -7718,7 +5909,7 @@ void QuakeAIManager::RunAIFastDecision()
 				continue;
 			}
 
-			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_RESPONSIVE)
+			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_GUESSING)
 			{
 				std::this_thread::yield();
 				continue;
@@ -7727,7 +5918,7 @@ void QuakeAIManager::RunAIFastDecision()
 			unsigned int time = Timer::GetRealTime();
 
 			PlayerView aiView;
-			if (MakeAIFastDecision(aiView))
+			if (MakeAIDecision(aiView))
 			{
 				//we enable ai view only if got a plan
 				GameApplication* gameApp = (GameApplication*)Application::App;
@@ -7741,7 +5932,7 @@ void QuakeAIManager::RunAIFastDecision()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n ai fast decision total elapsed time " << diffTime;// << " threat level " << aiView.threat;
+				ss << "\n ai decision total elapsed time " << diffTime;// << " threat level " << aiView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -7749,7 +5940,7 @@ void QuakeAIManager::RunAIFastDecision()
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
 				Timer::Sleep(30);
-				//printf("\n Iteration AI Fast Decision %u", iteration);
+				//printf("\n Iteration AI Decision %u", iteration);
 				//iteration++;
 			}
 
@@ -7804,6 +5995,64 @@ void QuakeAIManager::RunAIGuessing()
 				PlayerGuessView& playerGuessView = aiView.guessViews[mPlayers[GV_HUMAN]];
 
 				UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);  //update playerView
+				UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
+
+				//lets wait to give some time for the AI Manager and AI Views update its status
+				Timer::Sleep(30);
+				//printf("\n Iteration AI Guessing %u", iteration);
+				//iteration++;
+			}
+
+			SetEnable(true);
+		}
+	}
+}
+
+void QuakeAIManager::RunAIGuessingDecision()
+{
+	unsigned int iteration = 0;
+
+	while (true)
+	{
+		if (GameLogic::Get()->GetState() == BGS_RUNNING)
+		{
+			if (mPlayers.find(GV_AI) == mPlayers.end())
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_GUESSING)
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			unsigned int time = Timer::GetRealTime();
+
+
+			PlayerView aiView;
+			bool isAIGuessing = MakeAIGuessingDecision(aiView);
+			if (isAIGuessing)
+			{
+				//we enable ai view only if got a plan
+				GameApplication* gameApp = (GameApplication*)Application::App;
+				const GameViewList& gameViews = gameApp->GetGameViews();
+				for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+				{
+					std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+					if (pAiView)
+						pAiView->SetEnabled(true);
+				}
+
+				unsigned int diffTime = Timer::GetRealTime() - time;
+				std::stringstream ss;
+				ss << "\n ai guessing decision total elapsed time " << diffTime;// << " threat level " << aiView.threat;
+				PrintInfo(ss.str());
+				printf(ss.str().c_str());
+
+				PlayerGuessView& playerGuessView = aiView.guessViews[mPlayers[GV_HUMAN]];
+
 				UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
@@ -7879,7 +6128,7 @@ void QuakeAIManager::RunAIAwareDecision()
 	}
 }
 
-void QuakeAIManager::RunHumanFastDecision()
+void QuakeAIManager::RunHumanDecision()
 {
 	unsigned int iteration = 0;
 
@@ -7893,7 +6142,7 @@ void QuakeAIManager::RunHumanFastDecision()
 				continue;
 			}
 
-			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_RESPONSIVE)
+			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_GUESSING)
 			{
 				std::this_thread::yield();
 				continue;
@@ -7902,7 +6151,7 @@ void QuakeAIManager::RunHumanFastDecision()
 			unsigned int time = Timer::GetRealTime();
 
 			PlayerView playerView;
-			if (MakeHumanFastDecision(playerView))
+			if (MakeHumanDecision(playerView))
 			{
 				//we enable ai view only if got a plan
 				GameApplication* gameApp = (GameApplication*)Application::App;
@@ -7916,7 +6165,7 @@ void QuakeAIManager::RunHumanFastDecision()
 
 				unsigned int diffTime = Timer::GetRealTime() - time;
 				std::stringstream ss;
-				ss << "\n human fast decision total elapsed time " << diffTime;// << " threat level " << playerView.threat;
+				ss << "\n human decision total elapsed time " << diffTime;// << " threat level " << playerView.threat;
 				PrintInfo(ss.str());
 				printf(ss.str().c_str());
 
@@ -7988,6 +6237,64 @@ void QuakeAIManager::RunHumanGuessing()
 				//iteration++;
 			}
 			
+			SetEnable(true);
+		}
+	}
+}
+
+
+void QuakeAIManager::RunHumanGuessingDecision()
+{
+	unsigned int iteration = 0;
+
+	while (true)
+	{
+		if (GameLogic::Get()->GetState() == BGS_RUNNING)
+		{
+			if (mPlayers.find(GV_HUMAN) == mPlayers.end())
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_GUESSING)
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			unsigned int time = Timer::GetRealTime();
+
+			PlayerView playerView;
+			bool isHumanDecision = MakeHumanGuessingDecision(playerView);
+			if (isHumanDecision)
+			{
+				//we enable ai view only if got a plan
+				GameApplication* gameApp = (GameApplication*)Application::App;
+				const GameViewList& gameViews = gameApp->GetGameViews();
+				for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+				{
+					std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+					if (pAiView)
+						pAiView->SetEnabled(true);
+				}
+
+				unsigned int diffTime = Timer::GetRealTime() - time;
+				std::stringstream ss;
+				ss << "\n human guessing decision total elapsed time " << diffTime;// << " threat level " << playerView.threat;
+				PrintInfo(ss.str());
+				printf(ss.str().c_str());
+
+				PlayerGuessView& aiGuessView = playerView.guessViews[mPlayers[GV_AI]];
+
+				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], aiGuessView); //update guessView
+
+				//lets wait to give some time for the AI Manager and AI Views update its status
+				Timer::Sleep(30);
+				//printf("\n Iteration Human Guessing %u", iteration);
+				//iteration++;
+			}
+
 			SetEnable(true);
 		}
 	}

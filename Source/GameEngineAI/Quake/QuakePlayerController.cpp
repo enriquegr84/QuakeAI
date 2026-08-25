@@ -38,6 +38,7 @@
 #include "QuakeStd.h"
 
 #include "QuakePlayerController.h"
+#include "QuakeAIManager.h"
 #include "QuakeEvents.h"
 #include "QuakeApp.h"
 
@@ -425,6 +426,22 @@ void QuakePlayerController::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 					fall = HProject(direction);
 
 					pPlayerActor->GetAction().actionType |= ACTION_FALL;
+				}
+
+				QuakeAIManager* aiManager =
+					dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+				if (aiManager && aiManager->GetPathingGraph())
+				{
+					PlayerView currentPlayer;
+					aiManager->GetPlayerView(actorId, currentPlayer);
+					currentPlayer.data.Update(pPlayerActor);
+
+					currentPlayer.data.plan.id = -1;
+					currentPlayer.data.plan.path.clear();
+					currentPlayer.data.plan.node =
+						aiManager->GetPathingGraph()->FindClosestNode(pPhysicComponent->GetPosition(), true);
+
+					aiManager->UpdatePlayerView(actorId, currentPlayer.data);
 				}
 
 				EventManager::Get()->TriggerEvent(

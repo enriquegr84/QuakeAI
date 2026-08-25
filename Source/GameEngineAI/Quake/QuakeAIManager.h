@@ -955,7 +955,7 @@ enum EvaluationType
 	ET_CLOSEGUESSING,
 	ET_GUESSING,
 	ET_AWARENESS,
-	ET_RESPONSIVE
+	ET_DECISION
 };
 
 //--------------------------------------------------------------------------------------------------------
@@ -1218,14 +1218,6 @@ protected:
 		WeaponType& playerWeapon, WeaponType& otherPlayerWeapon, unsigned long long& playerClusterCode, unsigned long long& otherPlayerClusterCode);
 
 	// Analysis simulation
-	bool SimulatePlayerGuessingDecision(
-		const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
-		const std::map<ActorId, float>& gameItems, AIAnalysis::GameEvaluation& gameEvaluation);
-	bool SimulatePlayerGuessings(
-		const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
-		const std::map<ActorId, float>& gameItems, AIAnalysis::GameEvaluation& gameEvaluation);
 	bool SimulatePlayerGuessing(
 		const PlayerData& playerDataIn, PlayerData& playerDataOut,
 		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut,
@@ -1236,12 +1228,6 @@ protected:
 		const std::map<ActorId, float>& gameItems, AIAnalysis::GameEvaluation& gameEvaluation);
 
 	// Runtime simulation
-	bool SimulatePlayerGuessingDecision(const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
-		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
-	bool SimulatePlayerGuessings(const PlayerData& playerDataIn, PlayerData& playerDataOut,
-		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
-		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
 	bool SimulatePlayerGuessing(const PlayerData& playerDataIn, PlayerData& playerDataOut,
 		const PlayerData& otherPlayerDataIn, PlayerData& otherPlayerDataOut, unsigned short& threatLevel,
 		const std::map<ActorId, float>& gameItems, ActorId playerEvaluation, EvaluationType evaluation);
@@ -1266,20 +1252,22 @@ protected:
 	}
 
 	bool MakeAIGuessing(PlayerView& aiView);
-	bool MakeAIFastDecision(PlayerView& aiView);
+	bool MakeAIDecision(PlayerView& aiView);
 	bool MakeAIGuessingDecision(PlayerView& aiView);
 	bool MakeAIAwareDecision(PlayerView& aiView);
 	bool MakeHumanGuessing(PlayerView& playerView);
-	bool MakeHumanFastDecision(PlayerView& playerView);
+	bool MakeHumanDecision(PlayerView& playerView);
 	bool MakeHumanGuessingDecision(PlayerView& playerView);
 	bool MakeHumanAwareDecision(PlayerView& playerView);
 
 	void RunAIGuessing();
-	void RunAIFastDecision();
+	void RunAIDecision();
+	void RunAIGuessingDecision();
 	void RunAIAwareDecision();
 
 	void RunHumanGuessing();
-	void RunHumanFastDecision();
+	void RunHumanDecision();
+	void RunHumanGuessingDecision();
 	void RunHumanAwareDecision();
 
 	unsigned int GetFrame() { return mUpdateCounter; }

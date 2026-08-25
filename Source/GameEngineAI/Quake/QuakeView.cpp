@@ -2796,9 +2796,18 @@ void QuakeHumanView::PlayDuelCombatDelegate(BaseEventDataPtr pEventData)
 	std::shared_ptr<EventDataPlayDuelCombat> pCastEventData =
 		std::static_pointer_cast<EventDataPlayDuelCombat>(pEventData);
 
-	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
-	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
-	aiView->SetBehavior(BT_PATROL);
+	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
+	const GameViewList& gameViews = GameApplication::Get()->GetGameViews();
+	for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+	{
+		std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+		if (pAiView)
+		{
+			//pAiView->SetBehavior(BT_PATROL);
+			pAiView->SetPathingGraph(aiManager->GetPathingGraph());
+			pAiView->SetEnabled(false);
+		}
+	}
 }
 
 void QuakeHumanView::RegisterAllDelegates(void)

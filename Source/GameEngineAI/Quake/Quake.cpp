@@ -1925,6 +1925,104 @@ void QuakeLogic::ChangeWeaponDelegate(BaseEventDataPtr pEventData)
 	mStatBars->EventHandler(pPlayerActor, "ammo_changed");
 }
 
+void QuakeLogic::PlayDuelCombatDelegate(BaseEventDataPtr pEventData)
+{
+	std::shared_ptr<EventDataPlayDuelCombat> pCastEventData =
+		std::static_pointer_cast<EventDataPlayDuelCombat>(pEventData);
+
+	if (!mGameAICombat)
+	{
+		float physicsSimulation = 60.f;
+#if defined(PHYSX) && defined(_WIN64)
+		//ai physics simulated at 60fps, but the game simulates character at 35fps, so we need to adjust the weights
+		physicsSimulation = Settings::Get()->GetFloat("fps_simulation");
+#endif
+
+		std::string levelPath = "ai/quake/" +
+			Settings::Get()->Get("selected_world") + "/map.bin";
+		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+		aiManager->LoadGraph(ToWideString(FileSystem::Get()->GetPath(levelPath.c_str()).c_str()), 60.f / physicsSimulation);
+
+		std::map<ActorId, const AIAnalysis::ActorPickup*>& gameActorPickups = aiManager->GetGameActorPickups();
+		for (auto const& actor : mActors)
+		{
+			std::shared_ptr<Actor> pActor = actor.second;
+			if (pActor->GetType() == "Ammo")
+			{
+				std::shared_ptr<AmmoPickup> pAmmoPickup = pActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
+
+				AIAnalysis::ActorPickup* ammoPickup = new AIAnalysis::ActorPickup(pAmmoPickup->GetCode(), pActor->GetType(), 
+					itemNode, pAmmoPickup->GetWait(), pAmmoPickup->GetAmount(), pAmmoPickup->GetMaximum());
+				gameActorPickups[pActor->GetId()] = ammoPickup;
+			}
+			if (pActor->GetType() == "Armor")
+			{
+				std::shared_ptr<ArmorPickup> pArmorPickup = pActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
+
+				AIAnalysis::ActorPickup* armorPickup = new AIAnalysis::ActorPickup(pArmorPickup->GetCode(), pActor->GetType(), 
+					itemNode, pArmorPickup->GetWait(), pArmorPickup->GetAmount(), pArmorPickup->GetMaximum());
+				gameActorPickups[pActor->GetId()] = armorPickup;
+			}
+			if (pActor->GetType() == "Weapon")
+			{
+				std::shared_ptr<WeaponPickup> pWeaponPickup = pActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
+
+				AIAnalysis::WeaponActorPickup* weaponPickup = new AIAnalysis::WeaponActorPickup(pWeaponPickup->GetCode(), pActor->GetType(),
+					itemNode, pWeaponPickup->GetWait(), pWeaponPickup->GetAmount(), pWeaponPickup->GetMaximum(), pWeaponPickup->GetAmmo());
+				gameActorPickups[pActor->GetId()] = weaponPickup;
+			}
+			if (pActor->GetType() == "Health")
+			{
+				std::shared_ptr<HealthPickup> pHealthPickup = pActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
+				std::shared_ptr<TransformComponent> pTransformComponent(
+					pActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
+				PathingNode* itemNode = aiManager->GetPathingGraph()->FindClosestNode(pTransformComponent->GetPosition(), true);
+
+				AIAnalysis::ActorPickup* healthPickup = new AIAnalysis::ActorPickup(pHealthPickup->GetCode(), pActor->GetType(), 
+					itemNode, pHealthPickup->GetWait(), pHealthPickup->GetAmount(), pHealthPickup->GetMaximum());
+				gameActorPickups[pActor->GetId()] = healthPickup;
+			}
+		}
+
+		std::vector<std::shared_ptr<PlayerActor>> playerActors;
+		GetPlayerActors(playerActors);
+		for (std::shared_ptr<PlayerActor> playerActor : playerActors)
+			aiManager->SpawnActor(playerActor->GetId());
+
+		Concurrency::create_task([&]
+		{
+			//guessing decision making
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->RunAIGuessingDecision();
+		});
+		
+		Concurrency::create_task([&]
+		{
+			//decision making
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->RunAIDecision();
+		});
+
+		Concurrency::create_task([&]
+		{
+			//aware decision making
+			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
+			aiManager->RunAIAwareDecision();
+		});
+
+		mGameAICombat = true;
+	}
+}
+
 void QuakeLogic::SimulateAIGameDelegate(BaseEventDataPtr pEventData)
 {
 	std::shared_ptr<EventDataSimulateAIGame> pCastEventData =
@@ -2168,29 +2266,7 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 
 		unsigned int time = Timer::GetRealTime();
 
-		if (gameDecision.evaluation.type == ET_GUESSING)
-		{
-			// update guessing items
-			std::map<ActorId, float> gameItems = gameDecision.evaluation.playerGuessItems;
-
-			//simulation
-			bool success = aiManager->SimulatePlayerGuessings(playerGuessData, playerGuessSimulation,
-				otherPlayerGuessData, otherPlayerGuessSimulation, gameItems, gameDecision.evaluation);
-			if (success)
-			{
-				// update decision items
-				gameItems = gameDecision.evaluation.playerDecisionItems;
-
-				success = aiManager->SimulatePlayerGuessingDecision(playerData, playerSimulation,
-					otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
-				if (success)
-				{
-					unsigned int time2 = Timer::GetRealTime();
-					printf("\n guessing decision total elapsed time %u threat level %u", time2 - time, gameDecision.evaluation.threat);
-				}
-			}
-		}
-		else if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
+		if (gameDecision.evaluation.type == ET_CLOSEGUESSING)
 		{
 			// update guessing items
 			std::map<ActorId, float> gameItems = gameDecision.evaluation.playerGuessItems;
@@ -2202,6 +2278,20 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 			{
 				unsigned int time2 = Timer::GetRealTime();
 				printf("\n close guessing total elapsed time %u threat level %u", time2 - time, gameDecision.evaluation.threat);
+			}
+		}
+		else if (gameDecision.evaluation.type == ET_DECISION)
+		{
+			// update guessing items
+			std::map<ActorId, float> gameItems = gameDecision.evaluation.playerGuessItems;
+
+			//simulation
+			bool success = aiManager->SimulatePlayerGuessing(playerData, playerSimulation,
+				otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
+			if (success)
+			{
+				unsigned int time2 = Timer::GetRealTime();
+				printf("\n decision total elapsed time %u threat level %u", time2 - time, gameDecision.evaluation.threat);
 			}
 		}
 		else if (gameDecision.evaluation.type == ET_AWARENESS)
@@ -2999,6 +3089,9 @@ void QuakeLogic::RegisterAllDelegates(void)
 		EventDataRemoveSounds::skEventType);
 
 	pGlobalEventManager->AddListener(
+		MakeDelegate(this, &QuakeLogic::PlayDuelCombatDelegate),
+		EventDataPlayDuelCombat::skEventType);
+	pGlobalEventManager->AddListener(
 		MakeDelegate(this, &QuakeLogic::SimulateAIGameDelegate),
 		EventDataSimulateAIGame::skEventType);
 	pGlobalEventManager->AddListener(
@@ -3132,6 +3225,9 @@ void QuakeLogic::RemoveAllDelegates(void)
 		MakeDelegate(this, &QuakeLogic::HandleRemoveSoundDelegate),
 		EventDataRemoveSounds::skEventType);
 
+	pGlobalEventManager->RemoveListener(
+		MakeDelegate(this, &QuakeLogic::PlayDuelCombatDelegate),
+		EventDataPlayDuelCombat::skEventType);
 	pGlobalEventManager->RemoveListener(
 		MakeDelegate(this, &QuakeLogic::SimulateAIGameDelegate),
 		EventDataSimulateAIGame::skEventType);
