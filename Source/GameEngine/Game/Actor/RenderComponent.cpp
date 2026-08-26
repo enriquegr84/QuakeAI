@@ -167,6 +167,7 @@ std::shared_ptr<Node> MeshRenderComponent::CreateSceneNode(void)
 				std::shared_ptr<AnimateMeshMD3> meshMD3 = std::dynamic_pointer_cast<AnimateMeshMD3>(mesh);
 				if (meshMD3)
 				{
+					// attach the animated mesh to the parent mesh
 					std::shared_ptr<AnimateMeshMD3> animMeshMD3 =
 						std::dynamic_pointer_cast<AnimateMeshMD3>(extra->GetMesh());
 					if (!animMeshMD3->GetMD3Mesh()->GetParent())
@@ -202,25 +203,58 @@ std::shared_ptr<Node> MeshRenderComponent::CreateSceneNode(void)
 				else
 				{
 					mesh = std::shared_ptr<BaseMesh>(extra->GetMesh());
-				
-					if (mMaterialType == MaterialType::MT_TRANSPARENT)
+
+					std::shared_ptr<AnimateMeshMD3> animMeshMD3 = std::dynamic_pointer_cast<AnimateMeshMD3>(mesh);
+					if (animMeshMD3)
 					{
-						for (unsigned int i = 0; i < mesh->GetMeshBufferCount(); ++i)
+						std::vector<std::shared_ptr<MD3Mesh>> animMeshes;
+						animMeshMD3->GetMD3Mesh()->GetMeshes(animMeshes);
+
+						if (mMaterialType == MaterialType::MT_TRANSPARENT)
 						{
-							std::shared_ptr<Material> material = mesh->GetMeshBuffer(i)->GetMaterial();
-							material->mBlendTarget.enable = true;
-							material->mBlendTarget.srcColor = BlendState::BM_ONE;
-							material->mBlendTarget.dstColor = BlendState::BM_INV_SRC_COLOR;
-							material->mBlendTarget.srcAlpha = BlendState::BM_SRC_ALPHA;
-							material->mBlendTarget.dstAlpha = BlendState::BM_INV_SRC_ALPHA;
+							for (std::shared_ptr<MD3Mesh> animMesh : animMeshes)
+							{
+								for (unsigned int i = 0; i < animMesh->GetMeshBufferCount(); ++i)
+								{
+									std::shared_ptr<Material> material = animMesh->GetMeshBuffer(i)->GetMaterial();
+									material->mBlendTarget.enable = true;
+									material->mBlendTarget.srcColor = BlendState::BM_ONE;
+									material->mBlendTarget.dstColor = BlendState::BM_INV_SRC_COLOR;
+									material->mBlendTarget.srcAlpha = BlendState::BM_SRC_ALPHA;
+									material->mBlendTarget.dstAlpha = BlendState::BM_INV_SRC_ALPHA;
 
-							material->mDepthBuffer = true;
-							material->mDepthMask = DepthStencilState::MASK_ZERO;
+									material->mDepthBuffer = true;
+									material->mDepthMask = DepthStencilState::MASK_ZERO;
 
-							material->mFillMode = RasterizerState::FILL_SOLID;
-							material->mCullMode = RasterizerState::CULL_NONE;
+									material->mFillMode = RasterizerState::FILL_SOLID;
+									material->mCullMode = RasterizerState::CULL_NONE;
 
-							material->mType = (MaterialType)mMaterialType;
+									material->mType = (MaterialType)mMaterialType;
+								}
+							}
+						}
+					}
+					else
+					{
+						if (mMaterialType == MaterialType::MT_TRANSPARENT)
+						{
+							for (unsigned int i = 0; i < mesh->GetMeshBufferCount(); ++i)
+							{
+								std::shared_ptr<Material> material = mesh->GetMeshBuffer(i)->GetMaterial();
+								material->mBlendTarget.enable = true;
+								material->mBlendTarget.srcColor = BlendState::BM_ONE;
+								material->mBlendTarget.dstColor = BlendState::BM_INV_SRC_COLOR;
+								material->mBlendTarget.srcAlpha = BlendState::BM_SRC_ALPHA;
+								material->mBlendTarget.dstAlpha = BlendState::BM_INV_SRC_ALPHA;
+
+								material->mDepthBuffer = true;
+								material->mDepthMask = DepthStencilState::MASK_ZERO;
+
+								material->mFillMode = RasterizerState::FILL_SOLID;
+								material->mCullMode = RasterizerState::CULL_NONE;
+
+								material->mType = (MaterialType)mMaterialType;
+							}
 						}
 					}
 				}

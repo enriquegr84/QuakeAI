@@ -4686,10 +4686,10 @@ GAUNTLET
 */
 
 void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward)
+	const Vector3<float>& muzzle, const Vector3<float>& start, const Vector3<float>& forward)
 {
 	//set muzzle location relative to pivoting eye
-	Vector3<float> end = muzzle + forward * 32.f;
+	Vector3<float> end = start + forward * 32.f;
 
 	std::shared_ptr<CameraNode> camera = GameApplication::Get()->GetHumanView()->mCamera;
 	Transform cameraTransform = camera->GetAbsoluteTransform();
@@ -4707,11 +4707,11 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 	{
 		std::vector<ActorId> collisionActors;
 		std::vector<Vector3<float>> collisions, collisionNormals;
-		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+		mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+			if (Length(closestCollision - start) > Length(collisions[i] - start))
 			{
 				closestCollisionId = collisionActors[i];
 				closestCollision = collisions[i];
@@ -4722,7 +4722,7 @@ void QuakeLogic::GauntletAttack(const std::shared_ptr<PlayerActor>& player,
 	if (closestCollisionId == INVALID_ACTOR_ID)
 	{
 		Transform origin;
-		origin.SetTranslation(muzzle);
+		origin.SetTranslation(start);
 		Transform destination;
 		destination.SetTranslation(end);
 
@@ -4776,14 +4776,13 @@ MACHINEGUN
 ======================================================================
 */
 
-void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward, const Vector3<float>& right,
-	const Vector3<float>& up, float spread, int damage)
+void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& start,
+	const Vector3<float>& forward, const Vector3<float>& right, const Vector3<float>& up, float spread, int damage)
 {
 	float r = ((Randomizer::Rand() & 0x7fff) / (float)0x7fff) * (float)GE_C_PI * 2.f;
 	float u = sin(r) * (2.f * ((Randomizer::Rand() & 0x7fff) / (float)0x7fff) - 0.5f) * spread * 16.f;
 	r = cos(r) * (2.f * ((Randomizer::Rand() & 0x7fff) / (float)0x7fff) - 0.5f) * spread * 16.f;
-	Vector3<float> end = muzzle + forward * 8192.f * 16.f;
+	Vector3<float> end = start + forward * 8192.f * 16.f;
 	end += right * r;
 	end += up * u;
 
@@ -4796,11 +4795,11 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 	{
 		std::vector<ActorId> collisionActors;
 		std::vector<Vector3<float>> collisions, collisionNormals;
-		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+		mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+			if (Length(closestCollision - start) > Length(collisions[i] - start))
 			{
 				closestCollisionId = collisionActors[i];
 				closestCollision = collisions[i];
@@ -4811,7 +4810,7 @@ void QuakeLogic::BulletFire(const std::shared_ptr<PlayerActor>& player,
 	if (closestCollisionId == INVALID_ACTOR_ID)
 	{
 		Transform origin;
-		origin.SetTranslation(muzzle);
+		origin.SetTranslation(start);
 		Transform destination;
 		destination.SetTranslation(end);
 
@@ -4973,9 +4972,8 @@ bool QuakeLogic::ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 	return false;
 }
 
-void QuakeLogic::ShotgunFire(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward,
-	const Vector3<float>& right, const Vector3<float>& up)
+void QuakeLogic::ShotgunFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& start, 
+	const Vector3<float>& forward,const Vector3<float>& right, const Vector3<float>& up)
 {
 	std::shared_ptr<CameraNode> camera = GameApplication::Get()->GetHumanView()->mCamera;
 	Transform cameraTransform = camera->GetAbsoluteTransform();
@@ -4985,11 +4983,11 @@ void QuakeLogic::ShotgunFire(const std::shared_ptr<PlayerActor>& player,
 	{
 		float r = (2.f * ((Randomizer::Rand() & 0x7fff) / (float)0x7fff) - 0.5f) * DEFAULT_SHOTGUN_SPREAD * 16.f;
 		float u = (2.f * ((Randomizer::Rand() & 0x7fff) / (float)0x7fff) - 0.5f) * DEFAULT_SHOTGUN_SPREAD * 16.f;
-		Vector3<float> end = muzzle + forward * 8192.f * 16.f;
+		Vector3<float> end = start + forward * 8192.f * 16.f;
 		end += right * r;
 		end += up * u;
 
-		if (ShotgunPellet(player, forward, muzzle, end))
+		if (ShotgunPellet(player, forward, start, end))
 			player->GetState().accuracyHits++;
 	}
 
@@ -5010,8 +5008,8 @@ GRENADE LAUNCHER
 ======================================================================
 */
 
-void QuakeLogic::GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
+void QuakeLogic::GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+	const Vector3<float>& start, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
 {
 	Matrix4x4<float> yawRotation = Rotation<4, float>(
 		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), viewAngles.mAngle[2]));
@@ -5022,8 +5020,8 @@ void QuakeLogic::GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player,
 	initTransform.SetRotation(yawRotation * pitchRotation);
 	initTransform.SetTranslation(muzzle);
 
-	Vector3<float> end = muzzle + forward * 8192.f * 16.f;
-	Vector3<float> direction = end - muzzle;
+	Vector3<float> end = start + forward * 8192.f * 16.f;
+	Vector3<float> direction = end - start;
 	Normalize(direction);
 
 	std::shared_ptr<Actor> pGameActor =
@@ -5084,8 +5082,8 @@ ROCKET
 ======================================================================
 */
 
-void QuakeLogic::RocketLauncherFire(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
+void QuakeLogic::RocketLauncherFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+	const Vector3<float>& start, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
 {
 	Matrix4x4<float> yawRotation = Rotation<4, float>(
 		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), viewAngles.mAngle[2]));
@@ -5096,8 +5094,8 @@ void QuakeLogic::RocketLauncherFire(const std::shared_ptr<PlayerActor>& player,
 	initTransform.SetRotation(yawRotation * pitchRotation);
 	initTransform.SetTranslation(muzzle);
 
-	Vector3<float> end = muzzle + forward * 8192.f * 16.f;
-	Vector3<float> direction = end - muzzle;
+	Vector3<float> end = start + forward * 8192.f * 16.f;
+	Vector3<float> direction = end - start;
 	Normalize(direction);
 
 	std::shared_ptr<Actor> pGameActor =
@@ -5160,8 +5158,8 @@ PLASMA GUN
 ======================================================================
 */
 
-void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
+void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+	const Vector3<float>& start, const Vector3<float>& forward, const EulerAngles<float>& viewAngles)
 {
 	Matrix4x4<float> yawRotation = Rotation<4, float>(
 		AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), viewAngles.mAngle[2]));
@@ -5172,8 +5170,8 @@ void QuakeLogic::PlasmagunFire(const std::shared_ptr<PlayerActor>& player,
 	initTransform.SetRotation(yawRotation * pitchRotation);
 	initTransform.SetTranslation(muzzle);
 
-	Vector3<float> end = muzzle + forward * 8192.f * 16.f;
-	Vector3<float> direction = end - muzzle;
+	Vector3<float> end = start + forward * 8192.f * 16.f;
+	Vector3<float> direction = end - start;
 	Normalize(direction);
 
 	std::shared_ptr<Actor> pGameActor =
@@ -5236,9 +5234,9 @@ RAILGUN
 */
 
 void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward)
+	const Vector3<float>& muzzle, const Vector3<float>& start, const Vector3<float>& forward)
 {
-	Vector3<float> end = muzzle + forward * 8192.f * 16.f;
+	Vector3<float> end = start + forward * 8192.f * 16.f;
 
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	Vector3<float> closestCollision = end;
@@ -5246,11 +5244,11 @@ void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
 	{
 		std::vector<ActorId> collisionActors;
 		std::vector<Vector3<float>> collisions, collisionNormals;
-		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+		mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+			if (Length(closestCollision - start) > Length(collisions[i] - start))
 			{
 				closestCollisionId = collisionActors[i];
 				closestCollision = collisions[i];
@@ -5261,7 +5259,7 @@ void QuakeLogic::RailgunFire(const std::shared_ptr<PlayerActor>& player,
 	if (closestCollisionId == INVALID_ACTOR_ID)
 	{
 		Transform origin;
-		origin.SetTranslation(muzzle);
+		origin.SetTranslation(start);
 		Transform destination;
 		destination.SetTranslation(end);
 
@@ -5352,9 +5350,9 @@ LIGHTNING GUN
 */
 
 void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
-	const Vector3<float>& muzzle, const Vector3<float>& forward)
+	const Vector3<float>& muzzle, const Vector3<float>& start, const Vector3<float>& forward)
 {
-	Vector3<float> end = muzzle + forward * (float)LIGHTNING_RANGE;
+	Vector3<float> end = start + forward * (float)LIGHTNING_RANGE;
 
 	ActorId closestCollisionId = INVALID_ACTOR_ID;
 	Vector3<float> closestCollision = end;
@@ -5362,11 +5360,11 @@ void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
 	{
 		std::vector<ActorId> collisionActors;
 		std::vector<Vector3<float>> collisions, collisionNormals;
-		mPhysics->CastRay(muzzle, end, collisionActors, collisions, collisionNormals, player->GetId());
+		mPhysics->CastRay(start, end, collisionActors, collisions, collisionNormals, player->GetId());
 
 		for (unsigned int i = 0; i < collisionActors.size(); i++)
 		{
-			if (Length(closestCollision - muzzle) > Length(collisions[i] - muzzle))
+			if (Length(closestCollision - muzzle) > Length(collisions[i] - start))
 			{
 				closestCollisionId = collisionActors[i];
 				closestCollision = collisions[i];
@@ -5377,7 +5375,7 @@ void QuakeLogic::LightningFire(const std::shared_ptr<PlayerActor>& player,
 	if (closestCollisionId == INVALID_ACTOR_ID)
 	{
 		Transform origin;
-		origin.SetTranslation(muzzle);
+		origin.SetTranslation(start);
 		Transform destination;
 		destination.SetTranslation(end);
 
@@ -5499,32 +5497,35 @@ void QuakeLogic::FireWeaponDelegate(BaseEventDataPtr pEventData)
 	muzzle += forward * 5.f;
 	muzzle -= right * 5.f;
 
+	Vector3<float> start = muzzle;
+	start += right * 10.f;
+
 	// fire the specific weapon
 	switch (pPlayerActor->GetState().weapon)
 	{
 		case WP_GAUNTLET:
-			GauntletAttack(pPlayerActor, muzzle, forward);
+			GauntletAttack(pPlayerActor, muzzle, start, forward);
 			break;
 		case WP_SHOTGUN:
-			ShotgunFire(pPlayerActor, muzzle, forward, right, up);
+			ShotgunFire(pPlayerActor, start, forward, right, up);
 			break;
 		case WP_MACHINEGUN:
-			BulletFire(pPlayerActor, muzzle, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
+			BulletFire(pPlayerActor, start, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
 			break;
 		case WP_GRENADE_LAUNCHER:
-			GrenadeLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
+			GrenadeLauncherFire(pPlayerActor, muzzle, start, forward, viewAngles);
 			break;
 		case WP_ROCKET_LAUNCHER:
-			RocketLauncherFire(pPlayerActor, muzzle, forward, viewAngles);
+			RocketLauncherFire(pPlayerActor, muzzle, start, forward, viewAngles);
 			break;
 		case WP_PLASMAGUN:
-			PlasmagunFire(pPlayerActor, muzzle, forward, viewAngles);
+			PlasmagunFire(pPlayerActor, muzzle, start, forward, viewAngles);
 			break;
 		case WP_RAILGUN:
-			RailgunFire(pPlayerActor, muzzle, forward);
+			RailgunFire(pPlayerActor, muzzle, start, forward);
 			break;
 		case WP_LIGHTNING:
-			LightningFire(pPlayerActor, muzzle, forward);
+			LightningFire(pPlayerActor, muzzle, start, forward);
 			break;
 		default:
 			// FIXME Error( "Bad ent->state->weapon" );

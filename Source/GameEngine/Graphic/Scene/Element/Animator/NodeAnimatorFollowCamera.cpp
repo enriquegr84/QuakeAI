@@ -67,22 +67,30 @@ void NodeAnimatorFollowCamera::AnimateNode(Scene* pScene, Node* node, unsigned i
 		Transform targetTransform = pTransformComponent->GetTransform();
 		camera->GetAbsoluteTransform().SetRotation(targetTransform.GetRotation() * rotation);
 
-		Vector4<float> direction = Vector4<float>::Unit(2); // forward vector
+		Vector4<float> forward = Vector4<float>::Unit(2); // forward vector
 #if defined(GE_USE_MAT_VEC)
-		direction = camera->GetAbsoluteTransform() * direction;
+		forward = camera->GetAbsoluteTransform() * forward;
 #else
-		direction = direction * camera->GetAbsoluteTransform();
+		forward = forward * camera->GetAbsoluteTransform();
 #endif
 
-		float scale = 40;
+		Vector4<float> right = -Vector4<float>::Unit(0); // right vector
+#if defined(GE_USE_MAT_VEC)
+		right = camera->GetAbsoluteTransform() * right;
+#else
+		right = right * camera->GetAbsoluteTransform();
+#endif
+
+		float scale = 10.f;
 		Vector4<float> offset{ 0, 0, 37.f, 0 };
-		Vector3<float> start = HProject(translation - direction * scale + offset);
+		Vector3<float> start = HProject(translation - forward * scale - right * scale + offset);
 		Vector3<float> end = HProject(translation);
 
 		ActorId closestCollisionId = INVALID_ACTOR_ID;
 		Vector3<float> closestCollision = end;
 		if (pPhysicComponent)
 		{
+			bool collision = false;
 			std::vector<ActorId> collisionActors;
 			std::vector<Vector3<float>> collisions, collisionNormals;
 			GameLogic::Get()->GetGamePhysics()->CastRay(start, end, collisionActors, collisions, collisionNormals, pGameActor->GetId());
@@ -94,13 +102,38 @@ void NodeAnimatorFollowCamera::AnimateNode(Scene* pScene, Node* node, unsigned i
 					closestCollisionId = collisionActors[i];
 					closestCollision = collisions[i];
 
-					camera->GetAbsoluteTransform().SetTranslation(translation + offset);
-					return;
+					collision = true;
+					break;
 				}
+			}
+
+			if (collision)
+			{
+				start = HProject(translation - forward * scale + offset);
+
+				collisions.clear();
+				collisionActors.clear();
+				collisionNormals.clear();
+				GameLogic::Get()->GetGamePhysics()->CastRay(start, end, collisionActors, collisions, collisionNormals, pGameActor->GetId());
+
+				for (unsigned int i = 0; i < collisionActors.size(); i++)
+				{
+					if (Length(closestCollision - start) > Length(collisions[i] - start))
+					{
+						closestCollisionId = collisionActors[i];
+						closestCollision = collisions[i];
+
+						camera->GetAbsoluteTransform().SetTranslation(translation + offset);
+						return;
+					}
+				}
+
+				camera->GetAbsoluteTransform().SetTranslation(translation - right * scale + offset);
+				return;
 			}
 		}
 
-		camera->GetAbsoluteTransform().SetTranslation(translation - direction * scale + offset);
+		camera->GetAbsoluteTransform().SetTranslation(translation - forward * scale - right * scale + offset);
 	}
 }
 

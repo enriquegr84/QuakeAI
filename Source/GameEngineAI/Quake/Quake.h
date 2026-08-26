@@ -506,25 +506,25 @@ private:
 	bool RadiusDamage(float damage, float radius, int mod,
 		Vector3<float> origin, const std::shared_ptr<PlayerActor>& attacker);
 
-	void GauntletAttack(const std::shared_ptr<PlayerActor>& player,
-		const Vector3<float>& muzzle, const Vector3<float>& forward);
-	void BulletFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
-		const Vector3<float>& forward, const Vector3<float>& right, const Vector3<float>& up, 
-		float spread, int damage);
-	void ShotgunFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+	void GauntletAttack(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+		const Vector3<float>& start, const Vector3<float>& forward);
+	void BulletFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& start, 
+		const Vector3<float>& forward, const Vector3<float>& right, 
+		const Vector3<float>& up, float spread, int damage);
+	void ShotgunFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& start, 
 		const Vector3<float>& forward, const Vector3<float>& right, const Vector3<float>& up);
 	bool ShotgunPellet(const std::shared_ptr<PlayerActor>& player,
 		const Vector3<float>& forward, const Vector3<float>& start, const Vector3<float>& end);
-	void GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player, 
-		const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& angles);
-	void RocketLauncherFire(const std::shared_ptr<PlayerActor>& player, 
-		const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& angles);
-	void PlasmagunFire(const std::shared_ptr<PlayerActor>& player, 
-		const Vector3<float>& muzzle, const Vector3<float>& forward, const EulerAngles<float>& angles);
-	void RailgunFire(const std::shared_ptr<PlayerActor>& player, 
-		const Vector3<float>& muzzle, const Vector3<float>& forward);
-	void LightningFire(const std::shared_ptr<PlayerActor>& player, 
-		const Vector3<float>& muzzle, const Vector3<float>& forward);
+	void GrenadeLauncherFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+		const Vector3<float>& start, const Vector3<float>& forward, const EulerAngles<float>& angles);
+	void RocketLauncherFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+		const Vector3<float>& start, const Vector3<float>& forward, const EulerAngles<float>& angles);
+	void PlasmagunFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+		const Vector3<float>& start, const Vector3<float>& forward, const EulerAngles<float>& angles);
+	void RailgunFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+		const Vector3<float>& start, const Vector3<float>& forward);
+	void LightningFire(const std::shared_ptr<PlayerActor>& player, const Vector3<float>& muzzle, 
+		const Vector3<float>& start, const Vector3<float>& forward);
 
 	int PickupAmmo(const std::shared_ptr<PlayerActor>& player, const std::shared_ptr<AmmoPickup>& ammo);
 	int PickupWeapon(const std::shared_ptr<PlayerActor>& player, const std::shared_ptr<WeaponPickup>& weapon);
