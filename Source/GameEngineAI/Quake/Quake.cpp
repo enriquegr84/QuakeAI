@@ -5473,6 +5473,7 @@ void QuakeLogic::FireWeaponDelegate(BaseEventDataPtr pEventData)
 	Vector3<float> origin;
 	Matrix4x4<float> rotation;
 	EulerAngles<float> viewAngles;
+
 	std::shared_ptr<TransformComponent> pTransformComponent(
 		pPlayerActor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 	if (pTransformComponent)
@@ -5480,7 +5481,6 @@ void QuakeLogic::FireWeaponDelegate(BaseEventDataPtr pEventData)
 		viewAngles.mAxis[1] = 1;
 		viewAngles.mAxis[2] = 2;
 		pTransformComponent->GetTransform().GetRotation(viewAngles);
-		origin = pTransformComponent->GetTransform().GetTranslation();
 		Matrix4x4<float> yawRotation = Rotation<4, float>(
 			AxisAngle<4, float>(Vector4<float>::Unit(AXIS_Y), viewAngles.mAngle[2]));
 		Matrix4x4<float> pitchRotation = Rotation<4, float>(
@@ -5491,46 +5491,58 @@ void QuakeLogic::FireWeaponDelegate(BaseEventDataPtr pEventData)
 	Vector3<float> right = HProject(rotation * Vector4<float>::Unit(AXIS_Z));
 	Vector3<float> up = HProject(rotation * Vector4<float>::Unit(AXIS_Y));
 
-	//set muzzle location relative to pivoting eye
-	Vector3<float> muzzle = origin;
-	muzzle += up * (float)pPlayerActor->GetState().viewHeight;
-	muzzle += forward * 5.f;
-	muzzle -= right * 5.f;
-
-	Vector3<float> start = muzzle;
-	start += right * 10.f;
-
-	// fire the specific weapon
-	switch (pPlayerActor->GetState().weapon)
+	std::shared_ptr<PhysicComponent> pPhysicComponent(
+		pPlayerActor->GetComponent<PhysicComponent>(PhysicComponent::Name).lock());
+	if (pPhysicComponent)
 	{
-		case WP_GAUNTLET:
-			GauntletAttack(pPlayerActor, muzzle, start, forward);
-			break;
-		case WP_SHOTGUN:
-			ShotgunFire(pPlayerActor, start, forward, right, up);
-			break;
-		case WP_MACHINEGUN:
-			BulletFire(pPlayerActor, start, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
-			break;
-		case WP_GRENADE_LAUNCHER:
-			GrenadeLauncherFire(pPlayerActor, muzzle, start, forward, viewAngles);
-			break;
-		case WP_ROCKET_LAUNCHER:
-			RocketLauncherFire(pPlayerActor, muzzle, start, forward, viewAngles);
-			break;
-		case WP_PLASMAGUN:
-			PlasmagunFire(pPlayerActor, muzzle, start, forward, viewAngles);
-			break;
-		case WP_RAILGUN:
-			RailgunFire(pPlayerActor, muzzle, start, forward);
-			break;
-		case WP_LIGHTNING:
-			LightningFire(pPlayerActor, muzzle, start, forward);
-			break;
-		default:
-			// FIXME Error( "Bad ent->state->weapon" );
-			break;
+		origin = pPhysicComponent->GetTransform().GetTranslation();
+
+		//set muzzle location relative to pivoting eye
+		Vector3<float> muzzle = origin;
+		muzzle += up * (float)pPlayerActor->GetState().viewHeight;
+		muzzle += forward * 5.f;
+		muzzle -= right * 5.f;
+
+		Vector3<float> start = muzzle;
+		if (!mGameSpec.mModding && GameApplication::Get()->GetHumanView()->GetActorId() == pPlayerActor->GetId())
+		{
+			std::shared_ptr<CameraNode> camera = GameApplication::Get()->GetHumanView()->mCamera;
+			start = camera->GetAbsoluteTransform().GetTranslation();
+		}
+
+		// fire the specific weapon
+		switch (pPlayerActor->GetState().weapon)
+		{
+			case WP_GAUNTLET:
+				GauntletAttack(pPlayerActor, muzzle, start, forward);
+				break;
+			case WP_SHOTGUN:
+				ShotgunFire(pPlayerActor, start, forward, right, up);
+				break;
+			case WP_MACHINEGUN:
+				BulletFire(pPlayerActor, start, forward, right, up, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE);
+				break;
+			case WP_GRENADE_LAUNCHER:
+				GrenadeLauncherFire(pPlayerActor, muzzle, start, forward, viewAngles);
+				break;
+			case WP_ROCKET_LAUNCHER:
+				RocketLauncherFire(pPlayerActor, muzzle, start, forward, viewAngles);
+				break;
+			case WP_PLASMAGUN:
+				PlasmagunFire(pPlayerActor, muzzle, start, forward, viewAngles);
+				break;
+			case WP_RAILGUN:
+				RailgunFire(pPlayerActor, muzzle, start, forward);
+				break;
+			case WP_LIGHTNING:
+				LightningFire(pPlayerActor, muzzle, start, forward);
+				break;
+			default:
+				// FIXME Error( "Bad ent->state->weapon" );
+				break;
+		}
 	}
+
 }
 
 bool QuakeLogic::SpotTelefrag(const std::shared_ptr<Actor>& spot)

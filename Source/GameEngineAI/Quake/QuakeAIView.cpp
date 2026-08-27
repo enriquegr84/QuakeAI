@@ -1924,7 +1924,6 @@ void QuakeAIView::OnUpdate(unsigned int timeMs, unsigned long deltaMs)
 									mReactionTime += deltaMs / 1000.f;
 
 									Vector3<float> direction = targetPos - playerPos;
-									float scale = Length(direction);
 									Normalize(direction);
 
 									mYaw = atan2(direction[AXIS_Z], direction[AXIS_X]) * (float)GE_C_RAD_TO_DEG;

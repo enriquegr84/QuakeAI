@@ -81,9 +81,8 @@ void NodeAnimatorFollowCamera::AnimateNode(Scene* pScene, Node* node, unsigned i
 		right = right * camera->GetAbsoluteTransform();
 #endif
 
-		float scale = 10.f;
 		Vector4<float> offset{ 0, 0, 37.f, 0 };
-		Vector3<float> start = HProject(translation - forward * scale - right * scale + offset);
+		Vector3<float> start = HProject(translation - forward * 20.f - right * 10.f + offset);
 		Vector3<float> end = HProject(translation);
 
 		ActorId closestCollisionId = INVALID_ACTOR_ID;
@@ -109,7 +108,7 @@ void NodeAnimatorFollowCamera::AnimateNode(Scene* pScene, Node* node, unsigned i
 
 			if (collision)
 			{
-				start = HProject(translation - forward * scale + offset);
+				start = HProject(translation - forward * 20.f + offset);
 
 				collisions.clear();
 				collisionActors.clear();
@@ -128,12 +127,12 @@ void NodeAnimatorFollowCamera::AnimateNode(Scene* pScene, Node* node, unsigned i
 					}
 				}
 
-				camera->GetAbsoluteTransform().SetTranslation(translation - right * scale + offset);
+				camera->GetAbsoluteTransform().SetTranslation(translation - right * 10.f + offset);
 				return;
 			}
 		}
 
-		camera->GetAbsoluteTransform().SetTranslation(translation - forward * scale - right * scale + offset);
+		camera->GetAbsoluteTransform().SetTranslation(translation - forward * 20.f - right * 10.f + offset);
 	}
 }
 
