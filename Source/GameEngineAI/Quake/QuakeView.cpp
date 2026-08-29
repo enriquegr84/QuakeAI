@@ -3244,11 +3244,11 @@ void QuakeHumanView::ShowPauseMenu()
 	std::ostringstream os;
 
 	os << "form_version[1]" << SIZE_TAG
-		<< "button_exit[4," << (yPos++) << ";3,0.5;btn_continue;"
-		<< "Continue" << "]" << "field[4.95,0;5,1.5;;" << "Game paused" << ";]";
+		<< "button_exit[4," << (yPos++) << ";3,0.5;btn_play_duel;"
+		<< "Play Duel" << "]" << "field[4.95,0;5,1.5;;" << "Game paused" << ";]";
 
-	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_play_duel;"
-		<< "Play Duel" << "]";
+	os << "button_exit[4," << (yPos++) << ";3,0.5;btn_save_duel;"
+		<< "Save Duel" << "]";
 
 	if (Settings::Get()->GetBool("enable_sound"))
 	{

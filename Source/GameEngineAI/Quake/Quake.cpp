@@ -2016,7 +2016,7 @@ void QuakeLogic::PlayDuelCombatDelegate(BaseEventDataPtr pEventData)
 		{
 			//aware decision making
 			QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-			aiManager->RunAIAwareDecision();
+			aiManager->RunAIAwareness();
 		});
 
 		mGameAICombat = true;

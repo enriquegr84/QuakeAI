@@ -427,6 +427,13 @@ struct LocalFormHandler : public TextDestination
 				return;
 			}
 
+			if (fields.find("btn_save_duel") != fields.end())
+			{
+				std::shared_ptr<EventDataSaveAIGame> pEvent(new EventDataSaveAIGame());
+				BaseEventManager::Get()->TriggerEvent(pEvent);
+				return;
+			}
+
 			if (fields.find("btn_sound") != fields.end())
 			{
 				std::shared_ptr<EventDataChangeVolume> pEvent(new EventDataChangeVolume());

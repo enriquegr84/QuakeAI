@@ -273,7 +273,7 @@ struct PlayerGuessView
 	PlayerData simulation;
 
 	//known game items and its respawning time in sec that the player is aware of
-	std::map<ActorId, float> items;
+	std::map<ActorId, std::map<ActorId, float>> items;
 	std::map<ActorId, std::map<ActorId, float>> guessItems;
 
 	std::map<ActorId, PlayerData> guessPlayers;
@@ -1264,11 +1264,13 @@ protected:
 	void RunAIDecision();
 	void RunAIGuessingDecision();
 	void RunAIAwareDecision();
+	void RunAIAwareness();
 
 	void RunHumanGuessing();
 	void RunHumanDecision();
 	void RunHumanGuessingDecision();
 	void RunHumanAwareDecision();
+	void RunHumanAwareness();
 
 	unsigned int GetFrame() { return mUpdateCounter; }
 
@@ -1320,8 +1322,9 @@ private:
 	void RemoveAllDelegates(void);
 
 	void InitializePlayerItems(PlayerView& playerView);
+	void InitializePlayerGuessItems(PlayerGuessView& playerGuessView, ActorId playerId);
 	void UpdatePlayerItems(unsigned long deltaMs, PathingNode* playerNode, PlayerView& playerView);
-	void UpdatePlayerGuessItems(unsigned long deltaMs, ActorId playerId, PlayerGuessView& playerGuessView);
+	void UpdatePlayerGuessItems(unsigned long deltaMs, PlayerGuessView& playerGuessView);
 
 	void UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessView& playerGuessView);
 	void UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessView& playerGuessView, ActorId playerId);

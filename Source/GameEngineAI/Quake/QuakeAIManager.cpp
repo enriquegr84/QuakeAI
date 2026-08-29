@@ -2965,15 +2965,6 @@ bool QuakeAIManager::SimulatePlayerGuessing(
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
-	for (PathingArc* playerPathArc : playerPathPlanOffset)
-	{
-		if (playerDataOut.planWeight <= 0.f)
-			break;
-
-		playerDataOut.plan.path.erase(playerDataOut.plan.path.begin());
-		playerDataOut.plan.node = playerPathArc->GetNode();
-		playerDataOut.planWeight -= playerPathArc->GetWeight();
-	}
 
 	otherPlayerDataOut.valid = true;
 	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
@@ -3559,15 +3550,6 @@ bool QuakeAIManager::SimulatePlayerDecision(
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
-	for (PathingArc* playerPathArc : playerPathPlanOffset)
-	{
-		if (playerDataOut.planWeight <= 0.f)
-			break;
-
-		playerDataOut.plan.path.erase(playerDataOut.plan.path.begin());
-		playerDataOut.plan.node = playerPathArc->GetNode();
-		playerDataOut.planWeight -= playerPathArc->GetWeight();
-	}
 
 	otherPlayerDataOut.valid = true;
 	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
@@ -4017,15 +3999,6 @@ bool QuakeAIManager::SimulatePlayerGuessing(const PlayerData& playerDataIn, Play
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
-	for (PathingArc* playerPathArc : playerPathPlanOffset)
-	{
-		if (playerDataOut.planWeight <= 0.f)
-			break;
-
-		playerDataOut.plan.path.erase(playerDataOut.plan.path.begin());
-		playerDataOut.plan.node = playerPathArc->GetNode();
-		playerDataOut.planWeight -= playerPathArc->GetWeight();
-	}
 
 	otherPlayerDataOut.valid = true;
 	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
@@ -4449,15 +4422,6 @@ bool QuakeAIManager::SimulatePlayerDecision(const PlayerData& playerDataIn, Play
 
 	playerDataOut.planWeight = playerPathOffset;
 	playerDataOut.planWeight += diffTime / 1000.f;
-	for (PathingArc* playerPathArc : playerPathPlanOffset)
-	{
-		if (playerDataOut.planWeight <= 0.f)
-			break;
-
-		playerDataOut.plan.path.erase(playerDataOut.plan.path.begin());
-		playerDataOut.plan.node = playerPathArc->GetNode();
-		playerDataOut.planWeight -= playerPathArc->GetWeight();
-	}
 
 	otherPlayerDataOut.valid = true;
 	otherPlayerDataOut.heuristic = -otherPlayerDataOut.heuristic;
@@ -4762,7 +4726,6 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 		playerGuessSimulation.data.planWeight += playerGuessSimulationArc->GetWeight();
 	playerGuessSimulation.data.planWeight -= playerGuessPathWeightOffset;
 
-
 	playerGuessSimulation.data.planWeight = 0.f;
 
 	PrintInfo("\nAI Guessing Human player guess input after: ");
@@ -4797,7 +4760,7 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 		}
 
 		// update the items which are guessed to be taken by the human player
-		for (auto const& humanGuessItem : playerGuessView.items)
+		for (auto const& humanGuessItem : playerGuessView.items[mPlayers[GV_HUMAN]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
@@ -4817,12 +4780,25 @@ bool QuakeAIManager::MakeAIGuessing(PlayerView& aiView)
 	playerGuessView.data.planWeight = playerGuessSimulation.data.planWeight;
 	playerGuessView.data.valid = playerGuessSimulation.data.plan.path.empty() ? false : true;
 
+	PathingArcVec aiSimulationPath = aiSimulation.data.plan.path;
+
 	//simulation
 	bool success = SimulatePlayerGuessing(
 		aiView.data, aiSimulation.data, playerGuessView.data, playerGuessSimulation.data, gameDecision.evaluation.threat,
 		gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		//advance the path plan for the ai player
+		for (PathingArc* aiSimulationPathArc : aiSimulationPath)
+		{
+			if (aiSimulation.data.planWeight <= 0.f)
+				break;
+
+			aiSimulation.data.plan.path.erase(aiSimulation.data.plan.path.begin());
+			aiSimulation.data.plan.node = aiSimulationPathArc->GetNode();
+			aiSimulation.data.planWeight -= aiSimulationPathArc->GetWeight();
+		}
+
 		mMutex.lock();
 
 		PrintInfo("\nAI Guessing AI player output: ");
@@ -4891,7 +4867,7 @@ bool QuakeAIManager::MakeAIDecision(PlayerView& aiView)
 	float aiPathWeightOffset = CalculatePathingWeight(aiView.data);
 	float playerGuessPathWeightOffset = playerGuessView.data.planWeight > 0.f ? playerGuessView.data.planWeight : 0.f;
 
-	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed (max 0.1 seg)
+	//we need to advance the players path plan total time exactly what it takes the decision making algorithm to be executed
 	PlayerView aiSimulation = aiView;
 	aiSimulation.data.planWeight = 0.24f;
 	aiSimulation.data.planWeight += aiPathWeightOffset;
@@ -4924,8 +4900,12 @@ bool QuakeAIManager::MakeAIDecision(PlayerView& aiView)
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
 	gameDecision.evaluation.type = ET_CLOSEGUESSING;
 	gameDecision.evaluation.target = GV_AI;
+	SetPlayerInput(gameDecision.evaluation.playerGuessInput, playerGuessView.data, playerGuessSimulation.data);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput, aiView.data, aiSimulation.data);
+
 	SetPlayerInput(gameDecision.evaluation.playerInput, aiView.data, aiSimulation.data);
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessSimulation.data);
+
 
 	// update the guess items from the world
 	std::map<ActorId, float> gameItems = aiView.gameItems;
@@ -4942,7 +4922,7 @@ bool QuakeAIManager::MakeAIDecision(PlayerView& aiView)
 		}
 
 		// update the items which are guessed to be taken by the human player
-		for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
+		for (auto const& humanGuessItem : playerGuessView.items[mPlayers[GV_HUMAN]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
@@ -4952,6 +4932,7 @@ bool QuakeAIManager::MakeAIDecision(PlayerView& aiView)
 	}
 
 	gameDecision.evaluation.playerDecisionItems = gameItems;
+	gameDecision.evaluation.playerGuessItems = gameItems;
 
 	playerGuessView.data.ResetItems();
 	playerGuessView.guessPlayers[mPlayers[GV_AI]].ResetItems();
@@ -4962,22 +4943,46 @@ bool QuakeAIManager::MakeAIDecision(PlayerView& aiView)
 	aiView.data.planWeight = aiSimulation.data.planWeight;
 	aiView.data.valid = aiSimulation.data.plan.path.empty() ? false : true;
 
+	PathingArcVec aiSimulationPath = aiSimulation.data.plan.path;
+
 	//simulation
 	bool success = SimulatePlayerGuessing(
 		aiView.data, aiSimulation.data, playerGuessView.data, playerGuessSimulation.data, gameDecision.evaluation.threat,
 		gameDecision.evaluation.playerGuessItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		//advance the path plan for the ai player
+		for (PathingArc* aiSimulationPathArc : aiSimulationPath)
+		{
+			if (aiSimulation.data.planWeight <= 0.f)
+				break;
+
+			aiSimulation.data.plan.path.erase(aiSimulation.data.plan.path.begin());
+			aiSimulation.data.plan.node = aiSimulationPathArc->GetNode();
+			aiSimulation.data.planWeight -= aiSimulationPathArc->GetWeight();
+		}
+
 		mMutex.lock();
 
 		PrintInfo("\nAI Decision AI player output: ");
 		PrintPlayerData(aiSimulation.data);
 
+		PrintInfo("\nAI Decision human player guess output: ");
+		PrintPlayerData(playerGuessSimulation.data);
+
 		aiView.isUpdated = true;
 		aiView.simulation = aiSimulation.data;
 		aiView.threat = gameDecision.evaluation.threat;
 
+		playerGuessView.isUpdated = true;
+		playerGuessView.simulation = playerGuessSimulation.data;
+		playerGuessView.guessSimulations[mPlayers[GV_AI]] = aiSimulation.data;
+		playerGuessView.threat = gameDecision.evaluation.threat;
+
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, aiView.simulation);
+
+		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerGuessView.simulation);
+		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, playerGuessView.guessSimulations[mPlayers[GV_AI]]);
 
 		Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
 		gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
@@ -5060,30 +5065,30 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
 	gameDecision.evaluation.type = ET_CLOSEGUESSING;
 	gameDecision.evaluation.target = GV_HUMAN;
-	SetPlayerInput(gameDecision.evaluation.playerGuessInput, playerGuessView.data, playerGuessSimulation.data);
-	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput,
+	SetPlayerInput(gameDecision.evaluation.playerGuessInput,
 		playerGuessView.guessPlayers[mPlayers[GV_AI]], playerGuessSimulation.guessPlayers[mPlayers[GV_AI]]);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput, playerGuessView.data, playerGuessSimulation.data);
 
-	SetPlayerInput(gameDecision.evaluation.playerInput, 
+	SetPlayerInput(gameDecision.evaluation.playerInput, playerGuessView.data, playerGuessSimulation.data);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerInput,
 		playerGuessView.guessPlayers[mPlayers[GV_AI]], playerGuessSimulation.guessPlayers[mPlayers[GV_AI]]);
-	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, playerGuessView.data, playerGuessSimulation.data);
 
 	// update the guess items from the world
-	std::map<ActorId, float> gameItems = playerGuessView.items;
+	std::map<ActorId, float> gameItems = playerGuessView.guessItems[mPlayers[GV_HUMAN]];
 
 	if (playerGuessSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be take by the human player
-		for (auto const& guessItem : playerGuessView.data.items)
+		for (auto const& humanGuessItem : playerGuessView.items[mPlayers[GV_HUMAN]])
 		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
-				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[guessItem.first] <= 0.f)
-					gameItems[guessItem.first] = guessItem.second;
+				if (!playerGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[humanGuessItem.first] <= 0.f)
+					gameItems[humanGuessItem.first] = humanGuessItem.second;
 		}
 
 		// update the items which are guessed to be taken by the ai player
-		for (auto const& aiGuessItem : playerGuessView.guessItems[mPlayers[GV_AI]])
+		for (auto const& aiGuessItem : playerGuessView.items[mPlayers[GV_AI]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
@@ -5124,8 +5129,10 @@ bool QuakeAIManager::MakeAIGuessingDecision(PlayerView& aiView)
 		playerGuessView.guessSimulations[mPlayers[GV_AI]] = playerGuessSimulation.guessPlayers[mPlayers[GV_AI]];
 		playerGuessView.threat = gameDecision.evaluation.threat;
 
-		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerGuessView.simulation);
-		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, playerGuessView.guessSimulations[mPlayers[GV_AI]]);
+		SetPlayerOutput(gameDecision.evaluation.playerOutput, playerGuessView.simulation);
+
+		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, playerGuessView.guessSimulations[mPlayers[GV_AI]]);
+		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, playerGuessView.simulation);
 
 		Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
 		gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
@@ -5241,7 +5248,7 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 		}
 
 		// update the items which are guessed to be taken by the human player
-		for (auto const& humanGuessItem : playerGuessView.guessItems[mPlayers[GV_HUMAN]])
+		for (auto const& humanGuessItem : playerGuessView.items[mPlayers[GV_HUMAN]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
@@ -5262,12 +5269,25 @@ bool QuakeAIManager::MakeAIAwareDecision(PlayerView& aiView)
 	aiView.data.planWeight = aiDecisionSimulation.data.planWeight;
 	aiView.data.valid = aiDecisionSimulation.data.plan.path.empty() ? false : true;
 
+	PathingArcVec aiDecisionSimulationPath = aiDecisionSimulation.data.plan.path;
+
 	//simulation
 	bool success = SimulatePlayerDecision(
 		aiView.data, aiDecisionSimulation.data, playerGuessView.data, playerGuessSimulation.data, gameDecision.evaluation.threat,
 		gameDecision.evaluation.playerDecisionItems, mPlayers[GV_AI], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		//advance the path plan for the ai player
+		for (PathingArc* aiDecisionSimulationPathArc : aiDecisionSimulationPath)
+		{
+			if (aiDecisionSimulation.data.planWeight <= 0.f)
+				break;
+
+			aiDecisionSimulation.data.plan.path.erase(aiDecisionSimulation.data.plan.path.begin());
+			aiDecisionSimulation.data.plan.node = aiDecisionSimulationPathArc->GetNode();
+			aiDecisionSimulation.data.planWeight -= aiDecisionSimulationPathArc->GetWeight();
+		}
+
 		mMutex.lock();
 
 		PrintInfo("\nAI Guessing human player guess output: ");
@@ -5388,7 +5408,7 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 		}
 
 		// update the items which are guessed to be taken by the ai player
-		for (auto const& aiGuessItem : aiGuessView.items)
+		for (auto const& aiGuessItem : aiGuessView.items[mPlayers[GV_AI]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
@@ -5408,11 +5428,24 @@ bool QuakeAIManager::MakeHumanGuessing(PlayerView& playerView)
 	aiGuessView.data.planWeight = aiGuessSimulation.data.planWeight;
 	aiGuessView.data.valid = aiGuessSimulation.data.plan.path.empty() ? false : true;
 
+	PathingArcVec playerSimulationPath = playerSimulation.data.plan.path;
+
 	//simulation
 	bool success = SimulatePlayerGuessing(playerView.data, playerSimulation.data, aiGuessView.data, aiGuessSimulation.data,
 		gameDecision.evaluation.threat, gameDecision.evaluation.playerGuessItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		//advance the path plan for the human player
+		for (PathingArc* playerSimulationPathArc : playerSimulationPath)
+		{
+			if (playerSimulation.data.planWeight <= 0.f)
+				break;
+
+			playerSimulation.data.plan.path.erase(playerSimulation.data.plan.path.begin());
+			playerSimulation.data.plan.node = playerSimulationPathArc->GetNode();
+			playerSimulation.data.planWeight -= playerSimulationPathArc->GetWeight();
+		}
+
 		mMutex.lock();
 
 		PrintInfo("\nHuman Guessing Human player output: ");
@@ -5514,6 +5547,9 @@ bool QuakeAIManager::MakeHumanDecision(PlayerView& playerView)
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
 	gameDecision.evaluation.type = ET_CLOSEGUESSING;
 	gameDecision.evaluation.target = GV_HUMAN;
+	SetPlayerInput(gameDecision.evaluation.playerGuessInput, aiGuessView.data, aiGuessSimulation.data);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput, playerView.data, playerSimulation.data);
+
 	SetPlayerInput(gameDecision.evaluation.playerInput, playerView.data, playerSimulation.data);
 	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessSimulation.data);
 
@@ -5532,7 +5568,7 @@ bool QuakeAIManager::MakeHumanDecision(PlayerView& playerView)
 		}
 
 		// update the items which are guessed to be taken by the ai player
-		for (auto const& aiGuessItem : aiGuessView.guessItems[mPlayers[GV_AI]])
+		for (auto const& aiGuessItem : aiGuessView.items[mPlayers[GV_AI]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
@@ -5542,6 +5578,7 @@ bool QuakeAIManager::MakeHumanDecision(PlayerView& playerView)
 	}
 
 	gameDecision.evaluation.playerDecisionItems = gameItems;
+	gameDecision.evaluation.playerGuessItems = gameItems;
 
 	playerView.data.ResetItems();
 	playerView.data.planWeight = playerSimulation.data.planWeight;
@@ -5552,21 +5589,45 @@ bool QuakeAIManager::MakeHumanDecision(PlayerView& playerView)
 	aiGuessView.data.planWeight = aiGuessSimulation.data.planWeight;
 	aiGuessView.data.valid = aiGuessSimulation.data.plan.path.empty() ? false : true;
 
+	PathingArcVec playerSimulationPath = playerSimulation.data.plan.path;
+
 	//simulation
 	bool success = SimulatePlayerGuessing(playerView.data, playerSimulation.data, aiGuessView.data, aiGuessSimulation.data,
 		gameDecision.evaluation.threat, gameItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		//advance the path plan for the human player
+		for (PathingArc* playerSimulationPathArc : playerSimulationPath)
+		{
+			if (playerSimulation.data.planWeight <= 0.f)
+				break;
+
+			playerSimulation.data.plan.path.erase(playerSimulation.data.plan.path.begin());
+			playerSimulation.data.plan.node = playerSimulationPathArc->GetNode();
+			playerSimulation.data.planWeight -= playerSimulationPathArc->GetWeight();
+		}
+
 		mMutex.lock();
 
 		PrintInfo("\nHuman Decision Human player output: ");
 		PrintPlayerData(playerSimulation.data);
 
+		PrintInfo("\nHuman Decision AI player guess output: ");
+		PrintPlayerData(aiGuessSimulation.data);
+
 		playerView.isUpdated = true;
 		playerView.simulation = playerSimulation.data;
 		playerView.threat = gameDecision.evaluation.threat;
 
+		aiGuessView.isUpdated = true;
+		aiGuessView.simulation = aiGuessSimulation.data;
+		aiGuessView.guessSimulations[mPlayers[GV_HUMAN]] = playerSimulation.data;
+		aiGuessView.threat = gameDecision.evaluation.threat;
+
 		SetPlayerOutput(gameDecision.evaluation.playerOutput, playerView.simulation);
+
+		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, aiGuessView.simulation);
+		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, aiGuessView.guessSimulations[mPlayers[GV_AI]]);
 
 		Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
 		gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
@@ -5649,30 +5710,30 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 	AIAnalysis::GameDecision gameDecision = AIAnalysis::GameDecision();
 	gameDecision.evaluation.type = ET_CLOSEGUESSING;
 	gameDecision.evaluation.target = GV_AI;
-	SetPlayerInput(gameDecision.evaluation.playerGuessInput, aiGuessView.data, aiGuessSimulation.data);
-	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput,
+	SetPlayerInput(gameDecision.evaluation.playerGuessInput,
 		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]], aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]]);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerGuessInput, aiGuessView.data, aiGuessSimulation.data);
 
-	SetPlayerInput(gameDecision.evaluation.playerInput, 
+	SetPlayerInput(gameDecision.evaluation.playerInput, aiGuessView.data, aiGuessSimulation.data);
+	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, 
 		aiGuessView.guessPlayers[mPlayers[GV_HUMAN]], aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]]);
-	SetPlayerInput(gameDecision.evaluation.otherPlayerInput, aiGuessView.data, aiGuessSimulation.data);
 
 	// update the guess items from the world
-	std::map<ActorId, float> gameItems = aiGuessView.items;
+	std::map<ActorId, float> gameItems = aiGuessView.guessItems[mPlayers[GV_AI]];
 
 	if (aiGuessSimulation.data.plan.node)
 	{
 		// exclude items which are guessed to be taken by the ai player
-		for (auto const& guessItem : aiGuessView.data.items)
+		for (auto const& aiGuessItem : aiGuessView.items[mPlayers[GV_AI]])
 		{
-			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(guessItem.first);
+			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(aiGuessItem.first);
 			if (itemPickup)
-				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[guessItem.first] <= 0.f)
-					gameItems[guessItem.first] = guessItem.second;
+				if (!aiGuessSimulation.data.plan.node->IsVisibleNode(itemPickup->GetNode()) && gameItems[aiGuessItem.first] <= 0.f)
+					gameItems[aiGuessItem.first] = aiGuessItem.second;
 		}
 
 		// update the items which are guessed to be taken by the human player
-		for (auto const& humanGuessItem : aiGuessView.guessItems[mPlayers[GV_HUMAN]])
+		for (auto const& humanGuessItem : aiGuessView.items[mPlayers[GV_HUMAN]])
 		{
 			const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(humanGuessItem.first);
 			if (itemPickup)
@@ -5713,8 +5774,10 @@ bool QuakeAIManager::MakeHumanGuessingDecision(PlayerView& playerView)
 		aiGuessView.guessSimulations[mPlayers[GV_HUMAN]] = aiGuessSimulation.guessPlayers[mPlayers[GV_HUMAN]];
 		aiGuessView.threat = gameDecision.evaluation.threat;
 
-		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, aiGuessView.simulation);
-		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, aiGuessView.guessSimulations[mPlayers[GV_HUMAN]]);
+		SetPlayerOutput(gameDecision.evaluation.playerOutput, aiGuessView.simulation);
+
+		SetPlayerOutput(gameDecision.evaluation.playerGuessOutput, aiGuessView.guessSimulations[mPlayers[GV_HUMAN]]);
+		SetPlayerOutput(gameDecision.evaluation.otherPlayerGuessOutput, aiGuessView.simulation);
 
 		Timer::RealTimeDate realTime = Timer::GetRealTimeAndDate();
 		gameDecision.id = (unsigned short)mGameDecisions.size() + 1;
@@ -5851,11 +5914,24 @@ bool QuakeAIManager::MakeHumanAwareDecision(PlayerView& playerView)
 	playerView.data.planWeight = playerDecisionSimulation.data.planWeight;
 	playerView.data.valid = playerDecisionSimulation.data.plan.path.empty() ? false : true;
 
+	PathingArcVec playerDecisionSimulationPath = playerDecisionSimulation.data.plan.path;
+
 	//simulation
 	bool success = SimulatePlayerDecision(playerView.data, playerDecisionSimulation.data, aiGuessView.data, aiGuessSimulation.data, 
 		gameDecision.evaluation.threat, gameDecision.evaluation.playerDecisionItems, mPlayers[GV_HUMAN], (EvaluationType)gameDecision.evaluation.type);
 	if (success)
 	{
+		//advance the path plan for the human player
+		for (PathingArc* playerDecisionSimulationPathArc : playerDecisionSimulationPath)
+		{
+			if (playerDecisionSimulation.data.planWeight <= 0.f)
+				break;
+
+			playerDecisionSimulation.data.plan.path.erase(playerDecisionSimulation.data.plan.path.begin());
+			playerDecisionSimulation.data.plan.node = playerDecisionSimulationPathArc->GetNode();
+			playerDecisionSimulation.data.planWeight -= playerDecisionSimulationPathArc->GetWeight();
+		}
+
 		mMutex.lock();
 
 		PrintInfo("\nHuman Guessing AI player guess output: ");
@@ -5971,7 +6047,6 @@ void QuakeAIManager::RunAIGuessing()
 
 			unsigned int time = Timer::GetRealTime();
 
-
 			PlayerView aiView;
 			bool isAIGuessing = MakeAIGuessing(aiView);
 			if (isAIGuessing)
@@ -6022,14 +6097,7 @@ void QuakeAIManager::RunAIGuessingDecision()
 				continue;
 			}
 
-			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_GUESSING)
-			{
-				std::this_thread::yield();
-				continue;
-			}
-
 			unsigned int time = Timer::GetRealTime();
-
 
 			PlayerView aiView;
 			bool isAIGuessing = MakeAIGuessingDecision(aiView);
@@ -6112,6 +6180,65 @@ void QuakeAIManager::RunAIAwareDecision()
 
 				UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);  //update playerView
 				UpdatePlayerSimulationView(mPlayers[GV_AI], playerGuessView); //update guessView
+
+				//lets wait to give some time for the AI Manager and AI Views update its status
+				Timer::Sleep(30);
+				//printf("\n Iteration AI Aware Decision %u", iteration);
+				//iteration++;
+			}
+
+			//after complete execution we run guessing decision making
+			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) == ET_CLOSEGUESSING)
+				mPlayerEvaluations[mPlayers.at(GV_AI)] = ET_GUESSING;
+
+			SetEnable(true);
+		}
+	}
+}
+
+void QuakeAIManager::RunAIAwareness()
+{
+	unsigned int iteration = 0;
+
+	while (true)
+	{
+		if (GameLogic::Get()->GetState() == BGS_RUNNING)
+		{
+			if (mPlayers.find(GV_AI) == mPlayers.end())
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			if (mPlayerEvaluations.at(mPlayers.at(GV_AI)) != ET_AWARENESS)
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			unsigned int time = Timer::GetRealTime();
+
+			PlayerView aiView;
+			bool isAIDecision = MakeAIAwareDecision(aiView);
+			if (isAIDecision)
+			{
+				//we enable ai view only if got a plan
+				GameApplication* gameApp = (GameApplication*)Application::App;
+				const GameViewList& gameViews = gameApp->GetGameViews();
+				for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+				{
+					std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+					if (pAiView)
+						pAiView->SetEnabled(true);
+				}
+
+				unsigned int diffTime = Timer::GetRealTime() - time;
+				std::stringstream ss;
+				ss << "\n ai aware total elapsed time " << diffTime;// << " threat level " << aiView.threat;
+				PrintInfo(ss.str());
+				printf(ss.str().c_str());
+
+				UpdatePlayerSimulationView(mPlayers[GV_AI], aiView);  //update playerView
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
 				Timer::Sleep(30);
@@ -6257,12 +6384,6 @@ void QuakeAIManager::RunHumanGuessingDecision()
 				continue;
 			}
 
-			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_GUESSING)
-			{
-				std::this_thread::yield();
-				continue;
-			}
-
 			unsigned int time = Timer::GetRealTime();
 
 			PlayerView playerView;
@@ -6346,6 +6467,65 @@ void QuakeAIManager::RunHumanAwareDecision()
 
 				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], playerView); //update playerView
 				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], aiGuessView); //update guessView
+
+				//lets wait to give some time for the AI Manager and AI Views update its status
+				Timer::Sleep(30);
+				//printf("\n Iteration Human Aware Decision %u", iteration);
+				//iteration++;
+			}
+
+			//after complete execution we run guessing decision making
+			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) == ET_CLOSEGUESSING)
+				mPlayerEvaluations[mPlayers.at(GV_HUMAN)] = ET_GUESSING;
+
+			SetEnable(true);
+		}
+	}
+}
+
+void QuakeAIManager::RunHumanAwareness()
+{
+	unsigned int iteration = 0;
+
+	while (true)
+	{
+		if (GameLogic::Get()->GetState() == BGS_RUNNING)
+		{
+			if (mPlayers.find(GV_HUMAN) == mPlayers.end())
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			if (mPlayerEvaluations.at(mPlayers.at(GV_HUMAN)) != ET_AWARENESS)
+			{
+				std::this_thread::yield();
+				continue;
+			}
+
+			unsigned int time = Timer::GetRealTime();
+
+			PlayerView playerView;
+			bool isHumanDecision = MakeHumanAwareDecision(playerView);
+			if (isHumanDecision)
+			{
+				//we enable ai view only if got a plan
+				GameApplication* gameApp = (GameApplication*)Application::App;
+				const GameViewList& gameViews = gameApp->GetGameViews();
+				for (auto it = gameViews.begin(); it != gameViews.end(); ++it)
+				{
+					std::shared_ptr<QuakeAIView> pAiView = std::dynamic_pointer_cast<QuakeAIView>(*it);
+					if (pAiView)
+						pAiView->SetEnabled(true);
+				}
+
+				unsigned int diffTime = Timer::GetRealTime() - time;
+				std::stringstream ss;
+				ss << "\n human aware total elapsed time " << diffTime;// << " threat level " << playerView.threat;
+				PrintInfo(ss.str());
+				printf(ss.str().c_str());
+
+				UpdatePlayerSimulationView(mPlayers[GV_HUMAN], playerView); //update playerView
 
 				//lets wait to give some time for the AI Manager and AI Views update its status
 				Timer::Sleep(30);
@@ -6705,6 +6885,7 @@ void QuakeAIManager::SpawnActor(ActorId playerId)
 			{
 				PathingNode* spawnNode = mPathingGraph->FindClosestNode(pPhysicComponent->GetPosition(), false);
 				playerView.data.plan = NodePlan(spawnNode, PathingArcVec());
+				playerView.data.ResetItems();
 
 				//assuming the guessing players has no idea where our player is located, lets take a random spawn spot
 				Transform spawnTransform;
@@ -6727,6 +6908,9 @@ void QuakeAIManager::SpawnActor(ActorId playerId)
 					playerGuessView.guessPlayers[pPlayerActor->GetId()] = PlayerData(pPlayerActor);
 					playerGuessView.guessSimulations[pPlayerActor->GetId()] = PlayerData(pPlayerActor);
 
+					playerGuessView.guessPlayers[pOtherPlayerActor->GetId()] = PlayerData(pOtherPlayerActor);
+					playerGuessView.guessSimulations[pOtherPlayerActor->GetId()] = PlayerData(pOtherPlayerActor);
+
 					playerGuessView.data.plan = NodePlan(spawnNode, PathingArcVec());
 					playerGuessView.simulation.plan = NodePlan(spawnNode, PathingArcVec());
 
@@ -6737,10 +6921,14 @@ void QuakeAIManager::SpawnActor(ActorId playerId)
 					playerGuessView.guessPlayers[pPlayerActor->GetId()].plan = NodePlan(guessSpawnNode, PathingArcVec());
 					playerGuessView.guessSimulations[pPlayerActor->GetId()].plan = NodePlan(guessSpawnNode, PathingArcVec());
 
-					//update game items
-					playerGuessView.items.clear();
-					playerGuessView.guessItems[pPlayerActor->GetId()].clear();
-					playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+					Transform otherGuessSpawnTransform;
+					game->SelectRandomFurthestSpawnPoint(spawnNode->GetPosition(), otherGuessSpawnTransform, false);
+					PathingNode* otherGuessSpawnNode = mPathingGraph->FindClosestNode(otherGuessSpawnTransform.GetTranslation(), false);
+					playerGuessView.guessPlayers[pOtherPlayerActor->GetId()].plan = NodePlan(otherGuessSpawnNode, PathingArcVec());
+					playerGuessView.guessSimulations[pOtherPlayerActor->GetId()].plan = NodePlan(otherGuessSpawnNode, PathingArcVec());
+
+					//initialize game items
+					InitializePlayerGuessItems(playerGuessView, pPlayerActor->GetId());
 
 					playerView.guessViews[pOtherPlayerActor->GetId()] = playerGuessView;
 				}
@@ -6798,11 +6986,13 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 		PrintInfo(playerInfo.str());
 
 		playerGuessView.isUpdated = false;
-		playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		playerGuessView.items[pPlayerActor->GetId()].clear();
 
 		//we update the players path plan based on current position.
 		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
 
+		//initialize player guess items
+		InitializePlayerGuessItems(playerGuessView, pPlayerActor->GetId());
 		UpdatePlayerGuessView(pPlayerActor->GetId(), playerGuessView, true);
 
 		//we also update the other player's guess view about this player in case that the noise is within range.
@@ -6821,8 +7011,7 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 
 		PlayerGuessView& otherPlayerGuessView = otherPlayerView.guessViews[pPlayerActor->GetId()];
 		otherPlayerGuessView.isUpdated = false;
-		otherPlayerGuessView.items.clear();
-		otherPlayerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		otherPlayerGuessView.items[pPlayerActor->GetId()].clear();
 
 		//initialize player items
 		InitializePlayerItems(otherPlayerView);
@@ -6834,6 +7023,8 @@ void QuakeAIManager::DetectActor(std::shared_ptr<PlayerActor> pPlayerActor, std:
 		//we update the players path plan based on current position.
 		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], otherPlayerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
 
+		//initialize player guess items
+		InitializePlayerGuessItems(otherPlayerGuessView, pPlayerActor->GetId());
 		UpdatePlayerGuessView(pOtherPlayerActor->GetId(), otherPlayerGuessView, true);
 	}
 }
@@ -6882,11 +7073,13 @@ void QuakeAIManager::DetectPlayer(std::shared_ptr<PlayerActor> pPlayerActor)
 		PrintInfo(playerInfo.str());
 
 		playerGuessView.isUpdated = false;
-		playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		playerGuessView.items[pPlayerActor->GetId()].clear();
 
 		//we update the players path plan based on current position.
 		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], playerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
 
+		//initialize player guess items
+		InitializePlayerGuessItems(playerGuessView, pPlayerActor->GetId());
 		UpdatePlayerGuessView(pPlayerActor->GetId(), playerGuessView, true);
 
 		//we also update the other player's guess view about this player in case that the noise is within range.
@@ -6905,8 +7098,7 @@ void QuakeAIManager::DetectPlayer(std::shared_ptr<PlayerActor> pPlayerActor)
 
 		PlayerGuessView& otherPlayerGuessView = otherPlayerView.guessViews[pPlayerActor->GetId()];
 		otherPlayerGuessView.isUpdated = false;
-		otherPlayerGuessView.items.clear();
-		otherPlayerGuessView.guessItems[pPlayerActor->GetId()].clear();
+		otherPlayerGuessView.items[pPlayerActor->GetId()].clear();
 
 		//initialize player items
 		InitializePlayerItems(otherPlayerView);
@@ -6918,6 +7110,8 @@ void QuakeAIManager::DetectPlayer(std::shared_ptr<PlayerActor> pPlayerActor)
 		//we update the players path plan based on current position.
 		UpdatePlayerGuessPlan(pPlayerActor, aiViews[pPlayerActor->GetId()], otherPlayerGuessView.guessPlayers[pPlayerActor->GetId()], playerNode);
 
+		//initialize player guess items
+		InitializePlayerGuessItems(otherPlayerGuessView, pPlayerActor->GetId());
 		UpdatePlayerGuessView(pOtherPlayerActor->GetId(), otherPlayerGuessView, true);
 	}
 }
@@ -10423,6 +10617,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 						playerGuessView.guessPlayers[playerId].itemAmount[itemId];
 
 					playerGuessView.guessPlayers[playerId].items[itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerId][itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] -= playerGuessView.guessPlayers[playerId].planWeight;
 				}
@@ -10433,6 +10628,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 						playerGuessView.guessPlayers[playerId].itemAmount[itemId];
 
 					playerGuessView.guessPlayers[playerId].items[itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerId][itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] -= playerGuessView.guessPlayers[playerId].planWeight;
 				}
@@ -10443,6 +10639,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 						playerGuessView.guessPlayers[playerId].itemAmount[itemId];
 
 					playerGuessView.guessPlayers[playerId].items[itemId] = (float)pArmorPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerId][itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] -= playerGuessView.guessPlayers[playerId].planWeight;
 				}
@@ -10453,6 +10650,7 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 						playerGuessView.guessPlayers[playerId].itemAmount[itemId];
 
 					playerGuessView.guessPlayers[playerId].items[itemId] = (float)pHealthPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerId][itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerId][itemId] -= playerGuessView.guessPlayers[playerId].planWeight;
 				}
@@ -10505,8 +10703,8 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					// add ammo
 					playerGuessView.data.ammo[pWeaponPickup->GetCode()] += playerGuessView.data.itemAmount[itemId];
 
-					playerGuessView.items[itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerGuessView.data.player][itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pWeaponPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
 				}
@@ -10515,8 +10713,8 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					std::shared_ptr<AmmoPickup> pAmmoPickup = pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
 					playerGuessView.data.ammo[pAmmoPickup->GetCode()] += playerGuessView.data.itemAmount[itemId];
 
-					playerGuessView.items[itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerGuessView.data.player][itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pAmmoPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
 				}
@@ -10525,8 +10723,8 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					std::shared_ptr<ArmorPickup> pArmorPickup = pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
 					playerGuessView.data.stats[STAT_ARMOR] += playerGuessView.data.itemAmount[itemId];
 
-					playerGuessView.items[itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pArmorPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerGuessView.data.player][itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pArmorPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
 				}
@@ -10535,8 +10733,8 @@ void QuakeAIManager::UpdatePlayerGuessState(unsigned long deltaMs, PlayerGuessVi
 					std::shared_ptr<HealthPickup> pHealthPickup = pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
 					playerGuessView.data.stats[STAT_HEALTH] += playerGuessView.data.itemAmount[itemId];
 
-					playerGuessView.items[itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.data.items[itemId] = (float)pHealthPickup->GetWait() / 1000.f;
+					playerGuessView.items[playerGuessView.data.player][itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] = (float)pHealthPickup->GetWait() / 1000.f;
 					playerGuessView.guessItems[playerGuessView.data.player][itemId] -= playerGuessView.data.planWeight;
 				}
@@ -10710,6 +10908,42 @@ void QuakeAIManager::InitializePlayerItems(PlayerView& playerView)
 	}
 }
 
+void QuakeAIManager::InitializePlayerGuessItems(PlayerGuessView& playerGuessView, ActorId playerId)
+{
+	//for the moment we take perfect information but the goal is to have
+	//an accurate system to predict items availability and respawning time estimation
+	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
+
+	std::vector<std::shared_ptr<Actor>> searchActors;
+	game->GetAmmoActors(searchActors);
+	game->GetWeaponActors(searchActors);
+	game->GetHealthActors(searchActors);
+	game->GetArmorActors(searchActors);
+	for (std::shared_ptr<Actor> pItemActor : searchActors)
+	{
+		if (pItemActor->GetType() == "Weapon")
+		{
+			std::shared_ptr<WeaponPickup> pWeaponPickup = pItemActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+			playerGuessView.guessItems[playerId][pItemActor->GetId()] = pWeaponPickup->mRespawnTime / 1000.f;
+		}
+		else if (pItemActor->GetType() == "Ammo")
+		{
+			std::shared_ptr<AmmoPickup> pAmmoPickup = pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
+			playerGuessView.guessItems[playerId][pItemActor->GetId()] = pAmmoPickup->mRespawnTime / 1000.f;
+		}
+		else if (pItemActor->GetType() == "Armor")
+		{
+			std::shared_ptr<ArmorPickup> pArmorPickup = pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
+			playerGuessView.guessItems[playerId][pItemActor->GetId()] = pArmorPickup->mRespawnTime / 1000.f;
+		}
+		else if (pItemActor->GetType() == "Health")
+		{
+			std::shared_ptr<HealthPickup> pHealthPickup = pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
+			playerGuessView.guessItems[playerId][pItemActor->GetId()] = pHealthPickup->mRespawnTime / 1000.f;
+		}
+	}
+}
+
 void QuakeAIManager::UpdatePlayerItems(unsigned long deltaMs, PathingNode* playerNode, PlayerView& playerView)
 {
 	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
@@ -10757,24 +10991,54 @@ void QuakeAIManager::UpdatePlayerItems(unsigned long deltaMs, PathingNode* playe
 	}
 }
 
-void QuakeAIManager::UpdatePlayerGuessItems(unsigned long deltaMs, ActorId playerId, PlayerGuessView& playerGuessView)
+void QuakeAIManager::UpdatePlayerGuessItems(unsigned long deltaMs, PlayerGuessView& playerGuessView)
 {
-	for (auto const& item : playerGuessView.items)
-	{
-		playerGuessView.items[item.first] -= deltaMs / 1000.f;
-		if (playerGuessView.items[item.first] < 0)
-			playerGuessView.items[item.first] = 0.f;
+	QuakeLogic* game = static_cast<QuakeLogic*>(GameLogic::Get());
 
-		playerGuessView.guessItems[playerGuessView.data.player][item.first] -= deltaMs / 1000.f;
-		if (playerGuessView.guessItems[playerGuessView.data.player][item.first] < 0)
-			playerGuessView.guessItems[playerGuessView.data.player][item.first] = 0.f;
-	}
+	std::vector<std::shared_ptr<Actor>> searchActors;
+	game->GetAmmoActors(searchActors);
+	game->GetWeaponActors(searchActors);
+	game->GetHealthActors(searchActors);
+	game->GetArmorActors(searchActors);
 
-	for (auto const& item : playerGuessView.guessItems[playerId])
+	for (auto guessPlayer : playerGuessView.guessPlayers)
 	{
-		playerGuessView.guessItems[playerId][item.first] -= deltaMs / 1000.f;
-		if (playerGuessView.guessItems[playerId][item.first] < 0)
-			playerGuessView.guessItems[playerId][item.first] = 0.f;
+		for (std::shared_ptr<Actor> pItemActor : searchActors)
+		{
+			if (mGameActorPickups.find(pItemActor->GetId()) != mGameActorPickups.end())
+			{
+				const AIAnalysis::ActorPickup* itemPickup = mGameActorPickups.at(pItemActor->GetId());
+				if (guessPlayer.second.plan.node->IsVisibleNode(itemPickup->GetNode()))
+				{
+					if (pItemActor->GetType() == "Weapon")
+					{
+						std::shared_ptr<WeaponPickup> pWeaponPickup = pItemActor->GetComponent<WeaponPickup>(WeaponPickup::Name).lock();
+						playerGuessView.guessItems[guessPlayer.first][pItemActor->GetId()] = pWeaponPickup->mRespawnTime / 1000.f;
+					}
+					else if (pItemActor->GetType() == "Ammo")
+					{
+						std::shared_ptr<AmmoPickup> pAmmoPickup = pItemActor->GetComponent<AmmoPickup>(AmmoPickup::Name).lock();
+						playerGuessView.guessItems[guessPlayer.first][pItemActor->GetId()] = pAmmoPickup->mRespawnTime / 1000.f;
+					}
+					else if (pItemActor->GetType() == "Armor")
+					{
+						std::shared_ptr<ArmorPickup> pArmorPickup = pItemActor->GetComponent<ArmorPickup>(ArmorPickup::Name).lock();
+						playerGuessView.guessItems[guessPlayer.first][pItemActor->GetId()] = pArmorPickup->mRespawnTime / 1000.f;
+					}
+					else if (pItemActor->GetType() == "Health")
+					{
+						std::shared_ptr<HealthPickup> pHealthPickup = pItemActor->GetComponent<HealthPickup>(HealthPickup::Name).lock();
+						playerGuessView.guessItems[guessPlayer.first][pItemActor->GetId()] = pHealthPickup->mRespawnTime / 1000.f;
+					}
+				}
+				else
+				{
+					playerGuessView.guessItems[guessPlayer.first][pItemActor->GetId()] -= deltaMs / 1000.f;
+					if (playerGuessView.guessItems[guessPlayer.first][pItemActor->GetId()] < 0)
+						playerGuessView.guessItems[guessPlayer.first][pItemActor->GetId()] = 0.f;
+				}
+			}
+		}
 	}
 }
 
@@ -10846,7 +11110,7 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 					playerGuessView.data.ResetItems();
 					for (auto const& playerGuessItem : playerGuessView.simulation.items)
 					{
-						if (playerGuessView.items.find(playerGuessItem.first) == playerGuessView.items.end())
+						if (playerGuessView.items[pOtherPlayerActor->GetId()].find(playerGuessItem.first) == playerGuessView.items[pOtherPlayerActor->GetId()].end())
 						{
 							playerGuessView.data.items[playerGuessItem.first] = playerGuessItem.second;
 							playerGuessView.data.itemWeight[playerGuessItem.first] = playerGuessView.simulation.itemWeight[playerGuessItem.first];
@@ -10867,7 +11131,7 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 					playerGuessView.guessPlayers[pPlayerActor->GetId()].ResetItems();
 					for (auto const& playerGuessItem : playerGuessView.guessSimulations[pPlayerActor->GetId()].items)
 					{
-						if (playerGuessView.guessItems.find(playerGuessItem.first) == playerGuessView.guessItems.end())
+						if (playerGuessView.items[pPlayerActor->GetId()].find(playerGuessItem.first) == playerGuessView.items[pPlayerActor->GetId()].end())
 						{
 							playerGuessView.guessPlayers[pPlayerActor->GetId()].items[playerGuessItem.first] = playerGuessItem.second;
 							playerGuessView.guessPlayers[pPlayerActor->GetId()].itemWeight[playerGuessItem.first] = 
@@ -10897,13 +11161,16 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 					{
 						//distrust the guessing plan and reset guess player
 						playerGuessView.isUpdated = false;
-						playerGuessView.items.clear();
-						playerGuessView.guessItems[pPlayerActor->GetId()].clear();
-						playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+						playerGuessView.items[pPlayerActor->GetId()].clear();
+						playerGuessView.items[pOtherPlayerActor->GetId()].clear();
 
 						//initialize player items
 						InitializePlayerItems(playerView);
 						UpdatePlayerView(pPlayerActor->GetId(), playerView.gameItems);
+
+						//initialize player guess items
+						InitializePlayerGuessItems(playerGuessView, pPlayerActor->GetId());
+						InitializePlayerGuessItems(playerGuessView, pOtherPlayerActor->GetId());
 
 						std::stringstream updatePlayer;
 						updatePlayer << "\n visible nodes for both players ";
@@ -10925,12 +11192,14 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 						{
 							//distrust the guessing plan and reset guess player 
 							playerGuessView.isUpdated = false;
-							playerGuessView.items.clear();
-							playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+							playerGuessView.items[pPlayerActor->GetId()].clear();
 
 							//initialize player items
 							InitializePlayerItems(playerView);
 							UpdatePlayerView(pPlayerActor->GetId(), playerView.gameItems);
+
+							//initialize player guess items
+							InitializePlayerGuessItems(playerGuessView, pPlayerActor->GetId());
 
 							std::stringstream updatePlayer;
 							updatePlayer << "\n reset items for player guess: " << pPlayerActor->GetId() << " ";
@@ -10948,12 +11217,14 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 						{
 							//distrust the guessing plan and reset guess player node
 							playerGuessView.isUpdated = false;
-							playerGuessView.items.clear();
-							playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+							playerGuessView.items[pOtherPlayerActor->GetId()].clear();
 
 							//initialize player items
 							InitializePlayerItems(playerView);
 							UpdatePlayerView(pPlayerActor->GetId(), playerView.gameItems);
+
+							//initialize player guess items
+							InitializePlayerGuessItems(playerGuessView, pOtherPlayerActor->GetId());
 
 							std::stringstream updatePlayer;
 							updatePlayer << "\n visible node for player guess: " << pOtherPlayerActor->GetId() << " ";
@@ -10967,7 +11238,10 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 						{
 							//distrust the guessing plan and reset guess player 
 							playerGuessView.isUpdated = false;
-							playerGuessView.guessItems[pOtherPlayerActor->GetId()].clear();
+							playerGuessView.items[pOtherPlayerActor->GetId()].clear();
+
+							//initialize player guess items
+							InitializePlayerGuessItems(playerGuessView, pOtherPlayerActor->GetId());
 
 							std::stringstream updatePlayer;
 							updatePlayer << "\n reset other items for player guess: " << pOtherPlayerActor->GetId() << " ";
@@ -10981,7 +11255,10 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 						{
 							//distrust the guessing plan and reset guess player
 							playerGuessView.isUpdated = false;
-							playerGuessView.guessItems[pPlayerActor->GetId()].clear();
+							playerGuessView.items[pPlayerActor->GetId()].clear();
+
+							//initialize player guess items
+							InitializePlayerGuessItems(playerGuessView, pPlayerActor->GetId());
 
 							std::stringstream updatePlayer;
 							updatePlayer << "\n visible other node for player guess: " << pPlayerActor->GetId() << " ";
@@ -10999,7 +11276,7 @@ void QuakeAIManager::OnUpdate(unsigned long deltaMs)
 			UpdatePlayerGuessState(deltaMs, playerGuessView, pPlayerActor->GetId());
 
 			//update guess items
-			UpdatePlayerGuessItems(deltaMs, pPlayerActor->GetId(), playerGuessView);
+			UpdatePlayerGuessItems(deltaMs, playerGuessView);
 
 			UpdatePlayerGuessView(pPlayerActor->GetId(), playerGuessView, isPlayerGuessUpdated);
 		}
