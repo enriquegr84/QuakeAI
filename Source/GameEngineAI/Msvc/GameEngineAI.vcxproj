@@ -395,6 +395,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Quake\AI\AIGameSimulation.h" />
+    <ClInclude Include="..\Quake\AI\AIData.h" />
+    <ClInclude Include="..\Quake\AI\AIPhysicsSimulation.h" />
     <ClInclude Include="..\Quake\Data\Huddata.h" />
     <ClInclude Include="..\Quake\Data\MetricsBackend.h" />
     <ClInclude Include="..\Quake\Editor\CameraController.h" />
@@ -451,6 +454,9 @@
     <ClInclude Include="..\Quake\QuakeView.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Quake\AI\AIGameSimulation.cpp" />
+    <ClCompile Include="..\Quake\AI\AIData.cpp" />
+    <ClCompile Include="..\Quake\AI\AIPhysicsSimulation.cpp" />
     <ClCompile Include="..\Quake\Data\Huddata.cpp" />
     <ClCompile Include="..\Quake\Data\MetricsBackend.cpp" />
     <ClCompile Include="..\Quake\Editor\CameraController.cpp" />

@@ -63,7 +63,8 @@
 
 #include "Application/Settings.h"
 
-#include "QuakeAIManager.h"
+#include "AI/AIData.h"
+#include "AI/AIPhysicsSimulation.h"
 
 #define CHAT_MESSAGE_LIMIT_PER_10S 10.0f
 
@@ -294,7 +295,7 @@ protected:
 //---------------------------------------------------------------------------------------------------------------------
 class QuakeLogic : public GameLogic
 {
-	friend class QuakeAIManager;
+	friend class AIPhysicsSimulation;
 	friend class QuakeLogicThread;
 
 public:

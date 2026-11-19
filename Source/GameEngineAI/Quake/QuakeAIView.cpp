@@ -1134,7 +1134,7 @@ bool QuakeAIView::CanUpdateActionPlan(const PlayerData& player)
 					std::shared_ptr<Actor> pItemActor(std::dynamic_pointer_cast<Actor>(gameLogic->GetActor(itemId).lock()));
 					if (gameLogic->CanItemBeGrabbed(pItemActor, pPlayerActor))
 					{
-						if (aiManager->CalculateHeuristicItem(player, itemId, currentPathWeight) >= 0.1f)
+						if (aiManager->GetGameSimulation().CalculateHeuristicItem(player, itemId, currentPathWeight) >= 0.1f)
 						{
 							//if it is an item in the planning we will update to the new plan
 							if (player.items.find(itemId) != player.items.end())

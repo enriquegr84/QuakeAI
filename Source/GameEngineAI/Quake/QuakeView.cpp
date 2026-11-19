@@ -41,6 +41,7 @@
 #include "QuakeView.h"
 #include "QuakeAIView.h"
 #include "QuakeEvents.h"
+#include "QuakeAIManager.h"
 #include "QuakeLevelManager.h"
 #include "QuakeNetwork.h"
 #include "QuakePlayerController.h"

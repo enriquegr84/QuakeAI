@@ -41,6 +41,7 @@
 
 #include "QuakeStd.h"
 #include "QuakeEvents.h"
+#include "QuakeAIManager.h"
 
 #include "Games/Forms/Menu/BaseMenu.h"
 

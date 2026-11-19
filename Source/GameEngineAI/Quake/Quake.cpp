@@ -698,7 +698,7 @@ void QuakeLogic::UpdateGameAIState()
 void QuakeLogic::UpdateGameAISimulation(unsigned short frame)
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-	AIAnalysis::Simulation* gameSimulation = aiManager->GetGameSimulation();
+	AIAnalysis::Simulation* gameSimulation = aiManager->GetCurrentGameSimulation();
 
 	float simulationWeight = mPlayerInput.planOffset + frame / 10.f;
 
@@ -2272,8 +2272,8 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 			std::map<ActorId, float> gameItems = gameDecision.evaluation.playerGuessItems;
 
 			//simulation
-			bool success = aiManager->SimulatePlayerGuessing(playerData, playerSimulation,
-				otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
+			bool success = aiManager->GetGameSimulation().SimulatePlayerGuessing(
+				playerData, playerSimulation, otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
 			if (success)
 			{
 				unsigned int time2 = Timer::GetRealTime();
@@ -2286,8 +2286,8 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 			std::map<ActorId, float> gameItems = gameDecision.evaluation.playerGuessItems;
 
 			//simulation
-			bool success = aiManager->SimulatePlayerGuessing(playerData, playerSimulation,
-				otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
+			bool success = aiManager->GetGameSimulation().SimulatePlayerGuessing(
+				playerData, playerSimulation, otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
 			if (success)
 			{
 				unsigned int time2 = Timer::GetRealTime();
@@ -2300,23 +2300,23 @@ void QuakeLogic::AnalyzeAIGame(unsigned short analysisFrame, unsigned short play
 			std::map<ActorId, float> gameItems = gameDecision.evaluation.playerDecisionItems;
 
 			//simulation
-			bool success = aiManager->SimulatePlayerDecision(playerData, playerSimulation,
-				otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
+			bool success = aiManager->GetGameSimulation().SimulatePlayerDecision(
+				playerData, playerSimulation, otherPlayerData, otherPlayerSimulation, gameItems, gameDecision.evaluation);
 			if (success)
 			{
 				unsigned int time2 = Timer::GetRealTime();
 				printf("\n awareness decision total elapsed time %u threat level %u", time2 - time, gameDecision.evaluation.threat);
 			}
 		}
-		aiManager->RemovePlayerSimulations(aiManager->GetGameEvaluation());
-		aiManager->SetGameEvaluation(gameDecision.evaluation);
+		aiManager->RemovePlayerSimulations(aiManager->GetCurrentGameEvaluation());
+		aiManager->SetCurrentGameEvaluation(gameDecision.evaluation);
 	}
 }
 
 void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(mAIManager);
-	AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetGameEvaluation();
+	AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetCurrentGameEvaluation();
 
 	//Summary, Minimax, Guess, Minimax, Decision
 	if (tabIndex == 1)
@@ -2345,12 +2345,12 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 		mOtherPlayerInput = gameEvaluation.otherPlayerInput;
 	}
 
-	const AIAnalysis::Simulation* simulation = aiManager->GetGameSimulation();
+	const AIAnalysis::Simulation* simulation = aiManager->GetCurrentGameSimulation();
 	if (simulation)
 	{
 		std::map<ActorId, float> gameItems;
 
-		const AIAnalysis::GameEvaluation& evaluation = aiManager->GetGameEvaluation();
+		const AIAnalysis::GameEvaluation& evaluation = aiManager->GetCurrentGameEvaluation();
 		if (evaluation.type == ET_GUESSING)
 		{
 			// update guessing items
@@ -2372,12 +2372,12 @@ void QuakeLogic::UpdateGameAIAnalysis(unsigned short tabIndex)
 		aiManager->GetPlayerInput(mOtherPlayerInput, otherPlayer, otherPlayerOffset);
 
 		PathingArcVec playerPath, otherPlayerPath;
-		aiManager->BuildPlayerPath(simulation->playerSimulation,
-			player.plan.node, playerOffset.plan.weight, playerPath);
-		aiManager->BuildPlayerPath(simulation->otherPlayerSimulation,
-			otherPlayer.plan.node, otherPlayerOffset.plan.weight, otherPlayerPath);
-
-		aiManager->Simulation((EvaluationType)evaluation.type, gameItems,
+		aiManager->GetGameSimulation().BuildPlayerPath(
+			simulation->playerSimulation, player.plan.node, playerOffset.plan.weight, playerPath);
+		aiManager->GetGameSimulation().BuildPlayerPath(
+			simulation->otherPlayerSimulation, otherPlayer.plan.node, otherPlayerOffset.plan.weight, otherPlayerPath);
+		aiManager->GetGameSimulation().Simulation(
+			(EvaluationType)evaluation.type, gameItems,
 			evaluation.threat, player, playerPath, playerOffset.plan.weight,
 			otherPlayer, otherPlayerPath, otherPlayerOffset.plan.weight);
 

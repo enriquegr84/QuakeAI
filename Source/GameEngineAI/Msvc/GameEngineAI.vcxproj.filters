@@ -163,6 +163,15 @@
     <ClInclude Include="..\Quake\Graphics\ClusterNode.h">
       <Filter>Quake\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="..\Quake\AI\AIGameSimulation.h">
+      <Filter>Quake\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\AI\AIData.h">
+      <Filter>Quake\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Quake\AI\AIPhysicsSimulation.h">
+      <Filter>Quake\AI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Quake\Quake.cpp">
@@ -309,6 +318,15 @@
     <ClCompile Include="..\Quake\Graphics\ClusterNode.cpp">
       <Filter>Quake\Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="..\Quake\AI\AIGameSimulation.cpp">
+      <Filter>Quake\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\AI\AIData.cpp">
+      <Filter>Quake\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Quake\AI\AIPhysicsSimulation.cpp">
+      <Filter>Quake\AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Quake">
@@ -382,6 +400,9 @@
     </Filter>
     <Filter Include="Quake\Editor">
       <UniqueIdentifier>{8a5ad109-4b4b-4a0c-be00-893bab875ec6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quake\AI">
+      <UniqueIdentifier>{9e7d11f2-60c0-495c-b6b4-aaaa46a2a947}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

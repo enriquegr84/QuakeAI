@@ -3325,7 +3325,7 @@ void QuakeAIAnalyzerView::AnalyzeAIGame(unsigned short tabIndex,
 
 	mStats.gameTime = gameDecision.time;
 
-	const AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetGameEvaluation();
+	const AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetCurrentGameEvaluation();
 	std::shared_ptr<BaseGameView> humanView = GameApplication::Get()->GetGameView(GV_HUMAN);
 	ActorId playerId = humanView->GetActorId();
 	std::shared_ptr<BaseGameView> aiView = GameApplication::Get()->GetGameView(GV_AI);
@@ -3663,7 +3663,7 @@ void QuakeAIAnalyzerView::AnalyzeAIGame(unsigned short tabIndex,
 				{
 					auto it = std::find(playerGuessing->simulations.begin(), playerGuessing->simulations.end(), simulation);
 					otherRowGuessSimulation = std::distance(playerGuessing->simulations.begin(), it) + 2;
-					aiManager->SetGameSimulation(simulation);
+					aiManager->SetCurrentGameSimulation(simulation);
 					break;
 				}
 
@@ -3808,7 +3808,7 @@ void QuakeAIAnalyzerView::AnalyzeAIGame(unsigned short tabIndex,
 					auto it = std::find(gameEvaluation.playerGuessDecision->simulations.begin(), 
 						gameEvaluation.playerGuessDecision->simulations.end(), simulation);
 					otherRowGuessSimulation = std::distance(gameEvaluation.playerGuessDecision->simulations.begin(), it) + 2;
-					aiManager->SetGameSimulation(simulation);
+					aiManager->SetCurrentGameSimulation(simulation);
 					break;
 				}
 
@@ -3996,7 +3996,7 @@ void QuakeAIAnalyzerView::AnalyzeAIGame(unsigned short tabIndex,
 				{
 					auto it = std::find(playerDecision->simulations.begin(), playerDecision->simulations.end(), simulation);
 					otherRowDecisionSimulation = std::distance(playerDecision->simulations.begin(), it) + 2;
-					aiManager->SetGameSimulation(simulation);
+					aiManager->SetCurrentGameSimulation(simulation);
 					break;
 				}
 
@@ -4141,7 +4141,7 @@ void QuakeAIAnalyzerView::AnalyzeAIGame(unsigned short tabIndex,
 					auto it = std::find(gameEvaluation.playerDecision->simulations.begin(), 
 						gameEvaluation.playerDecision->simulations.end(), playerDecisionSimulation);
 					otherRowDecisionSimulation = std::distance(gameEvaluation.playerDecision->simulations.begin(), it) + 2;
-					aiManager->SetGameSimulation(playerDecisionSimulation);
+					aiManager->SetCurrentGameSimulation(playerDecisionSimulation);
 					break;
 				}
 
@@ -4279,7 +4279,7 @@ void QuakeAIAnalyzerView::ShowAIGameAnalysis(unsigned short tabIndex,
 		const AIAnalysis::GameDecision gameDecision = gameAnalysis.decisions[analysisFrame];
 		mStats.gameTime = gameDecision.time;
 
-		AIAnalysis::Simulation* gameSimulation = aiManager->GetGameSimulation();
+		AIAnalysis::Simulation* gameSimulation = aiManager->GetCurrentGameSimulation();
 		if (!gameSimulation)
 			return;
 
@@ -4658,7 +4658,7 @@ void QuakeAIAnalyzerView::UpdateGameAISimulation(unsigned short frame)
 {
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
 
-	AIAnalysis::Simulation* gameSimulation = aiManager->GetGameSimulation();
+	AIAnalysis::Simulation* gameSimulation = aiManager->GetCurrentGameSimulation();
 	for (auto const& item : gameSimulation->playerSimulation.items)
 	{
 		std::shared_ptr<Node> pItemNode = mScene->GetSceneNode(item.first);
@@ -4921,7 +4921,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		gameItems = gameDecision.evaluation.playerGuessItems;
 
 		//simulation guessing
-		bool success = aiManager->SimulateClusterPathing(
+		bool success = aiManager->GetGameSimulation().SimulateClusterPathing(
 			gameItems, playerGuessData, playerGuessSimulation, otherPlayerGuessData, otherPlayerGuessSimulation,
 			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
@@ -4930,7 +4930,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 			gameItems = gameDecision.evaluation.playerDecisionItems;
 
 			//simulation guessing decision
-			success = aiManager->SimulateClusterPathing(
+			success = aiManager->GetGameSimulation().SimulateClusterPathing(
 				gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
 				playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 			if (success)
@@ -4946,7 +4946,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		gameItems = gameDecision.evaluation.playerGuessItems;
 
 		//simulation guessing
-		bool success = aiManager->SimulateClusterPathing(
+		bool success = aiManager->GetGameSimulation().SimulateClusterPathing(
 			gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
 			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
@@ -4961,7 +4961,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysisSimulation(unsigned short playerIn
 		gameItems = gameDecision.evaluation.playerDecisionItems;
 
 		//simulation decision
-		bool success = aiManager->SimulateClusterPathing(
+		bool success = aiManager->GetGameSimulation().SimulateClusterPathing(
 			gameItems, playerData, playerSimulation, otherPlayerData, otherPlayerSimulation,
 			playerClusterPathings, playerClusterExpandedPathings, otherPlayerClusterPathings, otherPlayerClusterExpandedPathings);
 		if (success)
@@ -5503,7 +5503,7 @@ void QuakeAIAnalyzerView::UpdateGameAIAnalysis(unsigned short tabIndex, unsigned
 	if (gameAnalysis.decisions.empty() || gameAnalysis.decisions.size() < analysisFrame)
 		return;
 
-	const AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetGameEvaluation();
+	const AIAnalysis::GameEvaluation& gameEvaluation = aiManager->GetCurrentGameEvaluation();
 
 	//Summary, Minimax, Guess, Minimax, Decision
 	bool foundSimulation = false;

@@ -2799,7 +2799,7 @@ void QuakeAIEditorView::SimulateExploringDelegate(BaseEventDataPtr pEventData)
 
 		playerView.isUpdated = true;
 		playerView.simulation.plan = playerPlan;
-		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		playerView.simulation.plan.id = aiManager->GetGameSimulation().GetNewPlanID();
 		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
 
 		aiView->SetPathingGraph(mPathingMap);
@@ -2866,7 +2866,7 @@ void QuakeAIEditorView::CreatePathingGraphDelegate(BaseEventDataPtr pEventData)
 		mHighlightNode->SetVisible(false);
 
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	aiManager->CreatePathingMap(pCastEventData->GetActorId(), mCreatedNodes, mSelectedClusters, mPathingMap);
+	aiManager->GetPhysicsSimulation().CreatePathingMap(pCastEventData->GetActorId(), mCreatedNodes, mSelectedClusters, mPathingMap);
 	if (mCreatedNodes.empty())
 		return;
 
@@ -2921,7 +2921,7 @@ void QuakeAIEditorView::CreatePathingNodeDelegate(BaseEventDataPtr pEventData)
 		mHighlightNode->SetVisible(false);
 
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	PathingNode* pNode = aiManager->CreatePathingNode(pCastEventData->GetActorId(), mPathingMap);
+	PathingNode* pNode = aiManager->GetPhysicsSimulation().CreatePathingNode(pCastEventData->GetActorId(), mPathingMap);
 
 	if (pNode)
 	{
@@ -2959,7 +2959,7 @@ void QuakeAIEditorView::SimulatePathingDelegate(BaseEventDataPtr pEventData)
 	NodePlan playerPlan;
 	mPathingSimulation = std::make_shared<PathingGraph>();
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	aiManager->CreatePathing(pCastEventData->GetActorId(), playerPlan, mPathingSimulation);
+	aiManager->GetPhysicsSimulation().CreatePathing(pCastEventData->GetActorId(), playerPlan, mPathingSimulation);
 
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
@@ -2972,7 +2972,7 @@ void QuakeAIEditorView::SimulatePathingDelegate(BaseEventDataPtr pEventData)
 
 		playerView.isUpdated = true;
 		playerView.simulation.plan = playerPlan;
-		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		playerView.simulation.plan.id = aiManager->GetGameSimulation().GetNewPlanID();
 		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
 	}
 
@@ -3024,7 +3024,7 @@ void QuakeAIEditorView::SimulateJumpingDelegate(BaseEventDataPtr pEventData)
 
 	NodePlan playerPlan;
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	aiManager->CreatePathingJump(pCastEventData->GetActorId(), playerPlan, mPathingMap);
+	aiManager->GetPhysicsSimulation().CreatePathingJump(pCastEventData->GetActorId(), playerPlan, mPathingMap);
 
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
@@ -3037,7 +3037,7 @@ void QuakeAIEditorView::SimulateJumpingDelegate(BaseEventDataPtr pEventData)
 
 		playerView.isUpdated = true;
 		playerView.simulation.plan = playerPlan;
-		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		playerView.simulation.plan.id = aiManager->GetGameSimulation().GetNewPlanID();
 		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
 	}
 
@@ -3089,7 +3089,7 @@ void QuakeAIEditorView::SimulateRunningDelegate(BaseEventDataPtr pEventData)
 
 	NodePlan playerPlan;
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	aiManager->CreatePathingRun(pCastEventData->GetActorId(), playerPlan, mPathingMap);
+	aiManager->GetPhysicsSimulation().CreatePathingRun(pCastEventData->GetActorId(), playerPlan, mPathingMap);
 
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
@@ -3102,7 +3102,7 @@ void QuakeAIEditorView::SimulateRunningDelegate(BaseEventDataPtr pEventData)
 
 		playerView.isUpdated = true;
 		playerView.simulation.plan = playerPlan;
-		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		playerView.simulation.plan.id = aiManager->GetGameSimulation().GetNewPlanID();
 		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
 	}
 
@@ -3154,7 +3154,7 @@ void QuakeAIEditorView::SimulateFallingDelegate(BaseEventDataPtr pEventData)
 
 	NodePlan playerPlan;
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	aiManager->CreatePathingFall(pCastEventData->GetActorId(), playerPlan, mPathingMap);
+	aiManager->GetPhysicsSimulation().CreatePathingFall(pCastEventData->GetActorId(), playerPlan, mPathingMap);
 
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
@@ -3167,7 +3167,7 @@ void QuakeAIEditorView::SimulateFallingDelegate(BaseEventDataPtr pEventData)
 
 		playerView.isUpdated = true;
 		playerView.simulation.plan = playerPlan;
-		playerView.simulation.plan.id = aiManager->GetNewPlanID();
+		playerView.simulation.plan.id = aiManager->GetGameSimulation().GetNewPlanID();
 		aiManager->UpdatePlayerSimulationView(pCastEventData->GetActorId(), playerView);
 	}
 
@@ -3243,7 +3243,7 @@ void QuakeAIEditorView::EditMapDelegate(BaseEventDataPtr pEventData)
 					actor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 				if (pTransformComponent)
 				{
-					PathingNode* pNode = aiManager->CreatePathingNode(
+					PathingNode* pNode = aiManager->GetPhysicsSimulation().CreatePathingNode(
 						humanView->GetActorId(), pTransformComponent->GetPosition(), mPathingMap);
 					mCreatedNodes.push_back(pNode);
 				}
@@ -3259,7 +3259,7 @@ void QuakeAIEditorView::EditMapDelegate(BaseEventDataPtr pEventData)
 						actor->GetComponent<TransformComponent>(TransformComponent::Name).lock());
 					if (pTransformComponent)
 					{
-						PathingNode* pNode = aiManager->CreatePathingNode(
+						PathingNode* pNode = aiManager->GetPhysicsSimulation().CreatePathingNode(
 							humanView->GetActorId(), pTransformComponent->GetPosition(), mPathingMap);
 						mCreatedNodes.push_back(pNode);
 					}
@@ -3534,7 +3534,7 @@ void QuakeAIEditorView::SaveMapDelegate(BaseEventDataPtr pEventData)
 	if (mPathingMap)
 	{
 		QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-		aiManager->CreateTransitions(mPathingMap);
+		aiManager->GetPhysicsSimulation().CreateTransitions(mPathingMap);
 
 		std::string levelPath = "ai/quake/" +
 			Settings::Get()->Get("selected_world") + "/map.bin";
@@ -3708,7 +3708,7 @@ void QuakeAIEditorView::CreateMapDelegate(BaseEventDataPtr pEventData)
 	std::shared_ptr<BaseGameView> gameView = GameApplication::Get()->GetGameView(GV_AI);
 	std::shared_ptr<QuakeAIView> aiView = std::dynamic_pointer_cast<QuakeAIView>(gameView);
 	QuakeAIManager* aiManager = dynamic_cast<QuakeAIManager*>(GameLogic::Get()->GetAIManager());
-	aiManager->CreatePathingMap(aiView->GetActorId(), mCreatedNodes, mPathingMap);
+	aiManager->GetPhysicsSimulation().CreatePathingMap(aiView->GetActorId(), mCreatedNodes, mPathingMap);
 
 	//remove sceneboxes
 	for (PathingNode* pNode : mCreatedNodes)
